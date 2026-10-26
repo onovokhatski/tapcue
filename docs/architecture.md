@@ -54,7 +54,7 @@ that must follow.
 ```
 server/src/
   main.ts            start-up: read config, wire modules together, listen
-  config.ts          port, project folder path (from CLI args / env)
+  config.ts          port, project folder path, demo mode (from CLI args / env)
   project/
     store.ts         load, validate and atomically save project.json; keep revision
     assets.ts        save uploaded files into assets/, enforce the 200 MB limit
@@ -222,6 +222,18 @@ Editor                    Server                         Players
 - Uploaded files get a unique, sanitised name so uploads never overwrite each other.
   Unused files are not cleaned up in MVP.
 - The command log is in memory only and is lost on restart; it is a diagnostic tool, not history.
+
+### Demo mode
+
+Demo mode ([spec DEMO-3](spec.md#510-demo-receiver)) needs almost no special code, because
+the editor already changes its own copy of the project first and saves it second
+(§4.2). In demo mode:
+
+- the server answers `PUT /api/project`, `POST /api/assets` and the import endpoint with
+  `403`, and the editor stops trying to save after learning the mode from `GET /api/project`;
+- the dispatcher replaces every target with the demo receiver before choosing a driver.
+
+These are three checks in the server and one flag in the editor — no separate demo build.
 
 ## 7. Reliability
 

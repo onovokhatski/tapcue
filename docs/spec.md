@@ -143,6 +143,11 @@ IDs are referenced from issues and tests.
 
 - **DEMO-1** Accepts HTTP requests on a dedicated path and shows them as a live log.
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
+- **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
+  - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;
+  - the server rejects saving, file uploads and project import;
+  - commands are delivered only to the demo receiver, whatever the targets say;
+  - the editor shows a permanent "Demo mode — changes are not saved" notice.
 
 ## 6. Screens and user flows
 
@@ -191,6 +196,8 @@ IDs are referenced from issues and tests.
 1. Starts Tapcue with one command; the demo project is loaded.
 2. Opens the player in one tab and the demo receiver in another.
 3. Taps in the player and sees the commands arrive in the receiver.
+
+The same flow works on the public online demo (DEMO-3) without installing anything.
 
 ## 7. Non-functional requirements
 
