@@ -85,6 +85,25 @@ expose a Tapcue server to the internet except in demo mode.
 
 *Available from milestone M1.*
 
+## Development
+
+Requirements: Node.js 22 LTS or newer (`.nvmrc` pins the version used in CI) and npm 10.
+
+```bash
+npm install
+```
+
+The repository is an npm workspace with three packages:
+
+| Package | Responsibility |
+|---|---|
+| `packages/shared` | Project format and message schemas, shared types |
+| `packages/server` | Project storage, HTTP API, WebSocket, command drivers |
+| `packages/web` | Editor, player and demo receiver |
+
+`server` and `web` depend only on `shared`, never on each other
+([ADR 0002](docs/adr/0002-npm-workspaces.md)).
+
 ## License
 
 [MIT](LICENSE) © Oleg Novokhatskyi
