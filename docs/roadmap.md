@@ -38,6 +38,8 @@ was significant.
 A short throw-away experiment before design, to make sure the riskiest assumptions hold.
 The code is not kept; the conclusions go into ADRs.
 
+**Done 2026-10-27** — results in [spike-ipad.md](spike-ipad.md).
+
 | Question | Why it matters | Pass if |
 |---|---|---|
 | Does a muted looped video autoplay on iPad Safari from a home-screen page? | Video backgrounds (PG-3) | Plays without a tap, loops without a visible gap |
@@ -75,7 +77,8 @@ Hand-written demo project with test assets.
 
 Server loads the project and serves it with its assets. Player renders a station: backgrounds
 (image and video), `fit`/`fill`, hotspot shapes and styles, press effects, navigation with
-fade and preloading, idle timeout.
+fade and warm pages, idle timeout. Measure on a real iPad how many videos can stay warm at
+once.
 
 - **Requirements:** PRJ-1, CNV-1…3, PG-2…5, HS-3…5, ACT-3, ST-2, ST-4, PLY-1, PLY-7
 - **Done when:** the demo project can be browsed in a browser like a real catalogue.
@@ -107,7 +110,8 @@ canvas settings; command log view; zip export and import.
 
 ### M5 — Reliability and showcase
 
-Screen wake lock, end-to-end tests, testing on real iPads, error states polish,
+Screen wake lock, stand setup guide (Auto-Lock, Guided Access, dedicated access point),
+end-to-end tests, testing on real iPads incl. home-screen mode and Guided Access, error states polish,
 single-command start on macOS and Windows, README with screenshots and a short video,
 demo mode and a public online demo.
 

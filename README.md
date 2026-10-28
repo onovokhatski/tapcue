@@ -3,7 +3,7 @@
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
 > **Status:** pre-implementation — no code yet. The specification, architecture and decisions
-> are complete; a technical spike and the design phase come next. See the [roadmap](docs/roadmap.md).
+> and the technical spike are complete; the design phase comes next. See the [roadmap](docs/roadmap.md).
 
 <!-- Screenshot / short video of the editor and player goes here (milestone M5). -->
 

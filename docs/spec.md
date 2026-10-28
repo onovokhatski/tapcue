@@ -125,7 +125,9 @@ IDs are referenced from issues and tests.
 - **PLY-1** Renders the station's pages exactly as in the editor, scaled by the canvas scale mode.
 - **PLY-2** Shows an unobtrusive indicator when the connection to the server is lost; hides it when restored.
 - **PLY-3** Reconnects to the server automatically.
-- **PLY-4** Keeps the screen awake while open (where the browser allows it).
+- **PLY-4** Requests a screen wake lock where the browser offers one. On iPad over `http://` it
+  does not, so staying awake is a stand-setup step described in the setup guide
+  ([ADR 0015](adr/0015-screen-wake.md)).
 - **PLY-5** Applies project changes saved in the editor without a manual reload.
 - **PLY-6** If the current page no longer exists after an update, returns to the start page.
 - **PLY-7** Prevents accidental zoom, text selection and context menus.
@@ -230,8 +232,8 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 
 ## 10. Open questions
 
-None at the moment. Video autoplay, screen wake lock and tap latency on iPad are verified
-by a technical spike before the design phase.
+None at the moment. Video autoplay, screen wake lock and tap latency on iPad were checked by a
+technical spike: see [spike-ipad.md](spike-ipad.md).
 
 ## Appendix A. Recommended media
 
