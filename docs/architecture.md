@@ -263,15 +263,16 @@ No error in one tap, one driver or one connection may crash the server.
 
 Each significant decision is recorded as an ADR in [docs/adr/](adr/):
 
-1. Local server in the stand network instead of a cloud service
-2. npm workspaces with three packages
-3. Zod schemas in `shared` as the single source of truth
-4. One `PageView` renderer for player and editor
-5. Player sends hotspot references, not commands
-6. WebSocket for real-time messages, HTTP for documents and files
-7. Own OSC encoder instead of a library
-8. Tailwind for app UI; CSS variables and keyframes for hotspot styles and effects
-9. Filesystem storage, no database
-10. No authentication in MVP
-11. Auto-save with whole-project `PUT`
-12. "Add hotspot" button instead of a drawing mode
+1. [Local server in the stand network instead of a cloud service](adr/0001-local-server.md)
+2. [npm workspaces with three packages](adr/0002-npm-workspaces.md)
+3. [Zod schemas in `shared` as the single source of truth](adr/0003-zod-schemas.md)
+4. [One `PageView` renderer for player and editor](adr/0004-shared-page-renderer.md)
+5. [Player sends hotspot references, not commands](adr/0005-player-sends-hotspot-refs.md)
+6. [WebSocket for real-time messages, HTTP for documents and files](adr/0006-websocket-and-http.md)
+7. [Own OSC encoder instead of a library](adr/0007-own-osc-encoder.md)
+8. [Tailwind for app UI; CSS variables and keyframes for hotspot styles and effects](adr/0008-styling.md)
+9. [Filesystem storage, no database](adr/0009-filesystem-storage.md)
+10. [No authentication in MVP](adr/0010-no-auth-in-mvp.md)
+11. [Auto-save with whole-project `PUT`](adr/0011-autosave-whole-project.md)
+12. ["Add hotspot" button instead of a drawing mode](adr/0012-add-hotspot-button.md)
+13. [Demo mode as a server flag](adr/0013-demo-mode.md)
