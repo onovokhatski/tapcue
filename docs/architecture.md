@@ -168,6 +168,7 @@ contract at runtime and get the same TypeScript types at compile time.
 | `GET /api/project/export` | Download the project as `.zip` |
 | `POST /api/project/import` | Upload a `.zip` to replace the project |
 | `GET /api/network` | Local addresses for station URLs / QR codes |
+| `POST /api/test-send` | Send a hotspot's command from the editor (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)) |
 | `POST /demo/*` | Demo receiver endpoint |
 
 The editor saves the **whole project** in one request. A project is a few kilobytes of JSON,
@@ -182,7 +183,7 @@ One endpoint, `/ws`. Messages are JSON objects with a `type` field.
 | player → server | `hello` | `stationId` | Identify after (re)connect |
 | player → server | `tap` | `pageId`, `hotspotId` | A hotspot was tapped |
 | server → all | `project-updated` | `revision` | Fetch the new project |
-| server → editors | `log-entry` | entry | A command was sent or failed |
+| server → editors | `log-entry` | entry (incl. source: station id or `test`) | A command was sent or failed |
 | server → demo pages | `demo-received` | request summary | Demo receiver got a request |
 | both | `ping` / `pong` | — | Detect dead connections |
 

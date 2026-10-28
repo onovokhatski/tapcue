@@ -88,7 +88,7 @@ once.
 WebSocket, dispatcher, the three drivers, command log, demo receiver, connection
 indicator and automatic reconnect in the player.
 
-- **Requirements:** ACT-1, ACT-2, TGT-2…4, ST-3, ST-5, PLY-2, PLY-3, DEMO-1, DEMO-2, NFR-2
+- **Requirements:** ACT-1, ACT-2, TGT-2…5, ST-3, ST-5, PLY-2, PLY-3, DEMO-1, DEMO-2, NFR-2
 - **Done when:** a tap in the player appears in the demo receiver; the OSC encoder is tested byte by byte; pulling the network cable and plugging it back restores the player without a reload.
 
 ### M3 — Editor: core
@@ -97,15 +97,15 @@ Editor layout, page list, uploads, page backgrounds, add / select / move / resiz
 numeric position fields, stacking order, safe-area overlay, auto-save, live update of
 players.
 
-- **Requirements:** PG-1, PG-6, HS-1, HS-2, HS-6, ED-1, ED-2, ED-3, ED-5, PLY-5, PLY-6
+- **Requirements:** PG-1, PG-6, HS-1, HS-2, HS-6, ED-1, ED-2, ED-3, ED-5, ED-7, PLY-5, PLY-6
 - **Done when:** the demo project's pages can be rebuilt from scratch in the editor, and an open player follows every change within a second.
 
 ### M4 — Editor: complete
 
-Editing of hotspot style, effect and action; targets; stations with URLs and QR codes;
+Editing of hotspot style, effect and action, with "Send test"; targets; stations with URLs and QR codes;
 canvas settings; command log view; zip export and import.
 
-- **Requirements:** HS-4, HS-5, TGT-1, ST-1, ST-6, ED-4, ED-6, PRJ-3, PRJ-4, CNV-1, CNV-2
+- **Requirements:** HS-4, HS-5, ACT-4, TGT-1, ST-1, ST-6, ED-4, ED-6, PRJ-3, PRJ-4, CNV-1, CNV-2
 - **Done when:** everything in the project format can be edited in the editor; a project exported on one machine runs after import on another.
 
 ### M5 — Reliability and showcase

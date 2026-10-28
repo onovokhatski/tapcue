@@ -100,6 +100,9 @@ IDs are referenced from issues and tests.
 - **ACT-1** A hotspot action can navigate to a page, send a command to a target, or both.
 - **ACT-2** When an action does both, the command is sent first, then the page changes.
 - **ACT-3** Navigation happens immediately on the tablet and does not wait for the command result.
+- **ACT-4** The editor has a "Send test" button for the selected hotspot's command. The server
+  sends it exactly as if the hotspot had been tapped, so commands can be checked during setup
+  without the tablet.
 
 ### 5.6 Targets and drivers
 
@@ -110,6 +113,10 @@ IDs are referenced from issues and tests.
   - **HTTP** — base URL; command = method (GET/POST), path, optional body.
 - **TGT-3** Every driver implements one common interface, so a new protocol can be added without changing the rest of the system.
 - **TGT-4** Every sent command and every delivery error is recorded in a command log visible in the editor.
+  Each entry names its source: the station that tapped, or "Test" for a send from the editor (ACT-4).
+- **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
+  and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
+  confirm arrival. HTTP reports *error* on timeout or a non-2xx response.
 
 ### 5.7 Stations
 
@@ -140,10 +147,14 @@ IDs are referenced from issues and tests.
 - **ED-4** Provides management of pages, hotspots, targets, stations and canvas settings.
 - **ED-5** Saves changes to the server; saved changes reach open players (see PLY-5).
 - **ED-6** Shows the command log (TGT-4).
+- **ED-7** Shows the editor's own connection to the server (connected / disconnected) and the
+  save status (saving / saved / save error). Per-target reachability is not shown (TGT-5).
 
 ### 5.10 Demo receiver
 
-- **DEMO-1** Accepts HTTP requests on a dedicated path and shows them as a live log.
+- **DEMO-1** Accepts HTTP requests on `/demo/<screen>/<content>` and shows them as a live log,
+  plus one tile per screen name with the content it last received (e.g. `POST /demo/screen-1/product-a`
+  → tile "screen-1" shows "product-a"). The request body is shown in the log, not on the tiles.
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
 - **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
   - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;
