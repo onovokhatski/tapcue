@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 1536" width="2048" height="1536">
+  <!-- Sample designer artwork: Product A (dark). Not Tapcue UI. -->
+  <defs>
+    <radialGradient id="bg" cx=".3" cy=".45" r=".9"><stop offset="0" stop-color="#25335c"/><stop offset=".6" stop-color="#0f1629"/><stop offset="1" stop-color="#080b14"/></radialGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#5f86ff" stop-opacity=".45"/><stop offset="1" stop-color="#5f86ff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="2048" height="1536" fill="url(#bg)"/>
+  <circle cx="620" cy="800" r="560" fill="url(#glow)"/>
+  <!-- back -->
+  <rect x="120" y="176" width="236" height="88" rx="44" fill="#ffffff" fill-opacity=".08" stroke="#ffffff" stroke-opacity=".35" stroke-width="3"/>
+  <text x="238" y="232" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" font-size="32" font-weight="600" fill="#e6ecff">← Home</text>
+  <!-- speaker x2 -->
+  <g transform="translate(620 820) scale(1.7)">
+    <ellipse cx="0" cy="186" rx="150" ry="14" fill="#000" opacity=".5"/>
+    <rect x="-110" y="-170" width="220" height="340" rx="22" fill="#1d1f26"/>
+    <rect x="-110" y="-170" width="220" height="340" rx="22" fill="none" stroke="#3d4560" stroke-width="3"/>
+    <circle cx="0" cy="-88" r="36" fill="#0b0c10" stroke="#2c3247" stroke-width="7"/><circle cx="0" cy="-88" r="12" fill="#252a3a"/>
+    <circle cx="0" cy="58" r="84" fill="#0b0c10" stroke="#2c3247" stroke-width="9"/><circle cx="0" cy="58" r="30" fill="#1b1f2c"/>
+    <circle cx="82" cy="148" r="5" fill="#f5b342"/>
+  </g>
+  <!-- copy -->
+  <g font-family="Helvetica Neue, Arial, sans-serif">
+    <text x="1120" y="440" font-size="30" font-weight="700" letter-spacing="8" fill="#8fb3ff">PRODUCT A</text>
+    <text x="1116" y="560" font-family="Georgia, 'Times New Roman', serif" font-size="104" fill="#ffffff">Studio monitor</text>
+    <text x="1120" y="640" font-size="36" fill="#b8c3dc">Flat, honest sound for rooms</text>
+    <text x="1120" y="690" font-size="36" fill="#b8c3dc">up to 20 m².</text>
+    <g font-size="30" fill="#e6ecff">
+      <text x="1120" y="800" fill="#7f8db0">Frequency</text><text x="1420" y="800">45 Hz – 22 kHz</text>
+      <text x="1120" y="860" fill="#7f8db0">Power</text><text x="1420" y="860">2 × 60 W</text>
+      <text x="1120" y="920" fill="#7f8db0">Weight</text><text x="1420" y="920">6.2 kg</text>
+    </g>
+    <rect x="1120" y="1040" width="600" height="112" rx="56" fill="#8fb3ff"/>
+    <text x="1420" y="1108" text-anchor="middle" font-size="34" font-weight="700" fill="#0b1020">Play demo on the big screen</text>
+    <text x="1120" y="1272" font-size="32" font-weight="600" fill="#e6ecff">Next: Product B  →</text>
+  </g>
+</svg>

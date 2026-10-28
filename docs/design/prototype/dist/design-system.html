@@ -1,0 +1,1630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Design System</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.75 4.5h10.5M6.25 4.5V2.75h3.5V4.5M4.25 4.5l.6 8.75h6.3l.6-8.75M6.75 7v4M9.25 7v4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></symbol>
+  <symbol id="i-external" viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M13.5 2.5l-6 6M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 16 16"><g fill="currentColor" stroke="none"><circle cx="6" cy="4" r="1.1"/><circle cx="10" cy="4" r="1.1"/><circle cx="6" cy="8" r="1.1"/><circle cx="10" cy="8" r="1.1"/><circle cx="6" cy="12" r="1.1"/><circle cx="10" cy="12" r="1.1"/></g></symbol>
+  <symbol id="i-close" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3 8.5l3.25 3.25L13 5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M7.13 2.5a1 1 0 0 1 1.74 0l5.4 9.5a1 1 0 0 1-.87 1.5H2.6a1 1 0 0 1-.87-1.5z"/><path d="M8 6.25v3"/><circle cx="8" cy="11.25" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 16 16"><path d="M2.5 2.5l11 11M1.75 6.1A9.4 9.4 0 0 1 4.7 4.2M7.2 3.5a9.4 9.4 0 0 1 7.05 2.6M4 8.6a6 6 0 0 1 2.4-1.4M9.9 7.4a6 6 0 0 1 2.1 1.2M6.1 10.9a2.9 2.9 0 0 1 3.8 0"/><circle cx="8" cy="13" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <!-- additions needed by components -->
+  <symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7.25v3.75"/><circle cx="8" cy="5" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-image" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.75" cy="6.25" r="1.1"/><path d="M2.5 11.5l3.25-3 2.75 2.5 2-1.75 3 2.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 16 16"><rect x="1.75" y="4" width="9" height="8" rx="1.5"/><path d="M10.75 7l3.5-2v6l-3.5-2"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75"/></symbol>
+  <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.75v7.75M5 7.5l3 3 3-3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+</svg>
+
+
+<!-- ================= Page header ================= -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1360px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="text-body-m text-muted">Design system</span>
+    <span class="ml-auto rounded-sm border px-2 py-0.5 font-mono text-mono-s text-secondary">v0.2 · light</span>
+  </div>
+</header>
+
+<div class="gutter mx-auto grid max-w-[1360px] grid-cols-1 gap-10 py-8 lg:grid-cols-[184px_minmax(0,1fr)]">
+
+  <!-- ================= Section nav ================= -->
+  <nav aria-label="Sections" class="hidden lg:block">
+    <div class="sticky top-[88px] space-y-6">
+      <div>
+        <p class="mb-2 text-overline uppercase text-muted">Foundations</p>
+        <ul class="space-y-0.5 text-body-m">
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#colour">Colour</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#type">Type</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#spacing">Spacing &amp; radii</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#elevation">Elevation &amp; focus</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#contrast">Contrast check</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="mb-2 text-overline uppercase text-muted">Components</p>
+        <ul class="space-y-0.5 text-body-m">
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#icons">Icons</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#button">Button</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#text-field">Text field</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#select">Select</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#number-field">Number field</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#color-field">Colour field</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#segmented">Segmented control</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#tab">Tab</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#list-item">List item</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#status-badge">Status badge</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#log-row">Log row</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#hotspot">Hotspot overlay</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#connection">Connection indicator</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#dialog">Dialog</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#banner">Banner</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#qr-card">QR card</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#additions">v0.2 additions</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="min-w-0 space-y-16">
+
+    <!-- Intro -->
+    <section class="max-w-[68ch] space-y-3">
+      <h1 class="text-heading-xl [text-wrap:balance]">Tapcue design system</h1>
+      <p class="text-body-m text-secondary">Tokens and components for the editor, the player and the demo receiver. The chrome is warm grey so artwork reads honestly. Amber, the standby cue light, marks selection and the primary action. Status always pairs a colour with a shape or icon and a word.</p>
+      <p class="text-body-m text-secondary">Every value on this page is read live from <span class="font-mono text-mono-m text-primary">tokens.css</span>, so the specimen cannot drift from the source. Tokens map 1:1: <span class="font-mono text-mono-m text-primary">color/text/secondary</span> → <span class="font-mono text-mono-m text-primary">--color-text-secondary</span> → Tailwind <span class="font-mono text-mono-m text-primary">text-secondary</span>.</p>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: COLOUR                                                  -->
+    <!-- =================================================================== -->
+    <section id="colour" class="scroll-mt-20 space-y-6" aria-labelledby="h-colour">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-colour" class="text-heading-l">Colour</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Primitives are the raw palette and are never used in components. Semantic tokens point at primitives; a dark mode later redefines only the semantic layer.</p>
+      </div>
+
+      <div class="rounded-lg border bg-surface p-5">
+        <h3 class="mb-4 text-heading-m">Primitives</h3>
+        <div id="primitive-ramps" class="space-y-4"></div>
+      </div>
+
+      <div class="rounded-lg border bg-surface p-5">
+        <h3 class="mb-1 text-heading-m">Semantic tokens</h3>
+        <p class="mb-4 text-body-s text-muted">Token · alias · resolved value</p>
+        <div id="semantic-groups" class="gap-8 md:columns-2 xl:columns-3"></div>
+      </div>
+
+      <!-- Accent vs warning -->
+      <div class="rounded-lg border bg-surface p-5">
+        <h3 class="text-heading-m">Accent and warning never meet</h3>
+        <p class="mb-4 mt-1 max-w-[68ch] text-body-m text-secondary">Amber is a fill that carries dark text and means "act here" or "this is selected". Warning is a red-leaning orange, always shown as a tint with a triangle and a word. They differ in hue, in form and in label.</p>
+        <div class="flex flex-wrap items-center gap-6">
+          <div class="flex items-center gap-3">
+            <button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-accent px-3 text-label-m text-on-accent hover:bg-accent-hover active:bg-accent-pressed"><svg class="icon"><use href="#i-plus"/></svg>Add hotspot</button>
+            <span class="text-body-s text-muted">accent/default fill</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-6 items-center gap-1.5 rounded-full border border-warning bg-warning-bg px-2 text-label-s text-warning-fg"><svg class="icon h-3.5 w-3.5 text-warning-solid"><use href="#i-alert"/></svg>URL will change</span>
+            <span class="text-body-s text-muted">warning tint + triangle</span>
+          </div>
+          <div class="flex items-center gap-2" aria-hidden="true">
+            <span class="h-8 w-8 rounded bg-accent"></span><span class="h-8 w-8 rounded bg-warning-solid"></span>
+            <span class="text-body-s text-muted">#fbbf24 vs #ea580c, hue 43° vs 21°</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: TYPE                                                    -->
+    <!-- =================================================================== -->
+    <section id="type" class="scroll-mt-20 space-y-6" aria-labelledby="h-type">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-type" class="text-heading-l">Type</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Inter for the interface. JetBrains Mono for anything a machine reads: OSC addresses, IPs, ports, URLs, timestamps and hex values. Ligatures are off in mono so <span class="font-mono text-mono-m">-&gt;</span> stays two characters.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <table class="w-full min-w-[720px] text-left">
+          <thead class="border-b bg-subtle">
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="px-5 py-2 font-semibold">Style</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Sample</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Spec</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Tailwind</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Heading XL</th><td class="px-5 py-3 text-heading-xl">Demo stand</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 24/32 −1.5%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-heading-xl</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Heading L</th><td class="px-5 py-3 text-heading-l">Replace the current project?</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 20/28 −1%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-heading-l</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Heading M</th><td class="px-5 py-3 text-heading-m">Product A</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 16/24 −0.5%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-heading-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Body M</th><td class="px-5 py-3 text-body-m">Tapping this hotspot sends a command to Resolume.</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 400 14/20</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-body-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Body S</th><td class="px-5 py-3 text-body-s">4 hotspots · Image 2048 × 1536</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 400 12/16</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-body-s</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Label M</th><td class="px-5 py-3 text-label-m">Send test</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 500 14/20</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-label-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Label S</th><td class="px-5 py-3 text-label-s">Corner radius</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 500 12/16 +0.5%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-label-s</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Overline</th><td class="px-5 py-3 text-overline uppercase">On tap</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 11/16 +8% caps</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-overline uppercase</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Mono M</th><td class="px-5 py-3 font-mono text-mono-m">/composition/columns/2/connect</td><td class="px-5 py-3 font-mono text-mono-s text-muted">JetBrains Mono 400 13/20</td><td class="px-5 py-3 font-mono text-mono-s text-muted">font-mono text-mono-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Mono S</th><td class="px-5 py-3 font-mono text-mono-s">14:32:07.418 · 192.168.1.20:7000</td><td class="px-5 py-3 font-mono text-mono-s text-muted">JetBrains Mono 400 12/16</td><td class="px-5 py-3 font-mono text-mono-s text-muted">font-mono text-mono-s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: SPACING & RADII                                         -->
+    <!-- =================================================================== -->
+    <section id="spacing" class="scroll-mt-20 space-y-6" aria-labelledby="h-spacing">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-spacing" class="text-heading-l">Spacing and radii</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">A 4 px grid on the Tailwind scale (1 = 4 px). The 2 px half step is only for hairline offsets such as the segmented control's inner padding.</p>
+      </div>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="rounded-lg border bg-surface p-5">
+          <h3 class="mb-4 text-heading-m">Spacing</h3>
+          <div id="spacing-scale" class="space-y-2"></div>
+        </div>
+        <div class="rounded-lg border bg-surface p-5">
+          <h3 class="mb-4 text-heading-m">Radii</h3>
+          <div id="radii-scale" class="grid grid-cols-2 gap-4 sm:grid-cols-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: ELEVATION & FOCUS                                       -->
+    <!-- =================================================================== -->
+    <section id="elevation" class="scroll-mt-20 space-y-6" aria-labelledby="h-elevation">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-elevation" class="text-heading-l">Elevation and focus</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Panels sit flat and are separated by borders. Shadow is kept for things that float above the work.</p>
+      </div>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="grid gap-5 rounded-lg border bg-subtle p-6 sm:grid-cols-3">
+          <div class="rounded-lg border bg-surface p-4 shadow-1"><p class="text-label-m">Elevation 1</p><p class="text-body-s text-muted">Raised: thumbnails, QR card, dragged row at rest</p><p class="mt-3 font-mono text-mono-s text-muted">--elevation-1</p></div>
+          <div class="rounded-lg border bg-surface p-4 shadow-2"><p class="text-label-m">Elevation 2</p><p class="text-body-s text-muted">Floating: select menu, toast, dragged row</p><p class="mt-3 font-mono text-mono-s text-muted">--elevation-2</p></div>
+          <div class="rounded-xl bg-surface p-4 shadow-3"><p class="text-label-m">Elevation 3</p><p class="text-body-s text-muted">Modal: dialogs over the scrim</p><p class="mt-3 font-mono text-mono-s text-muted">--elevation-3</p></div>
+        </div>
+        <div class="rounded-lg border bg-surface p-5">
+          <h3 class="text-heading-m">Focus ring</h3>
+          <p class="mb-4 mt-1 text-body-s text-muted">2 px <span class="font-mono">--color-border-focus</span> (amber 700), 2 px offset. Text fields draw it on their own edge instead. Shown on every keyboard focus; never removed.</p>
+          <div class="flex flex-wrap items-center gap-4">
+            <button type="button" class="is-focus inline-flex h-8 items-center rounded bg-accent px-3 text-label-m text-on-accent">Primary</button>
+            <button type="button" class="is-focus inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m">Secondary</button>
+            <input aria-label="Focus specimen" class="field-focus h-8 w-36 rounded border border-strong bg-surface px-3 text-body-m" value="Product A">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: CONTRAST                                                -->
+    <!-- =================================================================== -->
+    <section id="contrast" class="scroll-mt-20 space-y-6" aria-labelledby="h-contrast">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-contrast" class="text-heading-l">Contrast check, WCAG 2.2 AA</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Every text and UI-boundary pair used by the components below, computed in the browser from the live token values. Text needs 4.5:1; icons, field borders, focus rings and selection indicators need 3:1. Disabled controls are exempt and listed for reference.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <table class="w-full min-w-[760px] text-left">
+          <thead class="border-b bg-subtle">
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="px-4 py-2 font-semibold">Sample</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Foreground</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Background</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Used for</th>
+              <th scope="col" class="px-4 py-2 text-right font-semibold">Ratio</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Result</th>
+            </tr>
+          </thead>
+          <tbody id="contrast-rows" class="divide-y"></tbody>
+        </table>
+      </div>
+      <p id="contrast-summary" class="text-body-s text-secondary"></p>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- COMPONENTS                                                           -->
+    <!-- =================================================================== -->
+        <!-- ============================ ICONS ============================ -->
+    <section id="icons" class="scroll-mt-20 space-y-4" aria-labelledby="h-icons">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-icons" class="text-heading-l">Icons</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use for actions that repeat in tight space, always next to a text label or with an <span class="font-mono text-mono-m">aria-label</span>. 16 px grid, 1.5 px stroke, round caps, colour from <span class="font-mono text-mono-m">currentColor</span>.</p>
+      </div>
+      <div class="rounded-lg border bg-surface p-5">
+        <ul class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-plus"/></svg><span class="font-mono text-mono-s text-secondary">plus</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-trash"/></svg><span class="font-mono text-mono-s text-secondary">trash</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-copy"/></svg><span class="font-mono text-mono-s text-secondary">copy</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-external"/></svg><span class="font-mono text-mono-s text-secondary">external</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-chevron-down"/></svg><span class="font-mono text-mono-s text-secondary">chevron-down</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-grip"/></svg><svg class="icon h-8 w-8 text-secondary" aria-hidden="true"><use href="#i-grip"/></svg><span class="font-mono text-mono-s text-secondary">grip</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-close"/></svg><span class="font-mono text-mono-s text-secondary">close</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-check"/></svg><span class="font-mono text-mono-s text-secondary">check</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-alert"/></svg><span class="font-mono text-mono-s text-secondary">alert</span></li>
+          <li class="flex items-center gap-3 rounded border p-3"><svg class="icon" aria-hidden="true"><use href="#i-wifi-off"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-wifi-off"/></svg><span class="font-mono text-mono-s text-secondary">wifi-off</span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-arrow-right"/></svg><span class="font-mono text-mono-s text-secondary">arrow-right <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-info"/></svg><span class="font-mono text-mono-s text-secondary">info <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-image"/></svg><span class="font-mono text-mono-s text-secondary">image <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-video"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-video"/></svg><span class="font-mono text-mono-s text-secondary">video <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-upload"/></svg><span class="font-mono text-mono-s text-secondary">upload <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-crop"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-crop"/></svg><span class="font-mono text-mono-s text-secondary">crop <span class="text-muted">+</span></span></li>
+        </ul>
+        <p class="mt-3 text-body-s text-muted">Dashed tiles marked + are additions the components need: arrow-right (page navigation in the log), info (Info banner), image and video (backgrounds), upload (dropzone), crop (safe area).</p>
+      </div>
+    </section>
+
+    <!-- ============================ BUTTON ============================ -->
+    <section id="button" class="scroll-mt-20 space-y-4" aria-labelledby="h-button">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-button" class="text-heading-l">Button</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use Primary for the one main action in a view, Secondary for everything else, Ghost inside toolbars and lists, and Danger only for the confirming action of a destructive dialog.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <table class="w-full min-w-[820px] text-left">
+          <thead class="border-b bg-subtle">
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="px-5 py-2 font-semibold">Variant</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Default</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Hover</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Pressed</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Disabled</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Focus</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr>
+              <th scope="row" class="px-5 py-4 text-label-s text-secondary">Primary</th>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-accent px-3 text-label-m text-on-accent hover:bg-accent-hover active:bg-accent-pressed"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add hotspot</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-accent-hover px-3 text-label-m text-on-accent"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add hotspot</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-accent-pressed px-3 text-label-m text-on-accent"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add hotspot</button></td>
+              <td class="px-5 py-4"><button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center gap-2 rounded bg-disabled px-3 text-label-m text-disabled"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add hotspot</button></td>
+              <td class="px-5 py-4"><button type="button" class="is-focus inline-flex h-8 items-center gap-2 rounded bg-accent px-3 text-label-m text-on-accent"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add hotspot</button></td>
+            </tr>
+            <tr>
+              <th scope="row" class="px-5 py-4 text-label-s text-secondary">Secondary</th>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded border border-strong bg-surface px-3 text-label-m text-primary hover:bg-hover active:bg-pressed"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>Send test</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded border border-strong bg-hover px-3 text-label-m text-primary"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>Send test</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded border border-strong bg-pressed px-3 text-label-m text-primary"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>Send test</button></td>
+              <td class="px-5 py-4"><button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center gap-2 rounded border border-default bg-disabled px-3 text-label-m text-disabled"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>Send test</button></td>
+              <td class="px-5 py-4"><button type="button" class="is-focus inline-flex h-8 items-center gap-2 rounded border border-strong bg-surface px-3 text-label-m text-primary"><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>Send test</button></td>
+            </tr>
+            <tr>
+              <th scope="row" class="px-5 py-4 text-label-s text-secondary">Ghost</th>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded px-3 text-label-m text-secondary hover:bg-hover hover:text-primary active:bg-pressed"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Duplicate</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-hover px-3 text-label-m text-primary"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Duplicate</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-pressed px-3 text-label-m text-primary"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Duplicate</button></td>
+              <td class="px-5 py-4"><button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center gap-2 rounded px-3 text-label-m text-disabled"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Duplicate</button></td>
+              <td class="px-5 py-4"><button type="button" class="is-focus inline-flex h-8 items-center gap-2 rounded px-3 text-label-m text-secondary"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Duplicate</button></td>
+            </tr>
+            <tr>
+              <th scope="row" class="px-5 py-4 text-label-s text-secondary">Danger</th>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-danger-solid px-3 text-label-m text-on-danger hover:bg-danger-hover active:bg-danger-pressed"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete target</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-danger-hover px-3 text-label-m text-on-danger"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete target</button></td>
+              <td class="px-5 py-4"><button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-danger-pressed px-3 text-label-m text-on-danger"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete target</button></td>
+              <td class="px-5 py-4"><button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center gap-2 rounded bg-disabled px-3 text-label-m text-disabled"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete target</button></td>
+              <td class="px-5 py-4"><button type="button" class="is-focus inline-flex h-8 items-center gap-2 rounded bg-danger-solid px-3 text-label-m text-on-danger"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete target</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex flex-wrap items-end gap-8 rounded-lg border bg-surface p-5">
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Size M · 32 px</p><button type="button" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Export .zip</button></div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Size S · 28 px</p><button type="button" class="inline-flex h-7 items-center gap-1.5 rounded border border-strong bg-surface px-2 text-label-s hover:bg-hover"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-copy"/></svg>Copy</button></div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Icon only · Ghost</p>
+          <div class="flex gap-1">
+            <button type="button" aria-label="Add page" class="inline-flex h-8 w-8 items-center justify-center rounded text-secondary hover:bg-hover hover:text-primary"><svg class="icon"><use href="#i-plus"/></svg></button>
+            <button type="button" aria-label="Delete page" class="inline-flex h-8 w-8 items-center justify-center rounded text-secondary hover:bg-danger-bg hover:text-danger-fg"><svg class="icon"><use href="#i-trash"/></svg></button>
+            <button type="button" aria-label="Close" class="inline-flex h-8 w-8 items-center justify-center rounded text-secondary hover:bg-hover hover:text-primary"><svg class="icon"><use href="#i-close"/></svg></button>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Busy</p><button type="button" aria-busy="true" class="inline-flex h-8 items-center gap-2 rounded border border-strong bg-surface px-3 text-label-m text-secondary"><span class="spinner" aria-hidden="true"></span>Sending…</button></div>
+      </div>
+      <p class="text-body-s text-muted">Props: <span class="font-mono">variant</span> primary | secondary | ghost | danger · <span class="font-mono">size</span> m | s · <span class="font-mono">leadingIcon</span> · <span class="font-mono">iconOnly</span> (requires aria-label) · <span class="font-mono">busy</span> · <span class="font-mono">disabled</span>.</p>
+    </section>
+
+    <!-- ============================ TEXT FIELD ============================ -->
+    <section id="text-field" class="scroll-mt-20 space-y-4" aria-labelledby="h-text-field">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-text-field" class="text-heading-l">Text field</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use for names and free text. Use the mono option for anything a machine reads: OSC address, host, URL, path, raw UDP payload.</p>
+      </div>
+      <div class="grid gap-6 rounded-lg border bg-surface p-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Default</p>
+          <div class="space-y-1">
+            <label for="tf-1" class="block text-label-s text-secondary">Name</label>
+            <input id="tf-1" class="field h-8 w-full rounded border border-strong bg-surface px-3 text-body-m text-primary placeholder:text-muted" value="Product A card">
+            <p class="text-body-s text-muted">Shown in the log and on the canvas.</p>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Focus</p>
+          <div class="space-y-1">
+            <label for="tf-2" class="block text-label-s text-secondary">Name</label>
+            <input id="tf-2" class="field-focus h-8 w-full rounded border border-strong bg-surface px-3 text-body-m text-primary" value="Product A card">
+            <p class="text-body-s text-muted">Shown in the log and on the canvas.</p>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Placeholder</p>
+          <div class="space-y-1">
+            <label for="tf-3" class="block text-label-s text-secondary">Name</label>
+            <input id="tf-3" class="field h-8 w-full rounded border border-strong bg-surface px-3 text-body-m text-primary placeholder:text-muted" placeholder="Untitled hotspot">
+            <p class="text-body-s text-muted">Shown in the log and on the canvas.</p>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Error · mono</p>
+          <div class="space-y-1">
+            <label for="tf-4" class="block text-label-s text-secondary">Host</label>
+            <input id="tf-4" aria-invalid="true" aria-describedby="tf-4-err" class="field field-error h-8 w-full rounded border bg-surface px-3 font-mono text-mono-m text-primary" value="192.168.1.400">
+            <p id="tf-4-err" class="flex items-start gap-1 text-body-s text-danger-fg"><svg class="icon mt-px h-3.5 w-3.5" aria-hidden="true"><use href="#i-alert"/></svg>Each part of an IP address must be 0–255.</p>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Mono</p>
+          <div class="space-y-1">
+            <label for="tf-5" class="block text-label-s text-secondary">OSC address</label>
+            <input id="tf-5" class="field h-8 w-full rounded border border-strong bg-surface px-3 font-mono text-mono-m text-primary" value="/composition/columns/2/connect">
+            <p class="text-body-s text-muted">Starts with /</p>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Disabled</p>
+          <div class="space-y-1">
+            <label for="tf-6" class="block text-label-s text-disabled">Base URL</label>
+            <input id="tf-6" disabled class="h-8 w-full cursor-not-allowed rounded border border-default bg-disabled px-3 font-mono text-mono-m text-disabled" value="http://localhost:4000">
+            <p class="text-body-s text-muted">Not used with UDP.</p>
+          </div>
+        </div>
+        <div class="space-y-2 sm:col-span-2 xl:col-span-3"><p class="text-overline uppercase text-muted">Multiline · mono (UDP text, HTTP body)</p>
+          <div class="max-w-xl space-y-1">
+            <label for="tf-7" class="block text-label-s text-secondary">Body</label>
+            <textarea id="tf-7" rows="3" class="field block w-full resize-y rounded border border-strong bg-surface px-3 py-1.5 font-mono text-mono-m text-primary">{ "station": "main", "content": "product-a" }</textarea>
+          </div>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Props: <span class="font-mono">label</span> · <span class="font-mono">value</span> · <span class="font-mono">placeholder</span> · <span class="font-mono">helper</span> · <span class="font-mono">error</span> (replaces helper, sets aria-invalid) · <span class="font-mono">mono</span> · <span class="font-mono">multiline</span> · <span class="font-mono">disabled</span>.</p>
+    </section>
+
+    <!-- ============================ SELECT ============================ -->
+    <section id="select" class="scroll-mt-20 space-y-4" aria-labelledby="h-select">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-select" class="text-heading-l">Select</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use to pick one item from a list of four or more, or a list that grows (pages, targets). For two or three fixed options use the segmented control.</p>
+      </div>
+      <div class="grid gap-6 rounded-lg border bg-surface p-5 sm:grid-cols-3">
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Default</p>
+          <div class="space-y-1">
+            <p id="sel-1-l" class="text-label-s text-secondary">Send command to</p>
+            <button type="button" aria-haspopup="listbox" aria-labelledby="sel-1-l sel-1" id="sel-1" class="flex h-8 w-full items-center gap-2 rounded border border-strong bg-surface pl-3 pr-2 text-left text-body-m hover:bg-hover">
+              <span class="min-w-0 flex-1 truncate">Resolume</span><span class="text-body-s text-muted">OSC</span><svg class="icon text-secondary" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Open</p>
+          <div class="space-y-1">
+            <p id="sel-2-l" class="text-label-s text-secondary">Send command to</p>
+            <div class="relative">
+              <button type="button" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="sel-2-l sel-2" id="sel-2" class="field-focus flex h-8 w-full items-center gap-2 rounded border bg-surface pl-3 pr-2 text-left text-body-m">
+                <span class="min-w-0 flex-1 truncate">Resolume</span><span class="text-body-s text-muted">OSC</span><svg class="icon rotate-180 text-secondary" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+              </button>
+              <ul role="listbox" aria-labelledby="sel-2-l" class="mt-1 w-full rounded-lg border bg-surface p-1 shadow-2">
+                <li role="option" aria-selected="false" class="flex h-8 items-center gap-2 rounded px-2 text-body-m text-secondary"><span class="w-4"></span><span class="flex-1">None</span></li>
+                <li role="option" aria-selected="true" class="flex h-8 items-center gap-2 rounded bg-selection px-2 text-body-m"><svg class="icon text-accent-strong" aria-hidden="true"><use href="#i-check"/></svg><span class="flex-1">Resolume</span><span class="text-body-s text-secondary">OSC over UDP</span></li>
+                <li role="option" aria-selected="false" class="flex h-8 items-center gap-2 rounded bg-hover px-2 text-body-m"><span class="w-4"></span><span class="flex-1">Projector</span><span class="text-body-s text-muted">UDP</span></li>
+                <li role="option" aria-selected="false" class="flex h-8 items-center gap-2 rounded px-2 text-body-m"><span class="w-4"></span><span class="flex-1">Demo receiver</span><span class="text-body-s text-muted">HTTP</span></li>
+              </ul>
+            </div>
+            <p class="pt-1 text-body-s text-muted">Selected: check + tint. Hover: grey. Keyboard moves the grey highlight.</p>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Disabled</p>
+          <div class="space-y-1">
+            <p class="text-label-s text-disabled">Go to page</p>
+            <button type="button" disabled class="flex h-8 w-full cursor-not-allowed items-center gap-2 rounded border border-default bg-disabled pl-3 pr-2 text-left text-body-m text-disabled">
+              <span class="flex-1 truncate">Product A</span><svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </button>
+            <p class="text-body-s text-muted">Add a second page to link to it.</p>
+          </div>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Props: <span class="font-mono">label</span> · <span class="font-mono">options[]</span> {value, label, meta?} · <span class="font-mono">value</span> · <span class="font-mono">placeholder</span> · <span class="font-mono">allowNone</span> · <span class="font-mono">open</span> · <span class="font-mono">disabled</span> · <span class="font-mono">helper</span>.</p>
+    </section>
+
+    <!-- ============================ NUMBER FIELD ============================ -->
+    <section id="number-field" class="scroll-mt-20 space-y-4" aria-labelledby="h-number-field">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-number-field" class="text-heading-l">Number field</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use for geometry and other short numbers in the properties panel. The axis letter sits inside the field so four fit in one row. Arrow keys step by 1, Shift + arrow by 10.</p>
+      </div>
+      <div class="grid gap-6 rounded-lg border bg-surface p-5 lg:grid-cols-2">
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Default · X Y W H row</p>
+          <fieldset class="space-y-1">
+            <legend class="mb-1 text-label-s text-secondary">Position, px</legend>
+            <div class="grid grid-cols-4 gap-2">
+              <label class="field flex h-7 items-center gap-1.5 rounded border border-strong bg-surface px-2"><span class="text-label-s text-muted">X</span><input class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" inputmode="numeric" value="312"></label>
+              <label class="field flex h-7 items-center gap-1.5 rounded border border-strong bg-surface px-2"><span class="text-label-s text-muted">Y</span><input class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" inputmode="numeric" value="904"></label>
+              <label class="field flex h-7 items-center gap-1.5 rounded border border-strong bg-surface px-2"><span class="text-label-s text-muted">W</span><input class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" inputmode="numeric" value="420"></label>
+              <label class="field flex h-7 items-center gap-1.5 rounded border border-strong bg-surface px-2"><span class="text-label-s text-muted">H</span><input class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" inputmode="numeric" value="512"></label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Focus · Error · Disabled</p>
+          <div class="grid grid-cols-4 gap-2">
+            <label class="field-focus flex h-7 items-center gap-1.5 rounded border bg-surface px-2"><span class="text-label-s text-muted">X</span><input class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" value="312"></label>
+            <label class="field-error flex h-7 items-center gap-1.5 rounded border bg-surface px-2"><span class="text-label-s text-muted">W</span><input aria-invalid="true" aria-describedby="nf-err" class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" value="0"></label>
+            <label class="flex h-7 cursor-not-allowed items-center gap-1.5 rounded border border-default bg-disabled px-2"><span class="text-label-s text-disabled">H</span><input disabled class="w-full min-w-0 bg-transparent text-right text-body-m tabular text-disabled" value="512"></label>
+            <label class="field flex h-7 items-center gap-1.5 rounded border border-strong bg-surface px-2"><span class="text-label-s text-muted">R</span><input class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none" value="24"><span class="text-body-s text-muted">px</span></label>
+          </div>
+          <p id="nf-err" class="flex items-center gap-1 text-body-s text-danger-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-alert"/></svg>Width must be at least 8 px.</p>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Props: <span class="font-mono">prefix</span> (axis letter) · <span class="font-mono">suffix</span> · <span class="font-mono">value</span> · <span class="font-mono">min</span> · <span class="font-mono">max</span> · <span class="font-mono">step</span> · <span class="font-mono">error</span> · <span class="font-mono">disabled</span>.</p>
+    </section>
+
+    <!-- ============================ COLOUR FIELD ============================ -->
+    <section id="color-field" class="scroll-mt-20 space-y-4" aria-labelledby="h-color-field">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-color-field" class="text-heading-l">Colour field</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use for hotspot fill and border and the canvas background. The swatch opens the system picker; the hex is typed. "None" is a real value, so invisible hotspots are explicit.</p>
+      </div>
+      <div class="grid gap-6 rounded-lg border bg-surface p-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Set</p>
+          <div class="space-y-1"><p class="text-label-s text-secondary">Fill</p>
+            <div class="field flex h-7 items-center gap-2 rounded border border-strong bg-surface pl-1 pr-1">
+              <button type="button" aria-label="Pick fill colour" class="h-5 w-5 flex-none rounded-sm border border-strong" style="background:#ffffff"></button>
+              <input aria-label="Fill hex" class="w-full min-w-0 bg-transparent font-mono text-mono-m uppercase outline-none" value="#FFFFFF">
+              <button type="button" aria-label="Set fill to None" class="inline-flex h-5 w-5 flex-none items-center justify-center rounded-sm text-muted hover:bg-hover hover:text-primary"><svg class="icon h-3.5 w-3.5"><use href="#i-close"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">None</p>
+          <div class="space-y-1"><p class="text-label-s text-secondary">Fill</p>
+            <div class="field flex h-7 items-center gap-2 rounded border border-strong bg-surface pl-1 pr-2">
+              <button type="button" aria-label="Pick fill colour" class="swatch-none h-5 w-5 flex-none rounded-sm border border-strong"></button>
+              <span class="flex-1 text-body-m text-muted">None</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Focus</p>
+          <div class="space-y-1"><p class="text-label-s text-secondary">Border</p>
+            <div class="field-focus flex h-7 items-center gap-2 rounded border bg-surface pl-1 pr-1">
+              <span class="h-5 w-5 flex-none rounded-sm border border-strong" style="background:#fbbf24"></span>
+              <input aria-label="Border hex" class="w-full min-w-0 bg-transparent font-mono text-mono-m uppercase outline-none" value="#FBBF24">
+              <span class="w-5"></span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Error · Disabled</p>
+          <div class="space-y-2">
+            <div class="field-error flex h-7 items-center gap-2 rounded border bg-surface pl-1 pr-1">
+              <span class="swatch-none h-5 w-5 flex-none rounded-sm border border-strong"></span>
+              <input aria-label="Background hex" aria-invalid="true" class="w-full min-w-0 bg-transparent font-mono text-mono-m uppercase outline-none" value="#12G">
+            </div>
+            <p class="flex items-center gap-1 text-body-s text-danger-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-alert"/></svg>Use 6 hex digits, e.g. #1C1917.</p>
+            <div class="flex h-7 cursor-not-allowed items-center gap-2 rounded border border-default bg-disabled pl-1 pr-1">
+              <span class="h-5 w-5 flex-none rounded-sm border border-default opacity-50" style="background:#000000"></span>
+              <span class="font-mono text-mono-m text-disabled">#000000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Props: <span class="font-mono">label</span> · <span class="font-mono">value</span> (hex | null) · <span class="font-mono">allowNone</span> · <span class="font-mono">error</span> · <span class="font-mono">disabled</span>. Opacity is a separate number field.</p>
+    </section>
+
+    <!-- ============================ SEGMENTED ============================ -->
+    <section id="segmented" class="scroll-mt-20 space-y-4" aria-labelledby="h-segmented">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-segmented" class="text-heading-l">Segmented control</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use to choose between two or three fixed options whose choice changes the form below it: shape, protocol, scale mode, HTTP method.</p>
+      </div>
+      <div class="grid gap-6 rounded-lg border bg-surface p-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">2 options</p>
+          <div role="radiogroup" aria-label="Shape" class="inline-flex rounded bg-pressed p-0.5">
+            <button type="button" role="radio" aria-checked="true" class="h-7 rounded-sm bg-surface px-3 text-label-s text-primary shadow-1">Rectangle</button>
+            <button type="button" role="radio" aria-checked="false" class="h-7 rounded-sm px-3 text-label-s text-secondary hover:text-primary">Ellipse</button>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">3 options</p>
+          <div role="radiogroup" aria-label="Protocol" class="inline-flex rounded bg-pressed p-0.5">
+            <button type="button" role="radio" aria-checked="true" class="h-7 rounded-sm bg-surface px-3 text-label-s text-primary shadow-1">OSC over UDP</button>
+            <button type="button" role="radio" aria-checked="false" class="h-7 rounded-sm px-3 text-label-s text-secondary hover:text-primary">UDP</button>
+            <button type="button" role="radio" aria-checked="false" class="h-7 rounded-sm px-3 text-label-s text-secondary hover:text-primary">HTTP</button>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Focus on option</p>
+          <div role="radiogroup" aria-label="Scale mode" class="inline-flex rounded bg-pressed p-0.5">
+            <button type="button" role="radio" aria-checked="true" class="h-7 rounded-sm bg-surface px-3 text-label-s text-primary shadow-1">Fit</button>
+            <button type="button" role="radio" aria-checked="false" class="is-focus h-7 rounded-sm px-3 text-label-s text-primary">Fill</button>
+          </div>
+        </div>
+        <div class="space-y-2"><p class="text-overline uppercase text-muted">Disabled</p>
+          <div role="radiogroup" aria-label="Method" aria-disabled="true" class="inline-flex cursor-not-allowed rounded bg-disabled p-0.5">
+            <button type="button" disabled role="radio" aria-checked="true" class="h-7 rounded-sm border border-default bg-surface px-3 text-label-s text-disabled">POST</button>
+            <button type="button" disabled role="radio" aria-checked="false" class="h-7 rounded-sm px-3 text-label-s text-disabled">GET</button>
+          </div>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Selected option is a raised white segment with primary text; unselected text is secondary. The difference is shape and weight of the plate, not colour alone. Props: <span class="font-mono">options[]</span> · <span class="font-mono">value</span> · <span class="font-mono">label</span> (aria) · <span class="font-mono">disabled</span>.</p>
+    </section>
+
+    <!-- ============================ TAB ============================ -->
+    <section id="tab" class="scroll-mt-20 space-y-4" aria-labelledby="h-tab">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-tab" class="text-heading-l">Tab</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use only for the editor's top navigation between Pages, Targets, Stations and Settings. Shown in the top-bar context.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <div class="flex h-12 min-w-[760px] items-stretch gap-6 border-b px-4">
+          <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden="true"></span><span class="text-heading-m">Tapcue</span><span class="text-body-m text-muted">/ Demo stand</span></div>
+          <nav aria-label="Editor" class="flex items-stretch">
+            <a href="#tab" aria-current="page" class="relative flex items-center px-3 text-label-m text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent-strong">Pages</a>
+            <a href="#tab" class="flex items-center px-3 text-label-m text-secondary hover:text-primary">Targets</a>
+            <a href="#tab" class="relative my-2 flex items-center rounded bg-hover px-3 text-label-m text-primary">Stations</a>
+            <a href="#tab" class="is-focus my-2 flex items-center rounded px-3 text-label-m text-secondary">Settings</a>
+          </nav>
+        </div>
+        <div class="flex flex-wrap gap-6 px-4 py-3 text-body-s text-muted">
+          <span><span class="text-label-s text-secondary">Pages</span> Active: primary text + 2 px accent-strong bar, aria-current="page"</span>
+          <span><span class="text-label-s text-secondary">Targets</span> Inactive</span>
+          <span><span class="text-label-s text-secondary">Stations</span> Hover</span>
+          <span><span class="text-label-s text-secondary">Settings</span> Focus</span>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">The bar uses amber 700, not amber 400, so the indicator reaches 3:1 on white. Props: <span class="font-mono">label</span> · <span class="font-mono">href</span> · <span class="font-mono">active</span> · <span class="font-mono">count?</span>.</p>
+    </section>
+
+    <!-- ============================ LIST ITEM ============================ -->
+    <section id="list-item" class="scroll-mt-20 space-y-4" aria-labelledby="h-list-item">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-list-item" class="text-heading-l">List item</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use for the left-hand lists: pages (with thumbnail, reorderable), targets and stations (text only). The row itself selects; the grip reorders; actions appear on hover and selection.</p>
+      </div>
+      <div class="grid gap-6 rounded-lg border bg-subtle p-5 lg:grid-cols-2">
+        <div class="space-y-2">
+          <p class="text-overline uppercase text-muted">Page row · Default, Hover, Selected, Focus</p>
+          <ul class="w-full max-w-[280px] space-y-1 rounded-lg border bg-surface p-2" aria-label="Pages">
+            <li><div class="group flex items-center gap-2 rounded border border-transparent p-1.5 pr-2 hover:bg-hover">
+              <span class="cursor-grab text-muted" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+              <span class="h-9 w-12 flex-none rounded-sm border shadow-1" style="background:linear-gradient(135deg,#f7f3ec,#e2d8c6)"></span>
+              <span class="min-w-0 flex-1"><span class="block truncate text-label-m">Home</span><span class="block truncate text-body-s text-muted">4 hotspots · Start page</span></span>
+            </div></li>
+            <li><div class="flex items-center gap-2 rounded border border-transparent bg-hover p-1.5 pr-2">
+              <span class="cursor-grab text-secondary" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+              <span class="h-9 w-12 flex-none rounded-sm border shadow-1" style="background:linear-gradient(135deg,#1b2440,#0b1020)"></span>
+              <span class="min-w-0 flex-1"><span class="block truncate text-label-m">About us</span><span class="block truncate text-body-s text-muted">1 hotspot · Video</span></span>
+              <button type="button" aria-label="Delete page About us" class="inline-flex h-6 w-6 items-center justify-center rounded text-secondary hover:bg-danger-bg hover:text-danger-fg"><svg class="icon"><use href="#i-trash"/></svg></button>
+            </div></li>
+            <li><div aria-current="true" class="flex items-center gap-2 rounded border border-selection bg-selection p-1.5 pr-2">
+              <span class="cursor-grab text-secondary" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+              <span class="h-9 w-12 flex-none rounded-sm border shadow-1" style="background:linear-gradient(135deg,#ffe3b3,#f08a4b 60%,#7a2e5d)"></span>
+              <span class="min-w-0 flex-1"><span class="block truncate text-label-m">Product A</span><span class="block truncate text-body-s text-secondary">3 hotspots · Image</span></span>
+              <button type="button" aria-label="Delete page Product A" class="inline-flex h-6 w-6 items-center justify-center rounded text-secondary hover:bg-danger-bg hover:text-danger-fg"><svg class="icon"><use href="#i-trash"/></svg></button>
+            </div></li>
+            <li><div tabindex="0" class="is-focus flex items-center gap-2 rounded border border-transparent p-1.5 pr-2">
+              <span class="cursor-grab text-muted" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+              <span class="h-9 w-12 flex-none rounded-sm border shadow-1" style="background:linear-gradient(135deg,#d8ecf2,#7fb3c8)"></span>
+              <span class="min-w-0 flex-1"><span class="block truncate text-label-m">Product B</span><span class="block truncate text-body-s text-muted">3 hotspots · Image</span></span>
+            </div></li>
+          </ul>
+        </div>
+        <div class="space-y-6">
+          <div class="space-y-2">
+            <p class="text-overline uppercase text-muted">Reorder · Dragging, Drop position, Rename</p>
+            <ul class="relative w-full max-w-[280px] space-y-1 rounded-lg border bg-surface p-2" aria-label="Reorder example">
+              <li><div class="flex items-center gap-2 rounded border border-transparent p-1.5 pr-2">
+                <span class="text-muted" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+                <span class="h-9 w-12 flex-none rounded-sm border" style="background:linear-gradient(135deg,#f7f3ec,#e2d8c6)"></span>
+                <span class="min-w-0 flex-1"><span class="block truncate text-label-m">Home</span><span class="block truncate text-body-s text-muted">4 hotspots · Start page</span></span>
+              </div></li>
+              <li aria-hidden="true" class="relative h-0.5 rounded-full bg-accent-strong"><span class="absolute -left-1 -top-[3px] h-2 w-2 rounded-full border-2 border-accent-strong bg-surface"></span></li>
+              <li><div class="flex items-center gap-2 rounded border border-transparent p-1.5 pr-2 opacity-40">
+                <span class="text-muted" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+                <span class="h-9 w-12 flex-none rounded-sm border" style="background:linear-gradient(135deg,#d8ecf2,#7fb3c8)"></span>
+                <span class="min-w-0 flex-1"><span class="block truncate text-label-m">Product B</span><span class="block truncate text-body-s text-muted">Original position</span></span>
+              </div></li>
+              <li><div class="flex translate-x-3 -rotate-1 items-center gap-2 rounded border border-selection bg-surface p-1.5 pr-2 shadow-2">
+                <span class="cursor-grabbing text-primary" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+                <span class="h-9 w-12 flex-none rounded-sm border" style="background:linear-gradient(135deg,#d8ecf2,#7fb3c8)"></span>
+                <span class="min-w-0 flex-1"><span class="block truncate text-label-m">Product B</span><span class="block truncate text-body-s text-muted">Dragging</span></span>
+              </div></li>
+              <li><div class="flex items-center gap-2 rounded border border-selection bg-selection p-1.5 pr-2">
+                <span class="text-secondary" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+                <span class="h-9 w-12 flex-none rounded-sm border" style="background:linear-gradient(135deg,#ffe3b3,#f08a4b 60%,#7a2e5d)"></span>
+                <input aria-label="Page name" class="field-focus h-7 min-w-0 flex-1 rounded border bg-surface px-2 text-label-m" value="Product A">
+              </div></li>
+            </ul>
+          </div>
+          <div class="space-y-2">
+            <p class="text-overline uppercase text-muted">Text-only row · Targets, Stations</p>
+            <ul class="w-full max-w-[280px] space-y-1 rounded-lg border bg-surface p-2" aria-label="Targets">
+              <li><div aria-current="true" class="rounded border border-selection bg-selection px-3 py-2"><span class="block text-label-m">Resolume</span><span class="block text-body-s text-secondary">OSC over UDP · <span class="font-mono text-mono-s">192.168.1.20:7000</span></span></div></li>
+              <li><div class="rounded border border-transparent px-3 py-2 hover:bg-hover"><span class="block text-label-m">Projector</span><span class="block text-body-s text-muted">UDP · <span class="font-mono text-mono-s">192.168.1.40:4352</span></span></div></li>
+              <li><div class="rounded border border-transparent px-3 py-2 hover:bg-hover"><span class="block text-label-m">Demo receiver</span><span class="block text-body-s text-muted">HTTP · <span class="font-mono text-mono-s">http://localhost:4000</span></span></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Selected = amber tint + amber edge, plus <span class="font-mono">aria-current</span>. Drop position = 2 px amber 700 line with a ring at its start. Keyboard reorder: focus the grip, Alt + ↑/↓. Props: <span class="font-mono">title</span> · <span class="font-mono">meta</span> · <span class="font-mono">thumbnail?</span> · <span class="font-mono">draggable</span> · <span class="font-mono">selected</span> · <span class="font-mono">editing</span> · <span class="font-mono">actions</span>.</p>
+    </section>
+
+    <!-- ============================ STATUS BADGE ============================ -->
+    <section id="status-badge" class="scroll-mt-20 space-y-4" aria-labelledby="h-status-badge">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-status-badge" class="text-heading-l">Status badge</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use for system state the integrator must trust at a glance: server link and autosave in the top bar, the result of each command in the log. Each status has its own shape and word.</p>
+      </div>
+      <div class="rounded-lg border bg-surface p-5">
+        <ul class="flex flex-wrap items-center gap-x-6 gap-y-4">
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Connected</p>
+            <span role="status" class="inline-flex h-6 items-center gap-1.5 rounded-full border border-success bg-success-bg px-2 text-label-s text-success-fg"><span class="h-2 w-2 rounded-full bg-success-solid" aria-hidden="true"></span>Connected</span></li>
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Disconnected</p>
+            <span role="status" class="inline-flex h-6 items-center gap-1.5 rounded-full border border-danger bg-danger-bg px-2 text-label-s text-danger-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-wifi-off"/></svg>Disconnected</span></li>
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Saving</p>
+            <span role="status" class="inline-flex h-6 items-center gap-1.5 rounded-full border bg-subtle px-2 text-label-s text-secondary"><span class="spinner h-3 w-3" aria-hidden="true"></span>Saving…</span></li>
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Saved</p>
+            <span role="status" class="inline-flex h-6 items-center gap-1.5 rounded-full border bg-subtle px-2 text-label-s text-secondary"><svg class="icon h-3.5 w-3.5 text-success-solid" aria-hidden="true"><use href="#i-check"/></svg>Saved</span></li>
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Error</p>
+            <span role="status" class="inline-flex h-6 items-center gap-1.5 rounded-full border border-danger bg-danger-bg px-2 text-label-s text-danger-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-alert"/></svg>Save error</span></li>
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Sent</p>
+            <span class="inline-flex h-6 items-center gap-1.5 rounded-full border border-success bg-success-bg px-2 text-label-s text-success-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-check"/></svg>Sent</span></li>
+          <li class="space-y-2"><p class="text-overline uppercase text-muted">Test (tag)</p>
+            <span class="inline-flex h-5 items-center rounded-sm border border-strong px-1.5 text-label-s text-secondary">Test</span></li>
+        </ul>
+        <div class="mt-6 flex flex-wrap items-center gap-3 border-t pt-4">
+          <p class="text-overline uppercase text-muted">In the top bar</p>
+          <span class="inline-flex h-6 items-center gap-1.5 rounded-full border border-success bg-success-bg px-2 text-label-s text-success-fg"><span class="h-2 w-2 rounded-full bg-success-solid" aria-hidden="true"></span>Connected</span>
+          <span class="inline-flex h-6 items-center gap-1.5 rounded-full border bg-subtle px-2 text-label-s text-secondary"><svg class="icon h-3.5 w-3.5 text-success-solid" aria-hidden="true"><use href="#i-check"/></svg>Saved</span>
+          <span class="text-body-s text-muted">Saved is quiet on purpose: it is the normal state. Errors are loud.</span>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Props: <span class="font-mono">status</span> connected | disconnected | saving | saved | error | sent · <span class="font-mono">label?</span> (override, e.g. "Save error", "HTTP 503"). Top-bar badges use <span class="font-mono">role="status"</span> so changes are announced.</p>
+    </section>
+
+    <!-- ============================ LOG ROW ============================ -->
+    <section id="log-row" class="scroll-mt-20 space-y-4" aria-labelledby="h-log-row">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-log-row" class="text-heading-l">Log row</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use in the editor's command log and the demo receiver. One row per tap or test send, newest on top. The row says who tapped what, where it went and what happened.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <table class="w-full min-w-[900px] text-left">
+          <thead class="border-b bg-subtle">
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="w-[112px] px-4 py-1.5 font-semibold">Time</th>
+              <th scope="col" class="w-[104px] px-2 py-1.5 font-semibold">Result</th>
+              <th scope="col" class="w-[140px] px-2 py-1.5 font-semibold">Source</th>
+              <th scope="col" class="w-[150px] px-2 py-1.5 font-semibold">Hotspot</th>
+              <th scope="col" class="px-2 py-1.5 font-semibold">Command</th>
+              <th scope="col" class="w-[96px] px-4 py-1.5 font-semibold"><span class="sr-only">Variant</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr class="hover:bg-hover">
+              <td class="px-4 py-1.5 font-mono text-mono-s text-muted tabular">14:32:07.418</td>
+              <td class="px-2 py-1.5"><span class="inline-flex items-center gap-1 text-label-s text-success-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-check"/></svg>Sent</span></td>
+              <td class="px-2 py-1.5 text-body-s text-secondary">Main catalog</td>
+              <td class="px-2 py-1.5 text-body-s">Product A card</td>
+              <td class="px-2 py-1.5"><span class="text-body-s text-muted">Resolume</span> <span class="font-mono text-mono-s">/composition/columns/2/connect</span> <span class="font-mono text-mono-s text-muted">i 1</span></td>
+              <td class="px-4 py-1.5 text-right text-label-s text-muted">Sent</td>
+            </tr>
+            <tr class="bg-danger-bg">
+              <td class="px-4 py-1.5 font-mono text-mono-s text-muted tabular">14:31:52.006</td>
+              <td class="px-2 py-1.5"><span class="inline-flex items-center gap-1 text-label-s text-danger-fg"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-alert"/></svg>Error</span></td>
+              <td class="px-2 py-1.5 text-body-s text-secondary"><span class="inline-flex h-5 items-center rounded-sm border border-strong px-1.5 text-label-s text-secondary">Test</span></td>
+              <td class="px-2 py-1.5 text-body-s">Product A card</td>
+              <td class="px-2 py-1.5"><span class="text-body-s text-muted">Demo receiver</span> <span class="font-mono text-mono-s">POST /demo/screen-1/product-a</span> <span class="text-body-s text-danger-fg">· Timed out after 2 s</span></td>
+              <td class="px-4 py-1.5 text-right text-label-s text-muted">Error</td>
+            </tr>
+            <tr class="hover:bg-hover">
+              <td class="px-4 py-1.5 font-mono text-mono-s text-muted tabular">14:31:40.771</td>
+              <td class="px-2 py-1.5"><span class="inline-flex items-center gap-1 text-label-s text-secondary"><svg class="icon h-3.5 w-3.5" aria-hidden="true"><use href="#i-arrow-right"/></svg>Page</span></td>
+              <td class="px-2 py-1.5 text-body-s text-secondary">Small screen</td>
+              <td class="px-2 py-1.5 text-body-s">Back</td>
+              <td class="px-2 py-1.5 text-body-s text-secondary">Product B <svg class="icon inline h-3.5 w-3.5 align-[-2px] text-muted" aria-label="to"><use href="#i-arrow-right"/></svg> Home <span class="text-muted">· no command</span></td>
+              <td class="px-4 py-1.5 text-right text-label-s text-muted">Navigation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-body-s text-muted">A tap that both navigates and sends shows the command row only, with "→ Product A" appended in muted text. Error rows get a faint red tint and the reason in words. Props: <span class="font-mono">time</span> · <span class="font-mono">result</span> sent | error | navigation · <span class="font-mono">source</span> (station name or test) · <span class="font-mono">hotspot</span> · <span class="font-mono">target</span> · <span class="font-mono">command</span> · <span class="font-mono">args</span> · <span class="font-mono">navigateTo?</span> · <span class="font-mono">error?</span>.</p>
+    </section>
+
+    <!-- ============================ HOTSPOT OVERLAY ============================ -->
+    <section id="hotspot" class="scroll-mt-20 space-y-4" aria-labelledby="h-hotspot">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component · editor canvas only</p>
+        <h2 id="h-hotspot" class="text-heading-l">Hotspot overlay</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use on the editor canvas to find, select and resize hotspots. Never rendered in the player. Every line is two-tone, a dark under-stroke with a light stroke on top, so it holds on light, mid-tone and dark artwork alike.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface p-5">
+        <table class="w-full min-w-[880px] border-separate border-spacing-3 text-left">
+          <thead>
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="w-20"></th>
+              <th scope="col" class="font-semibold">Light artwork</th>
+              <th scope="col" class="font-semibold">Mid-tone artwork</th>
+              <th scope="col" class="font-semibold">Dark artwork</th>
+            </tr>
+          </thead>
+          <tbody id="hotspot-matrix"></tbody>
+        </table>
+      </div>
+      <p class="text-body-s text-muted">Idle: dashed white over a solid dark line, so hotspots with no fill can still be found. Hover: solid white line and a faint white wash. Selected: amber line, name chip, eight square handles, each with a dark border and light halo. Props: <span class="font-mono">shape</span> rect | ellipse · <span class="font-mono">state</span> idle | hover | selected · <span class="font-mono">name</span> · <span class="font-mono">radius</span> · <span class="font-mono">x y w h</span> (page px).</p>
+    </section>
+
+    <!-- ============================ CONNECTION INDICATOR ============================ -->
+    <section id="connection" class="scroll-mt-20 space-y-4" aria-labelledby="h-connection">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component · player only</p>
+        <h2 id="h-connection" class="text-heading-l">Connection indicator</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use only in the player, only while the link to the server is down. Bottom-right corner, 12 px from the edges plus safe-area insets. It is the only Tapcue UI a visitor can ever see, so it stays small and translucent.</p>
+      </div>
+      <div class="grid gap-4 rounded-lg border bg-surface p-5 sm:grid-cols-2">
+        <figure class="space-y-2">
+          <div class="relative aspect-[4/3] max-w-full overflow-hidden rounded" style="background:linear-gradient(160deg,#fbf7f0 0%,#efe6d6 100%)">
+            <div class="absolute left-[10%] top-[16%] h-[34%] w-[36%] rounded-xl" style="background:#fff;box-shadow:0 10px 30px rgb(80 60 30 / .15)"></div>
+            <div class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-overlay-plate px-2.5 py-1 text-label-s text-inverse ring-1 ring-white/30 backdrop-blur-sm" role="status">
+              <span class="spinner h-3 w-3" aria-hidden="true"></span>Reconnecting…
+            </div>
+          </div>
+          <figcaption class="text-overline uppercase text-muted">On light artwork</figcaption>
+        </figure>
+        <figure class="space-y-2">
+          <div class="relative aspect-[4/3] max-w-full overflow-hidden rounded" style="background:radial-gradient(120% 90% at 30% 20%,#23305a 0%,#0b1020 70%)">
+            <div class="absolute left-[10%] top-[16%] h-[34%] w-[36%] rounded-xl" style="background:linear-gradient(135deg,#2f3e6e,#1a2445);box-shadow:0 0 40px rgb(120 160 255 / .25)"></div>
+            <div class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-overlay-plate px-2.5 py-1 text-label-s text-inverse ring-1 ring-white/30 backdrop-blur-sm" role="status">
+              <span class="spinner h-3 w-3" aria-hidden="true"></span>Reconnecting…
+            </div>
+          </div>
+          <figcaption class="text-overline uppercase text-muted">On dark artwork</figcaption>
+        </figure>
+      </div>
+      <p class="text-body-s text-muted">Dark 72% plate with a 30% white ring: the text sits on its own plate (≥ 12:1 at worst), the ring separates it from dark artwork. Taps made while disconnected are kept for 5 s and sent on reconnect; older ones are dropped. Props: <span class="font-mono">visible</span> · <span class="font-mono">corner</span> (default bottom-right).</p>
+    </section>
+
+    <!-- ============================ DIALOG ============================ -->
+    <section id="dialog" class="scroll-mt-20 space-y-4" aria-labelledby="h-dialog">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-dialog" class="text-heading-l">Dialog</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use only to confirm an action that is hard to undo: deleting a target or page, replacing the project. Never for information. The title asks the question; the body says what will happen to which things.</p>
+      </div>
+      <div class="grid gap-5 rounded-lg bg-scrim p-6 lg:grid-cols-2">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-1-t" class="rounded-xl bg-surface p-6 shadow-3">
+          <h3 id="dlg-1-t" class="text-heading-m">Replace the current project?</h3>
+          <p class="mt-2 text-body-m text-secondary">“tapcue-demo-stand.zip” has 4 pages, 3 targets and 2 stations. The pages, hotspots, targets and stations of “Demo stand” will be replaced. Export first if you may need them.</p>
+          <div class="mt-6 flex flex-wrap justify-end gap-2">
+            <button type="button" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Cancel</button>
+            <button type="button" class="inline-flex h-8 items-center rounded bg-accent px-3 text-label-m text-on-accent hover:bg-accent-hover">Replace project</button>
+          </div>
+          <p class="mt-4 border-t pt-3 text-overline uppercase text-muted">Default</p>
+        </div>
+        <div role="alertdialog" aria-modal="true" aria-labelledby="dlg-2-t" aria-describedby="dlg-2-d" class="rounded-xl bg-surface p-6 shadow-3">
+          <div class="flex gap-4">
+            <span class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-danger-bg text-danger-fg" aria-hidden="true"><svg class="icon"><use href="#i-trash"/></svg></span>
+            <div class="min-w-0">
+              <h3 id="dlg-2-t" class="text-heading-m">Delete target “Resolume”?</h3>
+              <div id="dlg-2-d" class="mt-2 space-y-2 text-body-m text-secondary">
+                <p>3 hotspots send commands to it: Product A, Product B and Product C cards. Their commands will be cleared. Page links on those hotspots stay.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-6 flex flex-wrap justify-end gap-2">
+            <button type="button" class="is-focus inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Cancel</button>
+            <button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-danger-solid px-3 text-label-m text-on-danger hover:bg-danger-hover"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete target</button>
+          </div>
+          <p class="mt-4 border-t pt-3 text-overline uppercase text-muted">Danger · focus starts on Cancel</p>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Width 440 px, radius xl, elevation 3, on <span class="font-mono">--color-bg-scrim</span>. Esc and the scrim cancel. Props: <span class="font-mono">tone</span> default | danger · <span class="font-mono">title</span> · <span class="font-mono">body</span> · <span class="font-mono">confirmLabel</span> · <span class="font-mono">cancelLabel</span> · <span class="font-mono">onConfirm</span>.</p>
+    </section>
+
+    <!-- ============================ BANNER ============================ -->
+    <section id="banner" class="scroll-mt-20 space-y-4" aria-labelledby="h-banner">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-banner" class="text-heading-l">Banner</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use inside a panel to explain a condition that affects what the integrator is doing right now. Info for context, Warning for a consequence, Error for something that failed and needs action.</p>
+      </div>
+      <div class="space-y-3 rounded-lg border bg-surface p-5">
+        <div role="status" class="flex gap-3 rounded-lg border border-info bg-info-bg p-3">
+          <svg class="icon mt-0.5 text-info-solid" aria-hidden="true"><use href="#i-info"/></svg>
+          <div class="min-w-0 flex-1 text-body-m text-info-fg"><p class="font-semibold">Demo mode</p><p>Changes stay in this browser tab and are lost when you close it. Saving, uploads and import are turned off.</p></div>
+        </div>
+        <div role="status" class="flex gap-3 rounded-lg border border-warning bg-warning-bg p-3">
+          <svg class="icon mt-0.5 text-warning-solid" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div class="min-w-0 flex-1 text-body-m text-warning-fg"><p class="font-semibold">Tablets using the old URL will stop working</p><p>Changing the id from <span class="font-mono text-mono-m">main</span> changes the station URL. Scan the new QR code on every tablet already set up.</p></div>
+        </div>
+        <div role="alert" class="flex gap-3 rounded-lg border border-danger bg-danger-bg p-3">
+          <svg class="icon mt-0.5 text-danger-fg" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div class="min-w-0 flex-1 text-body-m text-danger-fg"><p class="font-semibold">Upload failed</p><p>about-loop.mov is 312 MB. The limit is 200 MB. Export a smaller file (H.264 MP4 works well) and try again.</p></div>
+          <button type="button" aria-label="Dismiss" class="inline-flex h-6 w-6 flex-none items-center justify-center rounded text-danger-fg hover:bg-surface"><svg class="icon"><use href="#i-close"/></svg></button>
+        </div>
+      </div>
+      <p class="text-body-s text-muted">Error is an addition: upload and import failures need it. Props: <span class="font-mono">tone</span> info | warning | error · <span class="font-mono">title</span> · <span class="font-mono">children</span> · <span class="font-mono">action?</span> · <span class="font-mono">dismissible</span>.</p>
+    </section>
+
+    <!-- ============================ QR CARD ============================ -->
+    <section id="qr-card" class="scroll-mt-20 space-y-4" aria-labelledby="h-qr-card">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Component</p>
+        <h2 id="h-qr-card" class="text-heading-l">QR card</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Use on the Stations tab so the integrator can point a tablet camera at the screen and open the station. The URL is also selectable text for typing or pasting.</p>
+      </div>
+      <div class="flex flex-wrap gap-5 rounded-lg border bg-subtle p-5">
+        <figure class="w-[288px] max-w-full space-y-2">
+          <div class="rounded-xl border bg-surface p-5 shadow-1">
+            <p class="text-overline uppercase text-muted">Station URL</p>
+            <div class="mx-auto my-4 w-[176px] max-w-full rounded-lg bg-overlay-light p-3 text-overlay-dark"><svg viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="QR code for http://192.168.1.10:4000/play/main"><path fill="currentColor" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM9 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM14 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM25 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM20 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM9 2h1v1h-1zM11 2h1v1h-1zM15 2h1v1h-1zM19 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM12 3h1v1h-1zM13 3h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM25 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM16 4h1v1h-1zM18 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM25 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM14 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM19 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM10 7h1v1h-1zM12 7h1v1h-1zM15 7h1v1h-1zM17 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM0 8h1v1h-1zM2 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM24 8h1v1h-1zM27 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM15 9h1v1h-1zM16 9h1v1h-1zM21 9h1v1h-1zM22 9h1v1h-1zM25 9h1v1h-1zM28 9h1v1h-1zM0 10h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM17 10h1v1h-1zM18 10h1v1h-1zM19 10h1v1h-1zM21 10h1v1h-1zM23 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM27 10h1v1h-1zM28 10h1v1h-1zM1 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM14 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM22 11h1v1h-1zM23 11h1v1h-1zM25 11h1v1h-1zM27 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM4 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM21 12h1v1h-1zM23 12h1v1h-1zM24 12h1v1h-1zM27 12h1v1h-1zM28 12h1v1h-1zM1 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM19 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM24 13h1v1h-1zM25 13h1v1h-1zM28 13h1v1h-1zM0 14h1v1h-1zM3 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM18 14h1v1h-1zM20 14h1v1h-1zM21 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM26 14h1v1h-1zM27 14h1v1h-1zM28 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM4 15h1v1h-1zM12 15h1v1h-1zM15 15h1v1h-1zM17 15h1v1h-1zM18 15h1v1h-1zM19 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM25 15h1v1h-1zM26 15h1v1h-1zM27 15h1v1h-1zM0 16h1v1h-1zM2 16h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM9 16h1v1h-1zM10 16h1v1h-1zM12 16h1v1h-1zM16 16h1v1h-1zM17 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM23 16h1v1h-1zM27 16h1v1h-1zM28 16h1v1h-1zM3 17h1v1h-1zM8 17h1v1h-1zM10 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM16 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM28 17h1v1h-1zM0 18h1v1h-1zM3 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM8 18h1v1h-1zM12 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM16 18h1v1h-1zM17 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM23 18h1v1h-1zM25 18h1v1h-1zM27 18h1v1h-1zM28 18h1v1h-1zM1 19h1v1h-1zM3 19h1v1h-1zM4 19h1v1h-1zM7 19h1v1h-1zM9 19h1v1h-1zM10 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM13 19h1v1h-1zM14 19h1v1h-1zM16 19h1v1h-1zM17 19h1v1h-1zM18 19h1v1h-1zM19 19h1v1h-1zM20 19h1v1h-1zM21 19h1v1h-1zM24 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM0 20h1v1h-1zM2 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM8 20h1v1h-1zM9 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM14 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM8 21h1v1h-1zM10 21h1v1h-1zM14 21h1v1h-1zM15 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM27 21h1v1h-1zM28 21h1v1h-1zM0 22h1v1h-1zM1 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM6 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM25 22h1v1h-1zM27 22h1v1h-1zM28 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM11 23h1v1h-1zM12 23h1v1h-1zM15 23h1v1h-1zM17 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM24 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM12 24h1v1h-1zM18 24h1v1h-1zM19 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM27 24h1v1h-1zM28 24h1v1h-1zM0 25h1v1h-1zM2 25h1v1h-1zM3 25h1v1h-1zM4 25h1v1h-1zM6 25h1v1h-1zM11 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM16 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM25 25h1v1h-1zM27 25h1v1h-1zM0 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM6 26h1v1h-1zM8 26h1v1h-1zM10 26h1v1h-1zM13 26h1v1h-1zM14 26h1v1h-1zM17 26h1v1h-1zM18 26h1v1h-1zM20 26h1v1h-1zM22 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM28 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM9 27h1v1h-1zM10 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM17 27h1v1h-1zM18 27h1v1h-1zM19 27h1v1h-1zM20 27h1v1h-1zM21 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM25 27h1v1h-1zM27 27h1v1h-1zM0 28h1v1h-1zM1 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM9 28h1v1h-1zM11 28h1v1h-1zM13 28h1v1h-1zM15 28h1v1h-1zM16 28h1v1h-1zM19 28h1v1h-1zM20 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM23 28h1v1h-1zM24 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM28 28h1v1h-1z"/></svg></div>
+            <p class="break-all font-mono text-mono-s text-primary">http://192.168.1.10:4000/play/main</p>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" class="inline-flex h-8 items-center justify-center gap-2 rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copy</button>
+              <a href="#qr-card" class="inline-flex h-8 items-center justify-center gap-2 rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover"><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg>Open</a>
+            </div>
+          </div>
+          <figcaption class="text-overline uppercase text-muted">Default</figcaption>
+        </figure>
+        <figure class="w-[288px] max-w-full space-y-2">
+          <div class="rounded-xl border bg-surface p-5 shadow-1">
+            <p class="text-overline uppercase text-muted">Station URL</p>
+            <div class="mx-auto my-4 w-[176px] max-w-full rounded-lg bg-overlay-light p-3 text-overlay-dark"><svg viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="QR code for http://192.168.1.10:4000/play/main"><path fill="currentColor" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM9 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM14 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM25 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM20 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM9 2h1v1h-1zM11 2h1v1h-1zM15 2h1v1h-1zM19 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM12 3h1v1h-1zM13 3h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM25 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM16 4h1v1h-1zM18 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM25 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM14 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM19 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM10 7h1v1h-1zM12 7h1v1h-1zM15 7h1v1h-1zM17 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM0 8h1v1h-1zM2 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM24 8h1v1h-1zM27 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM15 9h1v1h-1zM16 9h1v1h-1zM21 9h1v1h-1zM22 9h1v1h-1zM25 9h1v1h-1zM28 9h1v1h-1zM0 10h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM17 10h1v1h-1zM18 10h1v1h-1zM19 10h1v1h-1zM21 10h1v1h-1zM23 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM27 10h1v1h-1zM28 10h1v1h-1zM1 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM14 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM22 11h1v1h-1zM23 11h1v1h-1zM25 11h1v1h-1zM27 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM4 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM21 12h1v1h-1zM23 12h1v1h-1zM24 12h1v1h-1zM27 12h1v1h-1zM28 12h1v1h-1zM1 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM19 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM24 13h1v1h-1zM25 13h1v1h-1zM28 13h1v1h-1zM0 14h1v1h-1zM3 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM18 14h1v1h-1zM20 14h1v1h-1zM21 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM26 14h1v1h-1zM27 14h1v1h-1zM28 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM4 15h1v1h-1zM12 15h1v1h-1zM15 15h1v1h-1zM17 15h1v1h-1zM18 15h1v1h-1zM19 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM25 15h1v1h-1zM26 15h1v1h-1zM27 15h1v1h-1zM0 16h1v1h-1zM2 16h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM9 16h1v1h-1zM10 16h1v1h-1zM12 16h1v1h-1zM16 16h1v1h-1zM17 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM23 16h1v1h-1zM27 16h1v1h-1zM28 16h1v1h-1zM3 17h1v1h-1zM8 17h1v1h-1zM10 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM16 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM28 17h1v1h-1zM0 18h1v1h-1zM3 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM8 18h1v1h-1zM12 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM16 18h1v1h-1zM17 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM23 18h1v1h-1zM25 18h1v1h-1zM27 18h1v1h-1zM28 18h1v1h-1zM1 19h1v1h-1zM3 19h1v1h-1zM4 19h1v1h-1zM7 19h1v1h-1zM9 19h1v1h-1zM10 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM13 19h1v1h-1zM14 19h1v1h-1zM16 19h1v1h-1zM17 19h1v1h-1zM18 19h1v1h-1zM19 19h1v1h-1zM20 19h1v1h-1zM21 19h1v1h-1zM24 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM0 20h1v1h-1zM2 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM8 20h1v1h-1zM9 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM14 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM8 21h1v1h-1zM10 21h1v1h-1zM14 21h1v1h-1zM15 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM27 21h1v1h-1zM28 21h1v1h-1zM0 22h1v1h-1zM1 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM6 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM25 22h1v1h-1zM27 22h1v1h-1zM28 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM11 23h1v1h-1zM12 23h1v1h-1zM15 23h1v1h-1zM17 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM24 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM12 24h1v1h-1zM18 24h1v1h-1zM19 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM27 24h1v1h-1zM28 24h1v1h-1zM0 25h1v1h-1zM2 25h1v1h-1zM3 25h1v1h-1zM4 25h1v1h-1zM6 25h1v1h-1zM11 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM16 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM25 25h1v1h-1zM27 25h1v1h-1zM0 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM6 26h1v1h-1zM8 26h1v1h-1zM10 26h1v1h-1zM13 26h1v1h-1zM14 26h1v1h-1zM17 26h1v1h-1zM18 26h1v1h-1zM20 26h1v1h-1zM22 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM28 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM9 27h1v1h-1zM10 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM17 27h1v1h-1zM18 27h1v1h-1zM19 27h1v1h-1zM20 27h1v1h-1zM21 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM25 27h1v1h-1zM27 27h1v1h-1zM0 28h1v1h-1zM1 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM9 28h1v1h-1zM11 28h1v1h-1zM13 28h1v1h-1zM15 28h1v1h-1zM16 28h1v1h-1zM19 28h1v1h-1zM20 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM23 28h1v1h-1zM24 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM28 28h1v1h-1z"/></svg></div>
+            <p class="break-all rounded-sm bg-selection font-mono text-mono-s text-primary">http://192.168.1.10:4000/play/main</p>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" class="inline-flex h-8 items-center justify-center gap-2 rounded border border-success bg-success-bg px-3 text-label-m text-success-fg"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Copied</button>
+              <a href="#qr-card" class="inline-flex h-8 items-center justify-center gap-2 rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover"><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg>Open</a>
+            </div>
+            <p class="mt-2 text-body-s text-muted" role="status">URL copied to the clipboard.</p>
+          </div>
+          <figcaption class="text-overline uppercase text-muted">Copied · reverts after 2 s</figcaption>
+        </figure>
+        <figure class="w-[288px] max-w-full space-y-2">
+          <div class="rounded-xl border bg-surface p-5 shadow-1">
+            <p class="text-overline uppercase text-muted">Station URL</p>
+            <div class="mx-auto my-4 flex aspect-square w-[176px] max-w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-strong bg-subtle p-3 text-center">
+              <svg class="icon text-muted" aria-hidden="true"><use href="#i-alert"/></svg>
+              <span class="text-body-s text-secondary">Fix the id to show a QR code</span>
+            </div>
+            <p class="break-all font-mono text-mono-s text-disabled">http://192.168.1.10:4000/play/—</p>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center justify-center gap-2 rounded border border-default bg-disabled px-3 text-label-m text-disabled"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copy</button>
+              <button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center justify-center gap-2 rounded border border-default bg-disabled px-3 text-label-m text-disabled"><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg>Open</button>
+            </div>
+          </div>
+          <figcaption class="text-overline uppercase text-muted">Disabled · id invalid</figcaption>
+        </figure>
+      </div>
+      <p class="text-body-s text-muted">The QR is always black on white inside its own plate, whatever the theme, so phone and tablet cameras read it. Props: <span class="font-mono">url</span> · <span class="font-mono">copied</span> · <span class="font-mono">disabled</span>.</p>
+    </section>
+
+    <!-- ============================ v0.2 ADDITIONS ============================ -->
+    <section id="additions" class="scroll-mt-20 space-y-4" aria-labelledby="h-additions">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Components · added in v0.2 for the Pages editor</p>
+        <h2 id="h-additions" class="text-heading-l">Additions</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Rendered from the same component functions the screens use, so the specimen and the screens cannot differ.</p>
+      </div>
+      <div id="v02" class="grid gap-5 lg:grid-cols-2"></div>
+    </section>
+
+
+  </main>
+</div>
+
+<script>
+/* =====================================================================
+   Tapcue components as plain template functions.
+   Each function returns the exact markup of one design-system component,
+   built only from token utilities. They are the reference for the React
+   components: same names, same props.
+   ===================================================================== */
+
+const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+/* ---------- Button ---------- */
+const BTN_VARIANT = {
+  primary: 'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-pressed',
+  secondary: 'border border-strong bg-surface text-primary hover:bg-hover active:bg-pressed',
+  ghost: 'text-secondary hover:bg-hover hover:text-primary active:bg-pressed',
+  danger: 'bg-danger-solid text-on-danger hover:bg-danger-hover active:bg-danger-pressed',
+};
+const BTN_DISABLED = {
+  primary: 'bg-disabled text-disabled', secondary: 'border border-default bg-disabled text-disabled',
+  ghost: 'text-disabled', danger: 'bg-disabled text-disabled',
+};
+const BTN_TOGGLE_ON = 'border border-selection bg-selection text-primary hover:bg-accent-subtle';
+function button({ variant = 'secondary', size = 'm', icon: ic, label = '', ariaLabel, disabled, pressed, busy, cls = '', tag = 'button' }) {
+  const iconOnly = !label;
+  const sizeCls = size === 's'
+    ? (iconOnly ? 'h-7 w-7 justify-center' : 'h-7 gap-1.5 px-2 text-label-s')
+    : (iconOnly ? 'h-8 w-8 justify-center' : 'h-8 gap-2 px-3 text-label-m');
+  const look = disabled ? `${BTN_DISABLED[variant]} cursor-not-allowed` : pressed ? BTN_TOGGLE_ON : BTN_VARIANT[variant];
+  const attrs = [
+    tag === 'button' ? 'type="button"' : '',
+    disabled ? 'disabled' : '',
+    pressed !== undefined ? `aria-pressed="${pressed ? 'true' : 'false'}"` : '',
+    iconOnly ? `aria-label="${esc(ariaLabel)}"` : '',
+  ].join(' ');
+  const iconCls = size === 's' ? 'h-3.5 w-3.5' : '';
+  const lead = busy ? '<span class="spinner" aria-hidden="true"></span>' : ic ? icon(ic, iconCls) : '';
+  return `<${tag} ${attrs} ${busy ? 'aria-busy="true"' : ''} class="inline-flex flex-none items-center rounded ${sizeCls} ${look} ${cls}">${lead}${esc(label)}</${tag}>`;
+}
+
+/* ---------- Status badge ---------- */
+function badge(status, label) {
+  const B = 'inline-flex h-6 flex-none items-center gap-1.5 rounded-full border px-2 text-label-s';
+  switch (status) {
+    case 'connected': return `<span role="status" class="${B} border-success bg-success-bg text-success-fg"><span class="h-2 w-2 rounded-full bg-success-solid" aria-hidden="true"></span>${label || 'Connected'}</span>`;
+    case 'disconnected': return `<span role="status" class="${B} border-danger bg-danger-bg text-danger-fg">${icon('wifi-off', 'h-3.5 w-3.5')}${label || 'Disconnected'}</span>`;
+    case 'saving': return `<span role="status" class="${B} bg-subtle text-secondary"><span class="spinner h-3 w-3" aria-hidden="true"></span>${label || 'Saving…'}</span>`;
+    case 'saved': return `<span role="status" class="${B} bg-subtle text-secondary">${icon('check', 'h-3.5 w-3.5 text-success-solid')}${label || 'Saved'}</span>`;
+    case 'error': return `<span role="status" class="${B} border-danger bg-danger-bg text-danger-fg">${icon('alert', 'h-3.5 w-3.5')}${label || 'Save error'}</span>`;
+    case 'sent': return `<span class="${B} border-success bg-success-bg text-success-fg">${icon('check', 'h-3.5 w-3.5')}${label || 'Sent'}</span>`;
+    case 'unsaved': return `<span role="status" class="${B} bg-subtle text-secondary"><span class="h-2 w-2 rounded-full border-[1.5px] border-current" aria-hidden="true"></span>${label || 'Unsaved changes'}</span>`;
+    case 'waiting': return `<span role="status" class="${B} bg-subtle text-secondary"><span class="spinner h-3 w-3" aria-hidden="true"></span>${label || 'Waiting'}</span>`;
+    case 'demo': return `<span role="status" class="${B} border-info bg-info-bg text-info-fg">${icon('info', 'h-3.5 w-3.5')}${label || 'Demo mode · not saved'}</span>`;
+  }
+}
+const testTag = () => `<span class="inline-flex h-5 items-center rounded-sm border border-strong px-1.5 text-label-s text-secondary">Test</span>`;
+
+/* ---------- Field parts ---------- */
+const fieldLabel = (id, label, disabled) => label ? `<label for="${id}" class="block text-label-s ${disabled ? 'text-disabled' : 'text-secondary'}">${esc(label)}</label>` : '';
+const fieldMessage = (id, helper, error) => error
+  ? `<p id="${id}-msg" class="flex items-start gap-1 text-body-s text-danger-fg">${icon('alert', 'mt-px h-3.5 w-3.5')}<span>${esc(error)}</span></p>`
+  : helper ? `<p id="${id}-msg" class="text-body-s text-muted">${helper}</p>` : '';
+const FIELD_H = { m: 'h-8', s: 'h-7' };
+
+/* ---------- Text field ---------- */
+function textField({ id, label, value = '', placeholder = '', helper, error, mono, multiline, rows = 3, disabled, readonly, size = 'm', prefix, ariaLabel }) {
+  const font = mono ? 'font-mono text-mono-m' : 'text-body-m';
+  const state = disabled ? 'cursor-not-allowed border-default bg-disabled text-disabled' : error ? 'field field-error bg-surface' : 'field border-strong bg-surface';
+  const aria = `${error ? 'aria-invalid="true"' : ''} ${helper || error ? `aria-describedby="${id}-msg"` : ''} ${!label && ariaLabel ? `aria-label="${esc(ariaLabel)}"` : ''}`;
+  let control;
+  if (multiline) {
+    control = `<textarea id="${id}" rows="${rows}" ${aria} ${disabled ? 'disabled' : ''} placeholder="${esc(placeholder)}" class="block w-full resize-y rounded border px-3 py-1.5 ${font} ${state} placeholder:text-muted">${esc(value)}</textarea>`;
+  } else if (prefix) {
+    control = `<div class="flex ${FIELD_H[size]} items-center rounded border ${state} min-w-0"><span class="flex-none select-none border-r border-default pl-2 pr-2 font-mono text-mono-s text-muted">${esc(prefix)}</span><input id="${id}" ${aria} ${disabled ? 'disabled' : ''} class="h-full w-full min-w-0 bg-transparent px-2 ${font} outline-none" value="${esc(value)}" placeholder="${esc(placeholder)}"></div>`;
+  } else {
+    control = `<input id="${id}" ${aria} ${disabled ? 'disabled' : ''} ${readonly ? 'readonly' : ''} class="${FIELD_H[size]} w-full min-w-0 rounded border px-3 ${font} ${state} ${readonly ? '!bg-subtle' : ''} placeholder:text-muted" value="${esc(value)}" placeholder="${esc(placeholder)}">`;
+  }
+  return `<div class="min-w-0 space-y-1">${fieldLabel(id, label, disabled)}${control}${fieldMessage(id, helper, error)}</div>`;
+}
+
+/* ---------- Select (closed) ---------- */
+function select({ id, label, value, meta, placeholder = 'None', disabled, size = 'm', helper, ariaLabel, mono }) {
+  const state = disabled ? 'cursor-not-allowed border-default bg-disabled text-disabled' : 'border-strong bg-surface hover:bg-hover';
+  const text = value ? `<span class="min-w-0 flex-1 truncate ${mono ? 'font-mono text-mono-m' : ''}">${esc(value)}</span>` : `<span class="min-w-0 flex-1 truncate text-muted">${esc(placeholder)}</span>`;
+  const aria = label ? `aria-labelledby="${id}-l ${id}"` : `aria-label="${esc(ariaLabel)}"`;
+  return `<div class="min-w-0 space-y-1">${label ? `<p id="${id}-l" class="text-label-s ${disabled ? 'text-disabled' : 'text-secondary'}">${esc(label)}</p>` : ''}
+    <button type="button" id="${id}" aria-haspopup="listbox" ${aria} ${disabled ? 'disabled' : ''} class="flex ${FIELD_H[size]} w-full items-center gap-2 rounded border pl-3 pr-2 text-left text-body-m ${state}">
+      ${text}${meta ? `<span class="flex-none text-body-s ${disabled ? '' : 'text-muted'}">${esc(meta)}</span>` : ''}${icon('chevron-down', disabled ? '' : 'text-secondary')}
+    </button>${fieldMessage(id, helper)}</div>`;
+}
+
+/* ---------- Number field ---------- */
+function numberField({ prefix, value, suffix, error, disabled, ariaLabel, cls = '' }) {
+  const state = disabled ? 'cursor-not-allowed border-default bg-disabled' : error ? 'field field-error bg-surface' : 'field border-strong bg-surface';
+  return `<label class="flex h-7 min-w-0 items-center gap-1.5 rounded border px-2 ${state} ${cls}">${prefix ? `<span class="text-label-s ${disabled ? 'text-disabled' : 'text-muted'}">${prefix}</span>` : ''}<input ${disabled ? 'disabled' : ''} aria-label="${esc(ariaLabel || prefix)}" ${error ? 'aria-invalid="true"' : ''} inputmode="numeric" class="w-full min-w-0 bg-transparent text-right text-body-m tabular outline-none ${disabled ? 'text-disabled' : ''}" value="${esc(value)}">${suffix ? `<span class="text-body-s text-muted">${suffix}</span>` : ''}</label>`;
+}
+
+/* ---------- Colour field ---------- */
+function colorField({ value, ariaLabel }) {
+  if (!value) return `<div class="field flex h-7 min-w-0 items-center gap-2 rounded border border-strong bg-surface pl-1 pr-2"><button type="button" aria-label="Pick ${esc(ariaLabel)}" class="swatch-none h-5 w-5 flex-none rounded-sm border border-strong"></button><span class="flex-1 text-body-m text-muted">None</span></div>`;
+  return `<div class="field flex h-7 min-w-0 items-center gap-2 rounded border border-strong bg-surface pl-1 pr-1"><button type="button" aria-label="Pick ${esc(ariaLabel)}" class="h-5 w-5 flex-none rounded-sm border border-strong" style="background:${value}"></button><input aria-label="${esc(ariaLabel)} hex" class="w-full min-w-0 bg-transparent font-mono text-mono-m uppercase outline-none" value="${value}"><button type="button" aria-label="Set ${esc(ariaLabel)} to None" class="inline-flex h-5 w-5 flex-none items-center justify-center rounded-sm text-muted hover:bg-hover hover:text-primary">${icon('close', 'h-3.5 w-3.5')}</button></div>`;
+}
+
+/* ---------- Segmented control ---------- */
+function segmented({ label, options, value, disabled }) {
+  return `<div role="radiogroup" aria-label="${esc(label)}" class="inline-flex flex-none rounded ${disabled ? 'bg-disabled' : 'bg-pressed'} p-0.5">${options.map((o) => {
+    const on = o === value;
+    return `<button type="button" role="radio" aria-checked="${on}" ${disabled ? 'disabled' : ''} class="h-6 rounded-sm px-2.5 text-label-s ${on ? 'bg-surface text-primary shadow-1' : disabled ? 'text-disabled' : 'text-secondary hover:text-primary'}">${esc(o)}</button>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- Banner ---------- */
+function banner({ tone = 'info', title, body, dismissible, action }) {
+  const T = {
+    info: ['border-info bg-info-bg text-info-fg', 'info', 'text-info-solid', 'status'],
+    warning: ['border-warning bg-warning-bg text-warning-fg', 'alert', 'text-warning-solid', 'status'],
+    error: ['border-danger bg-danger-bg text-danger-fg', 'alert', 'text-danger-fg', 'alert'],
+  }[tone];
+  return `<div role="${T[3]}" class="flex gap-3 rounded-lg border p-3 ${T[0]}">${icon(T[1], `mt-0.5 ${T[2]}`)}
+    <div class="min-w-0 flex-1 text-body-m"><p class="font-semibold">${title}</p>${body ? `<p>${body}</p>` : ''}${action ? `<div class="mt-2">${action}</div>` : ''}</div>
+    ${dismissible ? `<button type="button" aria-label="Dismiss" class="inline-flex h-6 w-6 flex-none items-center justify-center rounded hover:bg-surface">${icon('close')}</button>` : ''}</div>`;
+}
+
+/* ---------- Progress bar (added v0.2) ---------- */
+function progress({ value, label }) {
+  return `<div role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${value}" class="h-1.5 w-full overflow-hidden rounded-full bg-pressed"><div class="h-full rounded-full bg-accent" style="width:${value}%"></div></div>`;
+}
+
+/* ---------- Upload dropzone (added v0.2) ---------- */
+function dropzone({ active, disabled } = {}) {
+  if (disabled) return `<div class="flex flex-col items-center gap-2 rounded-lg border border-dashed border-default bg-disabled px-4 py-5 text-center">${icon('upload', 'text-disabled')}<p class="text-label-m text-disabled">Uploads are off in demo mode</p>${button({ size: 's', label: 'Choose file', disabled: true })}<p class="text-body-s text-muted">Run Tapcue on your own server to upload backgrounds.</p></div>`;
+  return `<div class="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-5 text-center ${active ? 'border-focus bg-accent-subtle' : 'border-strong bg-subtle'}">
+    ${icon('upload', active ? 'text-accent-strong' : 'text-secondary')}
+    <p class="text-label-m">${active ? 'Release to upload' : 'Drop an image or video'}</p>
+    ${active ? '' : button({ size: 's', label: 'Choose file' })}
+    <p class="text-body-s text-muted">PNG, JPG, WebP, MP4 or WebM, up to 200 MB. 2048 × 1536 fits the canvas exactly.</p>
+  </div>`;
+}
+
+/* ---------- File row (added v0.2) ---------- */
+function fileRow({ type, name, meta, actions = '', progressValue }) {
+  return `<div class="space-y-2 rounded-lg border bg-surface p-2.5">
+    <div class="flex items-center gap-2.5">
+      <span class="flex h-8 w-8 flex-none items-center justify-center rounded bg-subtle text-secondary">${icon(type === 'video' ? 'video' : 'image')}</span>
+      <div class="min-w-0 flex-1"><p class="truncate font-mono text-mono-s text-primary">${esc(name)}</p><p class="truncate text-body-s text-muted">${meta}</p></div>
+      ${actions}
+    </div>${progressValue !== undefined ? progress({ value: progressValue, label: `Uploading ${name}` }) : ''}
+  </div>`;
+}
+
+/* ---------- Panel section + inline row (added v0.2) ---------- */
+function panelSection({ title, action = '', body, id }) {
+  return `<section ${id ? `id="${id}"` : ''} class="space-y-3 border-b px-4 py-4" aria-label="${esc(title)}">
+    <div class="flex min-h-[20px] items-center justify-between gap-2"><h3 class="text-overline uppercase text-muted">${esc(title)}</h3>${action}</div>${body}</section>`;
+}
+const formRow = (label, control, forId) => `<div class="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2">${forId ? `<label for="${forId}" class="text-label-s text-secondary">${label}</label>` : `<span class="text-label-s text-secondary">${label}</span>`}<div class="flex min-w-0 items-center gap-2">${control}</div></div>`;
+
+/* ---------- Top bar with tabs ---------- */
+function topBar({ tab = 'Pages', conn = 'connected', save = 'saved', demo } = {}) {
+  const tabs = ['Pages', 'Targets', 'Stations', 'Settings'].map((t) => t === tab
+    ? `<a href="#" aria-current="page" class="relative flex items-center px-3 text-label-m text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent-strong">${t}</a>`
+    : `<a href="#" class="flex items-center px-3 text-label-m text-secondary hover:text-primary">${t}</a>`).join('');
+  return `<header class="flex h-12 flex-none items-stretch gap-5 border-b bg-surface pl-4 pr-3">
+    <div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span><span class="text-heading-m">Tapcue</span><span class="text-body-m text-muted">/</span><span class="text-label-m text-secondary">${esc(PROJECT.name)}</span></div>
+    <nav aria-label="Editor" class="flex items-stretch">${tabs}</nav>
+    <div class="ml-auto flex items-center gap-2">${badge(conn, conn === 'waiting' ? 'Connecting…' : undefined)}${demo ? badge('demo') : save ? badge(save) : ''}</div>
+  </header>`;
+}
+
+/* ---------- Hotspot overlay (editor canvas only) ----------
+   warn: hotspot reaches into a band cropped in Fill mode (shown even when "Show safe area" is off).
+   chipBelow: place the chip under the hotspot when there is no room above. */
+function hotspotOverlay({ x, y, w, h, shape, state, name, r = 0, warn, chipBelow }) {
+  const geom = shape === 'ellipse'
+    ? (cls) => `<ellipse class="${cls}" cx="50%" cy="50%" rx="50%" ry="50%"/>`
+    : (cls) => `<rect class="${cls}" x="0" y="0" width="100%" height="100%" rx="${r}"/>`;
+  const handles = state === 'selected'
+    ? [[0, 0], [50, 0], [100, 0], [100, 50], [100, 100], [50, 100], [0, 100], [0, 50]]
+      .map(([hx, hy]) => `<span class="hs-handle" style="left:${hx}%;top:${hy}%"></span>`).join('') : '';
+  const pos = chipBelow ? 'style="bottom:auto;top:calc(100% + 6px)"' : '';
+  const warnIcon = warn ? icon('alert', 'h-3 w-3') : '';
+  let chip = '';
+  if (state === 'selected') chip = `<span class="hs-chip ${warn ? 'hs-chip-warn' : ''}" ${pos}>${warnIcon}${esc(name)}</span>`;
+  else if (state === 'hover') chip = `<span class="hs-chip ${warn ? 'hs-chip-warn' : 'hs-chip-idle'}" ${pos}>${warnIcon}${esc(name)}</span>`;
+  else if (warn) chip = `<span class="hs-chip hs-chip-warn" ${pos} title="Partly cropped in Fill">${warnIcon}<span class="sr-only">${esc(name)} is partly cropped</span></span>`;
+  const focus = state === 'focus';
+  return `<div class="absolute ${focus ? 'hs-focus' : ''}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">
+    <svg class="hs" data-state="${focus ? 'hover' : state}" style="inset:0" width="100%" height="100%" aria-hidden="true">${geom('hs-fill')}${geom('hs-under')}${geom('hs-line')}</svg>${focus ? `<span class="hs-chip hs-chip-idle" ${pos}>${esc(name)}</span>` : chip}${handles}</div>`;
+}
+
+/* ---------- Log row ---------- */
+function logResult(e) {
+  if (e.result === 'sent') return `<span class="inline-flex items-center gap-1 text-label-s text-success-fg">${icon('check', 'h-3.5 w-3.5')}Sent</span>`;
+  if (e.result === 'error') return `<span class="inline-flex items-center gap-1 text-label-s text-danger-fg">${icon('alert', 'h-3.5 w-3.5')}Error</span>`;
+  return `<span class="inline-flex items-center gap-1 text-label-s text-secondary">${icon('arrow-right', 'h-3.5 w-3.5')}Page</span>`;
+}
+function logCommand(e) {
+  if (e.result === 'navigation') return `<span class="text-body-s text-secondary">${esc(e.from)} ${icon('arrow-right', 'inline h-3.5 w-3.5 align-[-2px] text-muted')} ${esc(e.navigateTo)} <span class="text-muted">· no command</span></span>`;
+  return `<span class="text-body-s text-muted">${esc(e.target)}</span> <span class="font-mono text-mono-s text-primary">${esc(e.command)}</span>${e.args ? ` <span class="font-mono text-mono-s text-muted">${esc(e.args)}</span>` : ''}${e.error ? ` <span class="text-body-s text-danger-fg">· ${esc(e.error)}</span>` : ''}${e.navigateTo ? ` <span class="text-body-s text-muted">· ${icon('arrow-right', 'inline h-3.5 w-3.5 align-[-2px]')} ${esc(e.navigateTo)}</span>` : ''}`;
+}
+const logSource = (e) => e.source === 'test' ? testTag() : `<span class="text-body-s text-secondary">${esc(e.source)}</span>`;
+function logRow(e, { fresh } = {}) {
+  return `<tr class="${e.result === 'error' ? 'bg-danger-bg' : fresh ? 'bg-accent-subtle' : 'hover:bg-hover'}">
+    <td class="whitespace-nowrap py-1 pl-4 pr-2 font-mono text-mono-s text-muted tabular">${e.time}</td>
+    <td class="px-2 py-1">${logResult(e)}</td>
+    <td class="px-2 py-1">${logSource(e)}</td>
+    <td class="px-2 py-1 text-body-s">${esc(e.hotspot)}</td>
+    <td class="px-2 py-1 pr-4">${logCommand(e)}</td></tr>`;
+}
+
+/* ---------- Command log panel (shell) ---------- */
+function logPanel({ collapsed, rows = LOG } = {}) {
+  if (collapsed) {
+    const e = rows[0];
+    return `<section aria-label="Command log" class="flex h-9 flex-none items-center gap-3 border-t bg-surface pl-2 pr-3">
+      ${button({ variant: 'ghost', size: 's', icon: 'chevron-down', ariaLabel: 'Expand command log', cls: 'rotate-180' })}
+      <h2 class="flex-none text-label-m">Command log</h2>
+      <span class="h-4 w-px flex-none bg-pressed" aria-hidden="true"></span>
+      <div class="flex min-w-0 flex-1 items-center gap-3 overflow-hidden whitespace-nowrap" aria-live="polite">
+        ${e ? `<span class="font-mono text-mono-s text-muted tabular">${e.time}</span>${logResult(e)}${logSource(e)}<span class="text-body-s">${esc(e.hotspot)}</span><span class="min-w-0 truncate">${logCommand(e)}</span>` : `<span class="text-body-s text-muted">No commands yet</span>`}
+      </div>
+      <span class="flex-none text-body-s text-muted">${rows.length} today</span>
+    </section>`;
+  }
+  return `<section aria-label="Command log" class="flex h-[176px] flex-none flex-col border-t bg-surface">
+    <div class="flex h-9 flex-none items-center gap-3 border-b pl-2 pr-3">
+      ${button({ variant: 'ghost', size: 's', icon: 'chevron-down', ariaLabel: 'Collapse command log' })}
+      <h2 class="text-label-m">Command log</h2>
+      <span class="inline-flex items-center gap-1.5 text-body-s text-muted"><span class="h-1.5 w-1.5 rounded-full bg-success-solid" aria-hidden="true"></span>Live from all stations</span>
+      <div class="ml-auto flex items-center gap-2">${button({ variant: 'ghost', size: 's', label: 'Clear' })}</div>
+    </div>
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      <table class="w-full text-left"><caption class="sr-only">Latest commands, newest first</caption>
+        <thead class="sticky top-0 bg-subtle"><tr class="text-overline uppercase text-muted">
+          <th scope="col" class="w-[120px] py-1 pl-4 pr-2 font-semibold">Time</th><th scope="col" class="w-[84px] px-2 py-1 font-semibold">Result</th>
+          <th scope="col" class="w-[128px] px-2 py-1 font-semibold">Source</th><th scope="col" class="w-[150px] px-2 py-1 font-semibold">Hotspot</th>
+          <th scope="col" class="px-2 py-1 pr-4 font-semibold">Command</th></tr></thead>
+        <tbody class="divide-y">${rows.length ? rows.map((e) => logRow(e)).join('') : `<tr><td colspan="5" class="px-4 py-6 text-center text-body-s text-muted">No commands yet. Taps from every station and test sends appear here.</td></tr>`}</tbody>
+      </table>
+    </div>
+  </section>`;
+}
+
+/* =====================================================================
+   v0.3 additions: shell and screen-level components
+   ===================================================================== */
+
+/* ---------- Toolbar meta: read-only value in a toolbar ---------- */
+const toolbarMeta = (text, label) => `<span class="inline-flex h-8 flex-none items-center gap-1.5 rounded bg-subtle px-2.5 text-body-s text-secondary"${label ? ` aria-label="${esc(label)}"` : ''}><span class="tabular">${text}</span></span>`;
+
+/* ---------- Editor shell: top bar, body, command log, optional modal ---------- */
+function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '' }) {
+  return `<div class="relative flex h-[900px] w-[1440px] flex-col overflow-hidden bg-app text-primary">
+    ${topBar({ tab, save: demo ? null : save, conn, demo })}${shellBanner}
+    <div class="flex min-h-0 flex-1">${body}</div>
+    ${logPanel({ collapsed, rows: logRows })}
+    ${modal ? `<div class="absolute inset-0 z-20 flex items-center justify-center bg-scrim">${modal}</div>` : ''}
+  </div>`;
+}
+
+/* ---------- List panel (left column of Targets / Stations) ---------- */
+function textRow({ title, meta, selected, warn }) {
+  return `<li><button type="button" ${selected ? 'aria-current="true"' : ''} class="block w-full rounded border px-3 py-2 text-left ${selected ? 'border-selection bg-selection' : 'border-transparent hover:bg-hover'}">
+    <span class="flex items-center gap-1.5 text-label-m">${esc(title)}${warn ? `${icon('alert', 'h-3.5 w-3.5 text-danger-fg')}<span class="sr-only">has invalid fields</span>` : ''}</span>
+    <span class="block truncate text-body-s ${selected ? 'text-secondary' : 'text-muted'}">${meta}</span></button></li>`;
+}
+function listPanel({ title, items, addLabel, empty }) {
+  return `<aside aria-label="${esc(title)}" class="flex w-[264px] flex-none flex-col border-r bg-surface">
+    <div class="flex h-11 flex-none items-center justify-between border-b pl-4 pr-2">
+      <h2 class="text-label-m">${esc(title)} <span class="text-body-s text-muted">${items.length}</span></h2>
+      ${button({ variant: 'ghost', size: 's', icon: 'plus', label: addLabel })}
+    </div>
+    ${items.length ? `<ul class="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">${items.map(textRow).join('')}</ul>` : `<p class="p-4 text-body-s text-muted">${empty}</p>`}
+  </aside>`;
+}
+
+/* ---------- Empty state ---------- */
+function emptyState({ icon: ic, title, body, action }) {
+  return `<div class="mx-auto flex max-w-[420px] flex-col items-center gap-3 text-center">
+    <span class="flex h-12 w-12 items-center justify-center rounded-full bg-accent-subtle text-accent-strong">${icon(ic, 'h-6 w-6')}</span>
+    <h2 class="text-heading-l">${title}</h2><p class="text-body-m text-secondary">${body}</p>${action ? `<div class="pt-1">${action}</div>` : ''}</div>`;
+}
+
+/* ---------- Form card (main column of Targets / Stations / Settings) ---------- */
+function formCard({ title, action = '', body, id }) {
+  return `<section ${id ? `id="${id}"` : ''} class="rounded-lg border bg-surface" aria-label="${esc(title)}">
+    <div class="flex h-12 items-center justify-between border-b px-5"><h2 class="text-heading-m">${title}</h2>${action}</div>
+    <div class="space-y-5 p-5">${body}</div></section>`;
+}
+
+/* ---------- Dialog ---------- */
+function dialog({ tone = 'default', title, body, confirmLabel, cancelLabel = 'Cancel', confirmIcon }) {
+  const danger = tone === 'danger';
+  return `<div role="${danger ? 'alertdialog' : 'dialog'}" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}" class="w-[440px] rounded-xl bg-surface p-6 shadow-3">
+    <div class="flex gap-4">${danger ? `<span class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-danger-bg text-danger-fg" aria-hidden="true">${icon('trash')}</span>` : ''}
+      <div class="min-w-0"><h2 class="text-heading-m">${title}</h2><div class="mt-2 space-y-2 text-body-m text-secondary">${body}</div></div></div>
+    <div class="mt-6 flex justify-end gap-2">${button({ label: cancelLabel, cls: danger ? 'is-focus' : '' })}${button({ variant: danger ? 'danger' : 'primary', label: confirmLabel, icon: confirmIcon })}</div>
+  </div>`;
+}
+
+/* ---------- QR card ---------- */
+function qrCard({ url, qr, copied, disabled }) {
+  const plate = disabled
+    ? `<div class="mx-auto my-4 flex aspect-square w-[176px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-strong bg-subtle p-3 text-center">${icon('alert', 'text-muted')}<span class="text-body-s text-secondary">Fix the id to show a QR code</span></div>`
+    : `<div class="mx-auto my-4 w-[176px] rounded-lg bg-overlay-light p-3 text-overlay-dark">${qr}</div>`;
+  const copy = copied
+    ? `<button type="button" class="inline-flex h-8 items-center justify-center gap-2 rounded border border-success bg-success-bg px-3 text-label-m text-success-fg">${icon('check')}Copied</button>`
+    : button({ icon: 'copy', label: 'Copy', disabled, cls: 'justify-center' });
+  return `<div class="w-[288px] rounded-xl border bg-surface p-5 shadow-1">
+    <p class="text-overline uppercase text-muted">Station URL</p>${plate}
+    <p class="break-all font-mono text-mono-s ${disabled ? 'text-disabled' : copied ? 'rounded-sm bg-selection text-primary' : 'text-primary'}">${esc(url)}</p>
+    <div class="mt-4 grid grid-cols-2 gap-2">${copy}${button({ icon: 'external', label: 'Open', disabled, cls: 'justify-center' })}</div>
+    ${copied ? `<p class="mt-2 text-body-s text-muted" role="status">URL copied to the clipboard.</p>` : ''}
+  </div>`;
+}
+
+/* ---------- Scale diagram (Settings): the 4:3 page on a wider screen ----------
+   Fit: dark screen, amber page inside, dark bars at the sides.
+   Fill: amber page larger than the screen; the parts outside the screen outline are cropped (pale, dashed). */
+function scaleDiagram({ mode, ref, width = 150 }) {
+  const r = REFERENCE[ref], pw = PROJECT.canvas.w, ph = PROJECT.canvas.h;
+  const k = width / r.w, sh = Math.round(r.h * k);
+  const s = mode === 'fit' ? Math.min(r.w / pw, r.h / ph) : Math.max(r.w / pw, r.h / ph);
+  const w = Math.round(pw * s * k), h = Math.round(ph * s * k);
+  let art, caption;
+  if (mode === 'fit') {
+    const x = Math.round((width - w) / 2);
+    art = `<div class="relative rounded-sm bg-inverse" style="width:${width}px;height:${sh}px">
+      <div class="absolute flex items-center justify-center bg-accent text-label-s text-on-accent" style="left:${x}px;top:0;width:${w}px;height:${h}px">Page</div></div>`;
+    caption = `${Math.round((r.w - pw * s) / 2)} px bars left and right`;
+  } else {
+    const y = Math.round((h - sh) / 2);
+    art = `<div class="relative" style="width:${width}px;height:${h}px">
+      <div class="absolute inset-0 rounded-sm border border-dashed border-strong bg-accent-subtle"></div>
+      <div class="absolute flex items-center justify-center bg-accent text-label-s text-on-accent outline outline-2 outline-[color:var(--color-bg-inverse)]" style="left:0;top:${y}px;width:${width}px;height:${sh}px">Page</div></div>`;
+    caption = `${Math.round((ph * s - r.h) / 2)} px cropped top and bottom`;
+  }
+  return `<figure class="flex flex-col items-center gap-2"><div class="flex items-center" style="min-height:${Math.round(width * 0.75)}px">${art}</div>
+    <figcaption class="text-center"><span class="block text-label-s">${r.label}</span><span class="block text-body-s text-muted tabular">${caption}</span></figcaption></figure>`;
+}
+
+/* ---------- Screen tile (demo receiver) ---------- */
+function screenTile({ name, content, since, source, fresh }) {
+  return `<section aria-label="${esc(name)}" class="flex flex-col rounded-lg border bg-surface p-3 ${fresh ? 'border-selection shadow-[0_0_0_3px_var(--color-accent-subtle)]' : ''}">
+    <div class="mb-2 flex items-center justify-between"><h2 class="text-label-m">${esc(name)}</h2>
+      ${fresh ? `<span class="inline-flex h-5 items-center gap-1 rounded-sm bg-accent px-1.5 text-label-s text-on-accent">Just changed</span>` : `<span class="text-body-s text-muted">Playing</span>`}</div>
+    <div class="flex aspect-video items-center justify-center rounded bg-inverse px-3 ${fresh ? 'ring-2 ring-[color:var(--color-accent-default)] ring-offset-2 ring-offset-[color:var(--color-bg-surface)]' : ''}">
+      <span class="truncate font-mono text-heading-l font-normal text-inverse" aria-live="polite">${esc(content)}</span></div>
+    <p class="mt-2 text-body-s text-muted">Since <span class="font-mono text-mono-s">${since}</span> · ${esc(source)}</p>
+  </section>`;
+}
+
+/* ---------- Compact row: a one-line link/button row in a list ---------- */
+function compactRow({ lead = '', title, meta = '', trailing = '', mono: m }) {
+  return `<li><button type="button" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-hover">${lead}
+    <span class="min-w-0 flex-1 truncate ${m ? 'font-mono text-mono-s' : 'text-label-m'}">${title}</span>${meta ? `<span class="flex-none text-body-s text-muted">${meta}</span>` : ''}${trailing}</button></li>`;
+}
+/* ---------- Log row, compact (two lines, for side panels) ---------- */
+function logRowCompact(e) {
+  return `<li class="space-y-0.5 px-5 py-2.5"><div class="flex items-center gap-2"><span class="font-mono text-mono-s text-muted tabular">${e.time}</span>${logResult(e)}${logSource(e)}</div>
+    <p class="truncate"><span class="font-mono text-mono-s">${esc(e.command || '')}</span> <span class="font-mono text-mono-s text-muted">${esc(e.args || '')}</span></p></li>`;
+}
+/* ---------- Shell banner: full-width strip under the top bar ---------- */
+function shellBanner({ tone = 'warning', title, body, action = '' }) {
+  const T = { warning: ['border-warning bg-warning-bg text-warning-fg', 'alert', 'text-warning-solid'], error: ['border-danger bg-danger-bg text-danger-fg', 'alert', 'text-danger-fg'], info: ['border-info bg-info-bg text-info-fg', 'info', 'text-info-solid'] }[tone];
+  return `<div role="${tone === 'error' ? 'alert' : 'status'}" class="flex h-10 flex-none items-center gap-2 border-b px-4 text-body-m ${T[0]}">${icon(T[1], T[2])}<span class="font-semibold">${title}</span><span class="min-w-0 flex-1 truncate">${body}</span>${action}</div>`;
+}
+/* ---------- Skeleton ---------- */
+const skeleton = (cls, style = '') => `<span class="skeleton block ${cls}" ${style ? `style="${style}"` : ''} aria-hidden="true"></span>`;
+</script>
+<script>
+/* Demo project shared by every Tapcue screen (editor, player, demo receiver).
+   Coordinates are page pixels on the 2048 x 1536 canvas. */
+const PROJECT = {
+  name: 'Demo stand',
+  server: 'http://192.168.1.10:4000',
+  canvas: { w: 2048, h: 1536, bg: '#000000', scale: 'fill' },
+  targets: [
+    { id: 'resolume', name: 'Resolume', protocol: 'osc', host: '192.168.1.20', port: 7000 },
+    { id: 'projector', name: 'Projector', protocol: 'udp', host: '192.168.1.40', port: 4352 },
+    { id: 'demo', name: 'Demo receiver', protocol: 'http', baseUrl: 'http://localhost:4000' },
+  ],
+  stations: [
+    { id: 'main', name: 'Main catalog', start: 'home', idle: 90 },
+    { id: 'small', name: 'Small screen', start: 'product-a', idle: 60 },
+  ],
+  pages: [
+    {
+      id: 'home', name: 'Home',
+      bg: { type: 'image', file: 'home.png', src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDQ4IDE1MzYiIHdpZHRoPSIyMDQ4IiBoZWlnaHQ9IjE1MzYiPgogIDwhLS0gU2FtcGxlIGRlc2lnbmVyIGFydHdvcms6IEhvbWUgKGxpZ2h0KS4gTm90IFRhcGN1ZSBVSS4gLS0+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmFmNmVmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZTlkZmNkIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9InNoIiB4PSItMjAlIiB5PSItMjAlIiB3aWR0aD0iMTQwJSIgaGVpZ2h0PSIxNDAlIj48ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMjQiIHN0ZERldmlhdGlvbj0iMjgiIGZsb29kLWNvbG9yPSIjNWE0MzIwIiBmbG9vZC1vcGFjaXR5PSIuMTQiLz48L2ZpbHRlcj4KICAgIDxwYXR0ZXJuIGlkPSJncmlsbGUiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iOCIgY3k9IjgiIHI9IjMiIGZpbGw9IiMwMDAiIG9wYWNpdHk9Ii4xOCIvPjwvcGF0dGVybj4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjIwNDgiIGhlaWdodD0iMTUzNiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIxNzYwIiBjeT0iMjIwIiByPSI1NjAiIGZpbGw9IiNmM2U4ZDUiLz4KICA8Y2lyY2xlIGN4PSIxMjAiIGN5PSIxNTAwIiByPSIzODAiIGZpbGw9IiNlZmU0ZDAiLz4KICA8IS0tIGJyYW5kIC0tPgogIDxjaXJjbGUgY3g9IjE2OCIgY3k9IjIwNiIgcj0iMjQiIGZpbGw9IiMxZjRlNWEiLz48Y2lyY2xlIGN4PSIxNjgiIGN5PSIyMDYiIHI9IjEwIiBmaWxsPSIjZmFmNmVmIi8+CiAgPHRleHQgeD0iMjEwIiB5PSIyMjIiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EgTmV1ZSwgQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNDQiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIxMCIgZmlsbD0iIzFmMmEyZSI+QVVSRUw8L3RleHQ+CiAgPCEtLSBjYWxsIG91ciB0ZWFtIChjcm9zc2VzIHRoZSAxNjoxMCBGaWxsIGNyb3AgbGluZSBhdCB5PTEyOCkgLS0+CiAgPHJlY3QgeD0iMTU5MiIgeT0iNzYiIHdpZHRoPSIzMTIiIGhlaWdodD0iOTYiIHJ4PSI0OCIgZmlsbD0iIzFmNGU1YSIvPgogIDxjaXJjbGUgY3g9IjE2NDQiIGN5PSIxMjQiIHI9IjEwIiBmaWxsPSIjN2ZkMWMwIi8+CiAgPHRleHQgeD0iMTY3MCIgeT0iMTM2IiBmb250LWZhbWlseT0iSGVsdmV0aWNhIE5ldWUsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjMyIiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjZmZmZmZmIj5DYWxsIG91ciB0ZWFtPC90ZXh0PgogIDwhLS0gaGVhZGxpbmUgLS0+CiAgPHRleHQgeD0iMTQ0IiB5PSIzNzAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc2l6ZT0iMTA4IiBmaWxsPSIjMWYyYTJlIj5GaW5kIHlvdXIgc291bmQuPC90ZXh0PgogIDx0ZXh0IHg9IjE0OCIgeT0iNDM4IiBmb250LWZhbWlseT0iSGVsdmV0aWNhIE5ldWUsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjM0IiBmaWxsPSIjNmI1ZjUwIj5UYXAgYSBwcm9kdWN0IHRvIHNlZSBpdCBvbiB0aGUgYmlnIHNjcmVlbi48L3RleHQ+CiAgPCEtLSBjYXJkcyAtLT4KICA8ZyBmaWx0ZXI9InVybCgjc2gpIj4KICAgIDxyZWN0IHg9IjE0NCIgeT0iNTAwIiB3aWR0aD0iNTYwIiBoZWlnaHQ9IjcyMCIgcng9IjQwIiBmaWxsPSIjZmZmZmZmIi8+CiAgICA8cmVjdCB4PSI3NDQiIHk9IjUwMCIgd2lkdGg9IjU2MCIgaGVpZ2h0PSI3MjAiIHJ4PSI0MCIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHJlY3QgeD0iMTM0NCIgeT0iNTAwIiB3aWR0aD0iNTYwIiBoZWlnaHQ9IjcyMCIgcng9IjQwIiBmaWxsPSIjZmZmZmZmIi8+CiAgPC9nPgogIDxyZWN0IHg9IjE3NiIgeT0iNTMyIiB3aWR0aD0iNDk2IiBoZWlnaHQ9IjQ0MCIgcng9IjI0IiBmaWxsPSIjZjFlYmUxIi8+CiAgPHJlY3QgeD0iNzc2IiB5PSI1MzIiIHdpZHRoPSI0OTYiIGhlaWdodD0iNDQwIiByeD0iMjQiIGZpbGw9IiNlMmVjZWQiLz4KICA8cmVjdCB4PSIxMzc2IiB5PSI1MzIiIHdpZHRoPSI0OTYiIGhlaWdodD0iNDQwIiByeD0iMjQiIGZpbGw9IiNmNWUzZGMiLz4KICA8IS0tIEE6IHN0dWRpbyBtb25pdG9yIC0tPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQyNCA3NTIpIj4KICAgIDxlbGxpcHNlIGN4PSIwIiBjeT0iMTc2IiByeD0iMTMwIiByeT0iMTYiIGZpbGw9IiMwMDAiIG9wYWNpdHk9Ii4xMiIvPgogICAgPHJlY3QgeD0iLTExMCIgeT0iLTE3MCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSIzNDAiIHJ4PSIyMiIgZmlsbD0iIzJhMmEyZCIvPgogICAgPHJlY3QgeD0iLTExMCIgeT0iLTE3MCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSIzNDAiIHJ4PSIyMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDU0NTRhIiBzdHJva2Utd2lkdGg9IjQiLz4KICAgIDxjaXJjbGUgY3g9IjAiIGN5PSItODgiIHI9IjM2IiBmaWxsPSIjMTIxMjE0IiBzdHJva2U9IiMzYjNiNDAiIHN0cm9rZS13aWR0aD0iOCIvPjxjaXJjbGUgY3g9IjAiIGN5PSItODgiIHI9IjEyIiBmaWxsPSIjMmUyZTMzIi8+CiAgICA8Y2lyY2xlIGN4PSIwIiBjeT0iNTgiIHI9Ijg0IiBmaWxsPSIjMTIxMjE0IiBzdHJva2U9IiMzYjNiNDAiIHN0cm9rZS13aWR0aD0iMTAiLz48Y2lyY2xlIGN4PSIwIiBjeT0iNTgiIHI9IjMwIiBmaWxsPSIjMjYyNjJhIi8+CiAgICA8Y2lyY2xlIGN4PSI4MiIgY3k9IjE0OCIgcj0iNiIgZmlsbD0iI2Y1YjM0MiIvPgogIDwvZz4KICA8IS0tIEI6IGhlYWRwaG9uZXMgLS0+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTAyNCA3NTIpIj4KICAgIDxlbGxpcHNlIGN4PSIwIiBjeT0iMTc2IiByeD0iMTUwIiByeT0iMTYiIGZpbGw9IiMwMDAiIG9wYWNpdHk9Ii4xIi8+CiAgICA8cGF0aCBkPSJNLTEyMCA0MCBWLTEwIEExMjAgMTMwIDAgMCAxIDEyMCAtMTAgVjQwIiBmaWxsPSJub25lIiBzdHJva2U9IiMyNDUwNWQiIHN0cm9rZS13aWR0aD0iMjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHJlY3QgeD0iLTE2OCIgeT0iMTAiIHdpZHRoPSI4NiIgaGVpZ2h0PSIxNTAiIHJ4PSI0MCIgZmlsbD0iIzNhNzQ4NiIvPjxyZWN0IHg9Ii0xNTAiIHk9IjMwIiB3aWR0aD0iNDAiIGhlaWdodD0iMTEwIiByeD0iMjAiIGZpbGw9IiMyYzVlNmQiLz4KICAgIDxyZWN0IHg9IjgyIiB5PSIxMCIgd2lkdGg9Ijg2IiBoZWlnaHQ9IjE1MCIgcng9IjQwIiBmaWxsPSIjM2E3NDg2Ii8+PHJlY3QgeD0iMTEwIiB5PSIzMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjExMCIgcng9IjIwIiBmaWxsPSIjMmM1ZTZkIi8+CiAgPC9nPgogIDwhLS0gQzogcG9ydGFibGUgc3BlYWtlciAtLT4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNjI0IDc1MikiPgogICAgPGVsbGlwc2UgY3g9IjAiIGN5PSIxNzYiIHJ4PSIxMjAiIHJ5PSIxNiIgZmlsbD0iIzAwMCIgb3BhY2l0eT0iLjEyIi8+CiAgICA8cGF0aCBkPSJNLTUwIC0xNTAgUTAgLTIxMCA1MCAtMTUwIiBmaWxsPSJub25lIiBzdHJva2U9IiM3YTMzMjQiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHJlY3QgeD0iLTk2IiB5PSItMTUwIiB3aWR0aD0iMTkyIiBoZWlnaHQ9IjMyMCIgcng9Ijk2IiBmaWxsPSIjYzQ1NzNmIi8+CiAgICA8cmVjdCB4PSItODAiIHk9Ii0xMTAiIHdpZHRoPSIxNjAiIGhlaWdodD0iMjMwIiByeD0iNzAiIGZpbGw9InVybCgjZ3JpbGxlKSIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9IjE0MCIgcj0iMTAiIGZpbGw9IiNmNmQ4Y2YiLz4KICA8L2c+CiAgPCEtLSBjYXJkIGNvcHkgLS0+CiAgPGcgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiI+CiAgICA8dGV4dCB4PSIxODQiIHk9IjEwNTYiIGZvbnQtc2l6ZT0iNDgiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMxZjJhMmUiPlByb2R1Y3QgQTwvdGV4dD4KICAgIDx0ZXh0IHg9IjE4NCIgeT0iMTEwNCIgZm9udC1zaXplPSIzMCIgZmlsbD0iIzZiNWY1MCI+U3R1ZGlvIG1vbml0b3I8L3RleHQ+CiAgICA8dGV4dCB4PSIxODQiIHk9IjExODAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxZjRlNWEiPkV4cGxvcmUg4oaSPC90ZXh0PgogICAgPHRleHQgeD0iNzg0IiB5PSIxMDU2IiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMWYyYTJlIj5Qcm9kdWN0IEI8L3RleHQ+CiAgICA8dGV4dCB4PSI3ODQiIHk9IjExMDQiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiM2YjVmNTAiPldpcmVsZXNzIGhlYWRwaG9uZXM8L3RleHQ+CiAgICA8dGV4dCB4PSI3ODQiIHk9IjExODAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxZjRlNWEiPkV4cGxvcmUg4oaSPC90ZXh0PgogICAgPHRleHQgeD0iMTM4NCIgeT0iMTA1NiIgZm9udC1zaXplPSI0OCIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzFmMmEyZSI+UHJvZHVjdCBDPC90ZXh0PgogICAgPHRleHQgeD0iMTM4NCIgeT0iMTEwNCIgZm9udC1zaXplPSIzMCIgZmlsbD0iIzZiNWY1MCI+UG9ydGFibGUgc3BlYWtlcjwvdGV4dD4KICAgIDx0ZXh0IHg9IjEzODQiIHk9IjExODAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxZjRlNWEiPlBsYXkgb24gdGhlIGJpZyBzY3JlZW4g4pa4PC90ZXh0PgogIDwvZz4KICA8IS0tIGZvb3RlciArIGFib3V0IC0tPgogIDx0ZXh0IHg9IjE0OCIgeT0iMTMzMCIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyOCIgZmlsbD0iIzhhN2Q2YiI+SGFsbCA0IMK3IFN0YW5kIEIxMjwvdGV4dD4KICA8Y2lyY2xlIGN4PSIxODMyIiBjeT0iMTMxNiIgcj0iNzIiIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0iIzFmNGU1YSIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHRleHQgeD0iMTgzMiIgeT0iMTMyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyOCIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iIzFmNGU1YSI+QWJvdXQ8L3RleHQ+Cjwvc3ZnPgo=', size: '1.8 MB' },
+      hotspots: [
+        { id: 'hs-a', name: 'Product A card', shape: 'rect', x: 144, y: 500, w: 560, h: 720, r: 40, effect: 'press-in',
+          goto: 'product-a', target: 'resolume', osc: { address: '/composition/columns/2/connect', args: [{ type: 'int', value: '1' }] } },
+        { id: 'hs-b', name: 'Product B card', shape: 'rect', x: 744, y: 500, w: 560, h: 720, r: 40, effect: 'press-in',
+          goto: 'product-b', target: 'resolume', osc: { address: '/composition/columns/3/connect', args: [{ type: 'int', value: '1' }] } },
+        { id: 'hs-c', name: 'Product C card', shape: 'rect', x: 1344, y: 500, w: 560, h: 720, r: 40, effect: 'ripple',
+          goto: null, target: 'resolume', osc: { address: '/composition/columns/4/connect', args: [{ type: 'int', value: '1' }] } },
+        { id: 'hs-about', name: 'About', shape: 'ellipse', x: 1760, y: 1244, w: 144, h: 144, effect: 'highlight', goto: 'about',
+          target: 'demo', http: { method: 'POST', path: '/demo/screen-2/about-us', body: '' } },
+        { id: 'hs-call', name: 'Call our team', shape: 'rect', x: 1592, y: 76, w: 312, h: 96, r: 48, effect: 'highlight',
+          goto: null, target: 'demo', http: { method: 'POST', path: '/demo/screen-3/call-staff', body: '{ "stand": "B12" }' } },
+      ],
+    },
+    {
+      id: 'product-a', name: 'Product A',
+      bg: { type: 'image', file: 'product-a.png', src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDQ4IDE1MzYiIHdpZHRoPSIyMDQ4IiBoZWlnaHQ9IjE1MzYiPgogIDwhLS0gU2FtcGxlIGRlc2lnbmVyIGFydHdvcms6IFByb2R1Y3QgQSAoZGFyaykuIE5vdCBUYXBjdWUgVUkuIC0tPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJiZyIgY3g9Ii4zIiBjeT0iLjQ1IiByPSIuOSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMjUzMzVjIi8+PHN0b3Agb2Zmc2V0PSIuNiIgc3RvcC1jb2xvcj0iIzBmMTYyOSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA4MGIxNCIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9Imdsb3ciIGN4PSIuNSIgY3k9Ii41IiByPSIuNSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNWY4NmZmIiBzdG9wLW9wYWNpdHk9Ii40NSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzVmODZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjIwNDgiIGhlaWdodD0iMTUzNiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSI2MjAiIGN5PSI4MDAiIHI9IjU2MCIgZmlsbD0idXJsKCNnbG93KSIvPgogIDwhLS0gYmFjayAtLT4KICA8cmVjdCB4PSIxMjAiIHk9IjE3NiIgd2lkdGg9IjIzNiIgaGVpZ2h0PSI4OCIgcng9IjQ0IiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9Ii4wOCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iLjM1IiBzdHJva2Utd2lkdGg9IjMiLz4KICA8dGV4dCB4PSIyMzgiIHk9IjIzMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIzMiIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iI2U2ZWNmZiI+4oaQIEhvbWU8L3RleHQ+CiAgPCEtLSBzcGVha2VyIHgyIC0tPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDYyMCA4MjApIHNjYWxlKDEuNykiPgogICAgPGVsbGlwc2UgY3g9IjAiIGN5PSIxODYiIHJ4PSIxNTAiIHJ5PSIxNCIgZmlsbD0iIzAwMCIgb3BhY2l0eT0iLjUiLz4KICAgIDxyZWN0IHg9Ii0xMTAiIHk9Ii0xNzAiIHdpZHRoPSIyMjAiIGhlaWdodD0iMzQwIiByeD0iMjIiIGZpbGw9IiMxZDFmMjYiLz4KICAgIDxyZWN0IHg9Ii0xMTAiIHk9Ii0xNzAiIHdpZHRoPSIyMjAiIGhlaWdodD0iMzQwIiByeD0iMjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNkNDU2MCIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgICA8Y2lyY2xlIGN4PSIwIiBjeT0iLTg4IiByPSIzNiIgZmlsbD0iIzBiMGMxMCIgc3Ryb2tlPSIjMmMzMjQ3IiBzdHJva2Utd2lkdGg9IjciLz48Y2lyY2xlIGN4PSIwIiBjeT0iLTg4IiByPSIxMiIgZmlsbD0iIzI1MmEzYSIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9IjU4IiByPSI4NCIgZmlsbD0iIzBiMGMxMCIgc3Ryb2tlPSIjMmMzMjQ3IiBzdHJva2Utd2lkdGg9IjkiLz48Y2lyY2xlIGN4PSIwIiBjeT0iNTgiIHI9IjMwIiBmaWxsPSIjMWIxZjJjIi8+CiAgICA8Y2lyY2xlIGN4PSI4MiIgY3k9IjE0OCIgcj0iNSIgZmlsbD0iI2Y1YjM0MiIvPgogIDwvZz4KICA8IS0tIGNvcHkgLS0+CiAgPGcgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiI+CiAgICA8dGV4dCB4PSIxMTIwIiB5PSI0NDAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSI4IiBmaWxsPSIjOGZiM2ZmIj5QUk9EVUNUIEE8L3RleHQ+CiAgICA8dGV4dCB4PSIxMTE2IiB5PSI1NjAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc2l6ZT0iMTA0IiBmaWxsPSIjZmZmZmZmIj5TdHVkaW8gbW9uaXRvcjwvdGV4dD4KICAgIDx0ZXh0IHg9IjExMjAiIHk9IjY0MCIgZm9udC1zaXplPSIzNiIgZmlsbD0iI2I4YzNkYyI+RmxhdCwgaG9uZXN0IHNvdW5kIGZvciByb29tczwvdGV4dD4KICAgIDx0ZXh0IHg9IjExMjAiIHk9IjY5MCIgZm9udC1zaXplPSIzNiIgZmlsbD0iI2I4YzNkYyI+dXAgdG8gMjAgbcKyLjwvdGV4dD4KICAgIDxnIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiNlNmVjZmYiPgogICAgICA8dGV4dCB4PSIxMTIwIiB5PSI4MDAiIGZpbGw9IiM3ZjhkYjAiPkZyZXF1ZW5jeTwvdGV4dD48dGV4dCB4PSIxNDIwIiB5PSI4MDAiPjQ1IEh6IOKAkyAyMiBrSHo8L3RleHQ+CiAgICAgIDx0ZXh0IHg9IjExMjAiIHk9Ijg2MCIgZmlsbD0iIzdmOGRiMCI+UG93ZXI8L3RleHQ+PHRleHQgeD0iMTQyMCIgeT0iODYwIj4yIMOXIDYwIFc8L3RleHQ+CiAgICAgIDx0ZXh0IHg9IjExMjAiIHk9IjkyMCIgZmlsbD0iIzdmOGRiMCI+V2VpZ2h0PC90ZXh0Pjx0ZXh0IHg9IjE0MjAiIHk9IjkyMCI+Ni4yIGtnPC90ZXh0PgogICAgPC9nPgogICAgPHJlY3QgeD0iMTEyMCIgeT0iMTA0MCIgd2lkdGg9IjYwMCIgaGVpZ2h0PSIxMTIiIHJ4PSI1NiIgZmlsbD0iIzhmYjNmZiIvPgogICAgPHRleHQgeD0iMTQyMCIgeT0iMTEwOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIzNCIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzBiMTAyMCI+UGxheSBkZW1vIG9uIHRoZSBiaWcgc2NyZWVuPC90ZXh0PgogICAgPHRleHQgeD0iMTEyMCIgeT0iMTI3MiIgZm9udC1zaXplPSIzMiIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iI2U2ZWNmZiI+TmV4dDogUHJvZHVjdCBCICDihpI8L3RleHQ+CiAgPC9nPgo8L3N2Zz4K', size: '2.1 MB' },
+      hotspots: [
+        { id: 'pa-back', name: 'Back', shape: 'rect', x: 120, y: 176, w: 236, h: 88, r: 44, effect: 'highlight', goto: 'home', target: null },
+        { id: 'pa-play', name: 'Play demo', shape: 'rect', x: 1120, y: 1040, w: 600, h: 112, r: 56, effect: 'press-in',
+          goto: null, target: 'demo', http: { method: 'POST', path: '/demo/screen-1/product-a', body: '' } },
+        { id: 'pa-next', name: 'Next product', shape: 'rect', x: 1104, y: 1224, w: 400, h: 72, r: 8, effect: 'highlight', goto: 'product-b', target: null },
+      ],
+    },
+    {
+      id: 'product-b', name: 'Product B',
+      bg: { type: 'image', file: 'product-b.png', src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDQ4IDE1MzYiIHdpZHRoPSIyMDQ4IiBoZWlnaHQ9IjE1MzYiPgogIDwhLS0gU2FtcGxlIGRlc2lnbmVyIGFydHdvcms6IFByb2R1Y3QgQiAobWlkLXRvbmUpLiBOb3QgVGFwY3VlIFVJLiAtLT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmNmIyNmIiLz48c3RvcCBvZmZzZXQ9Ii41IiBzdG9wLWNvbG9yPSIjZDk1NzZiIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNWI2ZmQ2Ii8+PC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjIwNDgiIGhlaWdodD0iMTUzNiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIxNDQwIiBjeT0iNzgwIiByPSI1MjAiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9Ii4xMiIvPgogIDxjaXJjbGUgY3g9IjE0NDAiIGN5PSI3ODAiIHI9IjM4MCIgZmlsbD0iI2ZmZmZmZiIgb3BhY2l0eT0iLjEiLz4KICA8cmVjdCB4PSIxMjAiIHk9IjE3NiIgd2lkdGg9IjIzNiIgaGVpZ2h0PSI4OCIgcng9IjQ0IiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9Ii4yIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS1vcGFjaXR5PSIuNiIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHRleHQgeD0iMjM4IiB5PSIyMzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EgTmV1ZSwgQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMzIiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiNmZmZmZmYiPuKGkCBIb21lPC90ZXh0PgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE0NDAgNzYwKSBzY2FsZSgyKSI+CiAgICA8ZWxsaXBzZSBjeD0iMCIgY3k9IjE4NiIgcng9IjE2MCIgcnk9IjE0IiBmaWxsPSIjMmExMDMwIiBvcGFjaXR5PSIuMjUiLz4KICAgIDxwYXRoIGQ9Ik0tMTIwIDQwIFYtMTAgQTEyMCAxMzAgMCAwIDEgMTIwIC0xMCBWNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzJiMWQzZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cmVjdCB4PSItMTY4IiB5PSIxMCIgd2lkdGg9Ijg2IiBoZWlnaHQ9IjE1MCIgcng9IjQwIiBmaWxsPSIjZmJlZmYyIi8+PHJlY3QgeD0iLTE1MCIgeT0iMzAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIxMTAiIHJ4PSIyMCIgZmlsbD0iI2U5Y2RkNiIvPgogICAgPHJlY3QgeD0iODIiIHk9IjEwIiB3aWR0aD0iODYiIGhlaWdodD0iMTUwIiByeD0iNDAiIGZpbGw9IiNmYmVmZjIiLz48cmVjdCB4PSIxMTAiIHk9IjMwIiB3aWR0aD0iNDAiIGhlaWdodD0iMTEwIiByeD0iMjAiIGZpbGw9IiNlOWNkZDYiLz4KICA8L2c+CiAgPGcgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZmlsbD0iI2ZmZmZmZiI+CiAgICA8dGV4dCB4PSIxNDQiIHk9IjQ0MCIgZm9udC1zaXplPSIzMCIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9IjgiIGZpbGw9IiNmZmYzZTYiPlBST0RVQ1QgQjwvdGV4dD4KICAgIDx0ZXh0IHg9IjE0MCIgeT0iNTYwIiBmb250LWZhbWlseT0iR2VvcmdpYSwgJ1RpbWVzIE5ldyBSb21hbicsIHNlcmlmIiBmb250LXNpemU9IjEwNCI+V2lyZWxlc3M8L3RleHQ+CiAgICA8dGV4dCB4PSIxNDAiIHk9IjY3MiIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsICdUaW1lcyBOZXcgUm9tYW4nLCBzZXJpZiIgZm9udC1zaXplPSIxMDQiPmhlYWRwaG9uZXM8L3RleHQ+CiAgICA8dGV4dCB4PSIxNDQiIHk9Ijc2MCIgZm9udC1zaXplPSIzNiIgZmlsbD0iI2ZmZjNlNiI+NDAgaG91cnMgb24gb25lIGNoYXJnZS48L3RleHQ+CiAgICA8dGV4dCB4PSIxNDQiIHk9IjgxMCIgZm9udC1zaXplPSIzNiIgZmlsbD0iI2ZmZjNlNiI+Rm9sZHMgZmxhdCBpbnRvIGEgamFja2V0IHBvY2tldC48L3RleHQ+CiAgICA8cmVjdCB4PSIxNDQiIHk9Ijk0MCIgd2lkdGg9IjYwMCIgaGVpZ2h0PSIxMTIiIHJ4PSI1NiIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHRleHQgeD0iNDQ0IiB5PSIxMDA4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjM0IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjN2EyZTVkIj5QbGF5IGRlbW8gb24gdGhlIGJpZyBzY3JlZW48L3RleHQ+CiAgICA8cmVjdCB4PSIxNDQiIHk9IjEwOTIiIHdpZHRoPSI2MDAiIGhlaWdodD0iMTEyIiByeD0iNTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgICA8dGV4dCB4PSI0NDQiIHk9IjExNjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMzQiIGZvbnQtd2VpZ2h0PSI3MDAiPlNob3cgb24gdGhlIHdhbGw8L3RleHQ+CiAgPC9nPgo8L3N2Zz4K', size: '2.4 MB' },
+      hotspots: [
+        { id: 'pb-back', name: 'Back', shape: 'rect', x: 120, y: 176, w: 236, h: 88, r: 44, effect: 'highlight', goto: 'home', target: null },
+        { id: 'pb-play', name: 'Play demo', shape: 'rect', x: 144, y: 940, w: 600, h: 112, r: 56, effect: 'press-in',
+          goto: null, target: 'demo', http: { method: 'POST', path: '/demo/screen-1/product-b', body: '' } },
+        { id: 'pb-wall', name: 'Show on the wall', shape: 'rect', x: 144, y: 1092, w: 600, h: 112, r: 56, effect: 'press-in',
+          goto: null, target: 'projector', udp: { text: '%1INPT 31\\r' } },
+      ],
+    },
+    {
+      id: 'about', name: 'About us',
+      bg: { type: 'video', file: 'about-loop.mp4', src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDQ4IDE1MzYiIHdpZHRoPSIyMDQ4IiBoZWlnaHQ9IjE1MzYiPgogIDwhLS0gU2FtcGxlIGRlc2lnbmVyIGFydHdvcms6IEFib3V0IHVzLCBwb3N0ZXIgZnJhbWUgb2YgYSBsb29waW5nIHZpZGVvIChkYXJrKS4gTm90IFRhcGN1ZSBVSS4gLS0+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMGMyYTJmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDYxMzE3Ii8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9ImJsdXIiPjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjYwIi8+PC9maWx0ZXI+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIyMDQ4IiBoZWlnaHQ9IjE1MzYiIGZpbGw9InVybCgjYmcpIi8+CiAgPGcgZmlsdGVyPSJ1cmwoI2JsdXIpIiBvcGFjaXR5PSIuOCI+CiAgICA8ZWxsaXBzZSBjeD0iNTYwIiBjeT0iNDIwIiByeD0iNTIwIiByeT0iMTYwIiBmaWxsPSIjMmY4Zjg2IiB0cmFuc2Zvcm09InJvdGF0ZSgtMTggNTYwIDQyMCkiLz4KICAgIDxlbGxpcHNlIGN4PSIxNTAwIiBjeT0iMTA4MCIgcng9IjYwMCIgcnk9IjE4MCIgZmlsbD0iI2QxOGEzYSIgdHJhbnNmb3JtPSJyb3RhdGUoLTEyIDE1MDAgMTA4MCkiIG9wYWNpdHk9Ii43Ii8+CiAgICA8ZWxsaXBzZSBjeD0iMTMwMCIgY3k9IjM4MCIgcng9IjM0MCIgcnk9IjEyMCIgZmlsbD0iIzdmZDFjMCIgb3BhY2l0eT0iLjUiLz4KICA8L2c+CiAgPHJlY3QgeD0iMTIwIiB5PSIxNzYiIHdpZHRoPSIyMzYiIGhlaWdodD0iODgiIHJ4PSI0NCIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIuMDgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii40IiBzdHJva2Utd2lkdGg9IjMiLz4KICA8dGV4dCB4PSIyMzgiIHk9IjIzMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIzMiIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iI2U4ZjVmMiI+4oaQIEhvbWU8L3RleHQ+CiAgPHRleHQgeD0iMTAyNCIgeT0iNzYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iR2VvcmdpYSwgJ1RpbWVzIE5ldyBSb21hbicsIHNlcmlmIiBmb250LXNpemU9IjEyOCIgZmlsbD0iI2ZmZmZmZiI+TWFkZSBmb3Igc21hbGwgcm9vbXMuPC90ZXh0PgogIDx0ZXh0IHg9IjEwMjQiIHk9Ijg1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIzOCIgZmlsbD0iI2JmZTNkYyI+RGVzaWduZWQgYW5kIHR1bmVkIGluIExpc2JvbiBzaW5jZSAyMDA5LjwvdGV4dD4KPC9zdmc+Cg==', size: '128 MB', duration: '0:24' },
+      hotspots: [
+        { id: 'ab-back', name: 'Back', shape: 'rect', x: 120, y: 176, w: 236, h: 88, r: 44, effect: 'highlight', goto: 'home', target: null },
+      ],
+    },
+  ],
+};
+const page = (id) => PROJECT.pages.find((p) => p.id === id);
+const target = (id) => PROJECT.targets.find((t) => t.id === id);
+const PROTOCOL_LABEL = { osc: 'OSC over UDP', udp: 'UDP', http: 'HTTP' };
+
+/* Commands as they appear in the log, newest first */
+const LOG = [
+  { time: '14:32:07.418', result: 'sent', source: 'Main catalog', hotspot: 'Product A card', target: 'Resolume', command: '/composition/columns/2/connect', args: 'i 1', navigateTo: 'Product A' },
+  { time: '14:32:05.120', result: 'sent', source: 'test', hotspot: 'Product A card', target: 'Resolume', command: '/composition/columns/2/connect', args: 'i 1' },
+  { time: '14:31:52.006', result: 'error', source: 'Small screen', hotspot: 'Call our team', target: 'Demo receiver', command: 'POST /demo/screen-3/call-staff', error: 'Timed out after 2 s' },
+  { time: '14:31:40.771', result: 'navigation', source: 'Small screen', hotspot: 'Back', from: 'Product B', navigateTo: 'Home' },
+  { time: '14:31:12.360', result: 'sent', source: 'Main catalog', hotspot: 'Play demo', target: 'Demo receiver', command: 'POST /demo/screen-1/product-b', args: '200 OK' },
+];
+
+/* Reference screens: an editor preference (this browser), not saved in the project */
+const REFERENCE = {
+  '16:10': { label: '16:10 · 1280 × 800', w: 1280, h: 800 },
+  '16:9': { label: '16:9 · 1920 × 1080', w: 1920, h: 1080 },
+};
+/* Page px cropped at each edge in Fill mode: { top, side } */
+function cropBands(ref) {
+  const r = REFERENCE[ref], { w, h } = PROJECT.canvas;
+  const scale = Math.max(r.w / w, r.h / h);
+  return { top: Math.round((h - r.h / scale) / 2), side: Math.round((w - r.w / scale) / 2) };
+}
+function croppedBy(hs, ref) {
+  if (PROJECT.canvas.scale !== 'fill') return 0;
+  const b = cropBands(ref), { w, h } = PROJECT.canvas;
+  return Math.max(b.top - hs.y, hs.y + hs.h - (h - b.top), b.side - hs.x, hs.x + hs.w - (w - b.side), 0);
+}
+</script>
+<script>
+/* Hotspot overlay specimen: uses hotspotOverlay() from components.js */
+(function () {
+  /* Sample artwork (content, not UI tokens): each tile draws a card and a round button. */
+  const art = {
+    light: { bg: 'linear-gradient(160deg,#fbf7f0 0%,#ece2d0 100%)', card: 'background:#ffffff;box-shadow:0 8px 24px rgb(90 70 40 / .14)', text: '#2a2118', btn: 'background:#f4ede2;border:1px solid #d9ccb6', btnText: '#5a4a35' },
+    mid:   { bg: 'linear-gradient(135deg,#f6b26b 0%,#d9576b 48%,#5b6fd6 100%)', card: 'background:rgb(255 255 255 / .22);border:1px solid rgb(255 255 255 / .4)', text: '#ffffff', btn: 'background:rgb(255 255 255 / .85)', btnText: '#7a2e5d' },
+    dark:  { bg: 'radial-gradient(120% 90% at 25% 15%,#26345f 0%,#0b1020 72%)', card: 'background:linear-gradient(135deg,#2f3e6e,#18213f);box-shadow:0 0 36px rgb(120 160 255 / .22)', text: '#e6ecff', btn: 'background:#0b1020;border:1px solid #3b4c84', btnText: '#a9b8ef' },
+  };
+  const rows = document.getElementById('hotspot-matrix');
+  ['idle', 'hover', 'selected'].forEach((state) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<th scope="row" class="align-top text-label-s capitalize text-secondary">${state}</th>` +
+      ['light', 'mid', 'dark'].map((k) => {
+        const a = art[k];
+        return `<td class="align-top"><div class="relative h-[192px] w-[256px] rounded" style="background:${a.bg}">
+          <div class="absolute flex flex-col justify-end p-3" style="left:20px;top:52px;width:136px;height:112px;border-radius:14px;${a.card}">
+            <span style="color:${a.text};font:600 15px/1.2 var(--font-sans)">Product A</span>
+            <span style="color:${a.text};opacity:.75;font:400 11px/1.3 var(--font-sans)">Tap to explore</span>
+          </div>
+          <div class="absolute flex items-center justify-center rounded-full" style="left:172px;top:76px;width:64px;height:64px;${a.btn}">
+            <span style="color:${a.btnText};font:600 11px/1 var(--font-sans)">About</span>
+          </div>
+          ${hotspotOverlay({ x: 20, y: 52, w: 136, h: 112, shape: 'rect', r: 14, state, name: 'Product A card' })}
+          ${hotspotOverlay({ x: 172, y: 76, w: 64, h: 64, shape: 'ellipse', state, name: 'About' })}
+        </div></td>`;
+      }).join('');
+    rows.appendChild(tr);
+  });
+})();
+</script>
+<script>
+/* v0.2 additions specimen, rendered with components.js */
+(function () {
+  const card = (title, use, body) => `<div class="min-w-0 space-y-3 rounded-lg border bg-surface p-5">
+    <div><h3 class="text-heading-m">${title}</h3><p class="text-body-s text-secondary">${use}</p></div>${body}</div>`;
+  const lab = (t) => `<p class="text-overline uppercase text-muted">${t}</p>`;
+  const art = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDQ4IDE1MzYiIHdpZHRoPSIyMDQ4IiBoZWlnaHQ9IjE1MzYiPgogIDwhLS0gU2FtcGxlIGRlc2lnbmVyIGFydHdvcms6IEhvbWUgKGxpZ2h0KS4gTm90IFRhcGN1ZSBVSS4gLS0+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmFmNmVmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZTlkZmNkIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9InNoIiB4PSItMjAlIiB5PSItMjAlIiB3aWR0aD0iMTQwJSIgaGVpZ2h0PSIxNDAlIj48ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMjQiIHN0ZERldmlhdGlvbj0iMjgiIGZsb29kLWNvbG9yPSIjNWE0MzIwIiBmbG9vZC1vcGFjaXR5PSIuMTQiLz48L2ZpbHRlcj4KICAgIDxwYXR0ZXJuIGlkPSJncmlsbGUiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iOCIgY3k9IjgiIHI9IjMiIGZpbGw9IiMwMDAiIG9wYWNpdHk9Ii4xOCIvPjwvcGF0dGVybj4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjIwNDgiIGhlaWdodD0iMTUzNiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIxNzYwIiBjeT0iMjIwIiByPSI1NjAiIGZpbGw9IiNmM2U4ZDUiLz4KICA8Y2lyY2xlIGN4PSIxMjAiIGN5PSIxNTAwIiByPSIzODAiIGZpbGw9IiNlZmU0ZDAiLz4KICA8IS0tIGJyYW5kIC0tPgogIDxjaXJjbGUgY3g9IjE2OCIgY3k9IjIwNiIgcj0iMjQiIGZpbGw9IiMxZjRlNWEiLz48Y2lyY2xlIGN4PSIxNjgiIGN5PSIyMDYiIHI9IjEwIiBmaWxsPSIjZmFmNmVmIi8+CiAgPHRleHQgeD0iMjEwIiB5PSIyMjIiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EgTmV1ZSwgQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNDQiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIxMCIgZmlsbD0iIzFmMmEyZSI+QVVSRUw8L3RleHQ+CiAgPCEtLSBjYWxsIG91ciB0ZWFtIChjcm9zc2VzIHRoZSAxNjoxMCBGaWxsIGNyb3AgbGluZSBhdCB5PTEyOCkgLS0+CiAgPHJlY3QgeD0iMTU5MiIgeT0iNzYiIHdpZHRoPSIzMTIiIGhlaWdodD0iOTYiIHJ4PSI0OCIgZmlsbD0iIzFmNGU1YSIvPgogIDxjaXJjbGUgY3g9IjE2NDQiIGN5PSIxMjQiIHI9IjEwIiBmaWxsPSIjN2ZkMWMwIi8+CiAgPHRleHQgeD0iMTY3MCIgeT0iMTM2IiBmb250LWZhbWlseT0iSGVsdmV0aWNhIE5ldWUsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjMyIiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjZmZmZmZmIj5DYWxsIG91ciB0ZWFtPC90ZXh0PgogIDwhLS0gaGVhZGxpbmUgLS0+CiAgPHRleHQgeD0iMTQ0IiB5PSIzNzAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc2l6ZT0iMTA4IiBmaWxsPSIjMWYyYTJlIj5GaW5kIHlvdXIgc291bmQuPC90ZXh0PgogIDx0ZXh0IHg9IjE0OCIgeT0iNDM4IiBmb250LWZhbWlseT0iSGVsdmV0aWNhIE5ldWUsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjM0IiBmaWxsPSIjNmI1ZjUwIj5UYXAgYSBwcm9kdWN0IHRvIHNlZSBpdCBvbiB0aGUgYmlnIHNjcmVlbi48L3RleHQ+CiAgPCEtLSBjYXJkcyAtLT4KICA8ZyBmaWx0ZXI9InVybCgjc2gpIj4KICAgIDxyZWN0IHg9IjE0NCIgeT0iNTAwIiB3aWR0aD0iNTYwIiBoZWlnaHQ9IjcyMCIgcng9IjQwIiBmaWxsPSIjZmZmZmZmIi8+CiAgICA8cmVjdCB4PSI3NDQiIHk9IjUwMCIgd2lkdGg9IjU2MCIgaGVpZ2h0PSI3MjAiIHJ4PSI0MCIgZmlsbD0iI2ZmZmZmZiIvPgogICAgPHJlY3QgeD0iMTM0NCIgeT0iNTAwIiB3aWR0aD0iNTYwIiBoZWlnaHQ9IjcyMCIgcng9IjQwIiBmaWxsPSIjZmZmZmZmIi8+CiAgPC9nPgogIDxyZWN0IHg9IjE3NiIgeT0iNTMyIiB3aWR0aD0iNDk2IiBoZWlnaHQ9IjQ0MCIgcng9IjI0IiBmaWxsPSIjZjFlYmUxIi8+CiAgPHJlY3QgeD0iNzc2IiB5PSI1MzIiIHdpZHRoPSI0OTYiIGhlaWdodD0iNDQwIiByeD0iMjQiIGZpbGw9IiNlMmVjZWQiLz4KICA8cmVjdCB4PSIxMzc2IiB5PSI1MzIiIHdpZHRoPSI0OTYiIGhlaWdodD0iNDQwIiByeD0iMjQiIGZpbGw9IiNmNWUzZGMiLz4KICA8IS0tIEE6IHN0dWRpbyBtb25pdG9yIC0tPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQyNCA3NTIpIj4KICAgIDxlbGxpcHNlIGN4PSIwIiBjeT0iMTc2IiByeD0iMTMwIiByeT0iMTYiIGZpbGw9IiMwMDAiIG9wYWNpdHk9Ii4xMiIvPgogICAgPHJlY3QgeD0iLTExMCIgeT0iLTE3MCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSIzNDAiIHJ4PSIyMiIgZmlsbD0iIzJhMmEyZCIvPgogICAgPHJlY3QgeD0iLTExMCIgeT0iLTE3MCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSIzNDAiIHJ4PSIyMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDU0NTRhIiBzdHJva2Utd2lkdGg9IjQiLz4KICAgIDxjaXJjbGUgY3g9IjAiIGN5PSItODgiIHI9IjM2IiBmaWxsPSIjMTIxMjE0IiBzdHJva2U9IiMzYjNiNDAiIHN0cm9rZS13aWR0aD0iOCIvPjxjaXJjbGUgY3g9IjAiIGN5PSItODgiIHI9IjEyIiBmaWxsPSIjMmUyZTMzIi8+CiAgICA8Y2lyY2xlIGN4PSIwIiBjeT0iNTgiIHI9Ijg0IiBmaWxsPSIjMTIxMjE0IiBzdHJva2U9IiMzYjNiNDAiIHN0cm9rZS13aWR0aD0iMTAiLz48Y2lyY2xlIGN4PSIwIiBjeT0iNTgiIHI9IjMwIiBmaWxsPSIjMjYyNjJhIi8+CiAgICA8Y2lyY2xlIGN4PSI4MiIgY3k9IjE0OCIgcj0iNiIgZmlsbD0iI2Y1YjM0MiIvPgogIDwvZz4KICA8IS0tIEI6IGhlYWRwaG9uZXMgLS0+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTAyNCA3NTIpIj4KICAgIDxlbGxpcHNlIGN4PSIwIiBjeT0iMTc2IiByeD0iMTUwIiByeT0iMTYiIGZpbGw9IiMwMDAiIG9wYWNpdHk9Ii4xIi8+CiAgICA8cGF0aCBkPSJNLTEyMCA0MCBWLTEwIEExMjAgMTMwIDAgMCAxIDEyMCAtMTAgVjQwIiBmaWxsPSJub25lIiBzdHJva2U9IiMyNDUwNWQiIHN0cm9rZS13aWR0aD0iMjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHJlY3QgeD0iLTE2OCIgeT0iMTAiIHdpZHRoPSI4NiIgaGVpZ2h0PSIxNTAiIHJ4PSI0MCIgZmlsbD0iIzNhNzQ4NiIvPjxyZWN0IHg9Ii0xNTAiIHk9IjMwIiB3aWR0aD0iNDAiIGhlaWdodD0iMTEwIiByeD0iMjAiIGZpbGw9IiMyYzVlNmQiLz4KICAgIDxyZWN0IHg9IjgyIiB5PSIxMCIgd2lkdGg9Ijg2IiBoZWlnaHQ9IjE1MCIgcng9IjQwIiBmaWxsPSIjM2E3NDg2Ii8+PHJlY3QgeD0iMTEwIiB5PSIzMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjExMCIgcng9IjIwIiBmaWxsPSIjMmM1ZTZkIi8+CiAgPC9nPgogIDwhLS0gQzogcG9ydGFibGUgc3BlYWtlciAtLT4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNjI0IDc1MikiPgogICAgPGVsbGlwc2UgY3g9IjAiIGN5PSIxNzYiIHJ4PSIxMjAiIHJ5PSIxNiIgZmlsbD0iIzAwMCIgb3BhY2l0eT0iLjEyIi8+CiAgICA8cGF0aCBkPSJNLTUwIC0xNTAgUTAgLTIxMCA1MCAtMTUwIiBmaWxsPSJub25lIiBzdHJva2U9IiM3YTMzMjQiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHJlY3QgeD0iLTk2IiB5PSItMTUwIiB3aWR0aD0iMTkyIiBoZWlnaHQ9IjMyMCIgcng9Ijk2IiBmaWxsPSIjYzQ1NzNmIi8+CiAgICA8cmVjdCB4PSItODAiIHk9Ii0xMTAiIHdpZHRoPSIxNjAiIGhlaWdodD0iMjMwIiByeD0iNzAiIGZpbGw9InVybCgjZ3JpbGxlKSIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9IjE0MCIgcj0iMTAiIGZpbGw9IiNmNmQ4Y2YiLz4KICA8L2c+CiAgPCEtLSBjYXJkIGNvcHkgLS0+CiAgPGcgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiI+CiAgICA8dGV4dCB4PSIxODQiIHk9IjEwNTYiIGZvbnQtc2l6ZT0iNDgiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMxZjJhMmUiPlByb2R1Y3QgQTwvdGV4dD4KICAgIDx0ZXh0IHg9IjE4NCIgeT0iMTEwNCIgZm9udC1zaXplPSIzMCIgZmlsbD0iIzZiNWY1MCI+U3R1ZGlvIG1vbml0b3I8L3RleHQ+CiAgICA8dGV4dCB4PSIxODQiIHk9IjExODAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxZjRlNWEiPkV4cGxvcmUg4oaSPC90ZXh0PgogICAgPHRleHQgeD0iNzg0IiB5PSIxMDU2IiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMWYyYTJlIj5Qcm9kdWN0IEI8L3RleHQ+CiAgICA8dGV4dCB4PSI3ODQiIHk9IjExMDQiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiM2YjVmNTAiPldpcmVsZXNzIGhlYWRwaG9uZXM8L3RleHQ+CiAgICA8dGV4dCB4PSI3ODQiIHk9IjExODAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxZjRlNWEiPkV4cGxvcmUg4oaSPC90ZXh0PgogICAgPHRleHQgeD0iMTM4NCIgeT0iMTA1NiIgZm9udC1zaXplPSI0OCIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzFmMmEyZSI+UHJvZHVjdCBDPC90ZXh0PgogICAgPHRleHQgeD0iMTM4NCIgeT0iMTEwNCIgZm9udC1zaXplPSIzMCIgZmlsbD0iIzZiNWY1MCI+UG9ydGFibGUgc3BlYWtlcjwvdGV4dD4KICAgIDx0ZXh0IHg9IjEzODQiIHk9IjExODAiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxZjRlNWEiPlBsYXkgb24gdGhlIGJpZyBzY3JlZW4g4pa4PC90ZXh0PgogIDwvZz4KICA8IS0tIGZvb3RlciArIGFib3V0IC0tPgogIDx0ZXh0IHg9IjE0OCIgeT0iMTMzMCIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyOCIgZmlsbD0iIzhhN2Q2YiI+SGFsbCA0IMK3IFN0YW5kIEIxMjwvdGV4dD4KICA8Y2lyY2xlIGN4PSIxODMyIiBjeT0iMTMxNiIgcj0iNzIiIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0iIzFmNGU1YSIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHRleHQgeD0iMTgzMiIgeT0iMTMyNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSBOZXVlLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyOCIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iIzFmNGU1YSI+QWJvdXQ8L3RleHQ+Cjwvc3ZnPgo=';
+  document.getElementById('v02').innerHTML = [
+    card('Toggle button', 'A Secondary button with aria-pressed, for on/off tools such as Show safe area.',
+      `<div class="flex flex-wrap gap-6"><div class="space-y-2">${lab('Off')}${button({ icon: 'crop', label: 'Show safe area', pressed: false })}</div>
+       <div class="space-y-2">${lab('On')}${button({ icon: 'crop', label: 'Show safe area', pressed: true })}</div></div>`),
+    card('Field size S (28 px)', 'Text field and select in the properties panel, so they line up with number and colour fields.',
+      `<div class="grid gap-3 sm:grid-cols-2">${textField({ id: 'v2-a', label: 'Name', value: 'Product A card', size: 's' })}${select({ id: 'v2-b', label: 'Send command to', value: 'Resolume', meta: 'OSC over UDP', size: 's' })}</div>`),
+    card('Progress bar', 'Upload progress; always paired with a percentage or size in text.',
+      `${progress({ value: 64, label: 'Upload' })}<p class="text-body-s text-muted tabular">64% · 82 of 128 MB</p>`),
+    card('File row', 'A background file: ready, or uploading with progress and Cancel.',
+      `${fileRow({ type: 'image', name: 'home.png', meta: 'Image · 2048 × 1536 · 1.8 MB', actions: button({ variant: 'ghost', size: 's', label: 'Replace' }) })}
+       ${fileRow({ type: 'video', name: 'about-loop.mp4', meta: '64% · 82 of 128 MB', progressValue: 64, actions: button({ variant: 'ghost', size: 's', label: 'Cancel' }) })}`),
+    card('Upload dropzone', 'Where a background has not been set, or after a failed upload. Limit: 200 MB.',
+      `<div class="grid gap-3 sm:grid-cols-2"><div class="space-y-2">${lab('Default')}${dropzone()}</div><div class="space-y-2">${lab('File dragged over')}${dropzone({ active: true })}</div></div>`),
+    card('Panel section and form row', 'Groups in the properties panel: overline title, optional action, stacked or inline fields.',
+      `<div class="rounded-lg border">${panelSection({ title: 'Position and size', body: `<div class="grid grid-cols-4 gap-1.5">${numberField({ prefix: 'X', value: 144 })}${numberField({ prefix: 'Y', value: 500 })}${numberField({ prefix: 'W', value: 560 })}${numberField({ prefix: 'H', value: 720 })}</div>${formRow('Opacity', `<div class="w-[96px]">${numberField({ value: 100, suffix: '%', ariaLabel: 'Opacity' })}</div>`)}` })}</div>`),
+    card('Safe-area overlay', 'Editor canvas only. Hatched bands mark what Fill crops on the reference screen; the hotspot chip turns to a warning when a hotspot crosses them.',
+      `<div class="relative max-w-full overflow-x-auto pb-1"><div class="relative aspect-[4/3] rounded" style="width:384px;margin-right:48px">
+        <img src="${art}" alt="" class="absolute inset-0 h-full w-full">
+        <div class="crop-zone top-0" style="height:24px"></div><div class="crop-zone bottom-0" style="height:24px"></div>
+        <div class="safe-line" style="top:24px"></div><div class="safe-line" style="top:264px"></div>
+        <span class="canvas-chip absolute bottom-1 left-2">${icon('crop', 'h-3 w-3')}Cropped on 16:10 in Fill · 128 px</span>
+        ${hotspotOverlay({ x: 299, y: 14, w: 59, h: 18, r: 9, shape: 'rect', state: 'selected', name: 'Call our team', warn: true, chipBelow: true })}
+      </div></div>`),
+    card('Empty canvas', 'A page with no background. The whole canvas accepts a drop.',
+      `<div class="relative aspect-[4/3] max-w-full rounded" style="width:384px;background:#000">
+        <div class="canvas-empty absolute inset-3 flex flex-col items-center justify-center gap-2 rounded-lg text-center">${icon('upload', 'h-6 w-6')}<p class="text-label-m">No background yet</p><p class="max-w-[240px] text-body-s opacity-80">Drop an image or video here, or choose a file in the panel.</p></div></div>`),
+  ].join('');
+})();
+</script>
+<script id="tokens-data" type="application/json">[{"name":"--white","value":"#ffffff"},{"name":"--stone-50","value":"#fafaf9"},{"name":"--stone-100","value":"#f5f5f4"},{"name":"--stone-200","value":"#e7e5e4"},{"name":"--stone-300","value":"#d6d3d1"},{"name":"--stone-400","value":"#a8a29e"},{"name":"--stone-450","value":"#8c8580"},{"name":"--stone-500","value":"#78716c"},{"name":"--stone-550","value":"#6f6863"},{"name":"--stone-600","value":"#57534e"},{"name":"--stone-700","value":"#44403c"},{"name":"--stone-800","value":"#292524"},{"name":"--stone-900","value":"#1c1917"},{"name":"--stone-950","value":"#0c0a09"},{"name":"--amber-50","value":"#fffbeb"},{"name":"--amber-100","value":"#fef3c7"},{"name":"--amber-200","value":"#fde68a"},{"name":"--amber-300","value":"#fcd34d"},{"name":"--amber-400","value":"#fbbf24"},{"name":"--amber-500","value":"#f59e0b"},{"name":"--amber-600","value":"#d97706"},{"name":"--amber-700","value":"#b45309"},{"name":"--amber-800","value":"#92400e"},{"name":"--amber-900","value":"#78350f"},{"name":"--red-50","value":"#fef2f2"},{"name":"--red-100","value":"#fee2e2"},{"name":"--red-200","value":"#fecaca"},{"name":"--red-600","value":"#dc2626"},{"name":"--red-700","value":"#b91c1c"},{"name":"--red-800","value":"#991b1b"},{"name":"--green-50","value":"#f0fdf4"},{"name":"--green-100","value":"#dcfce7"},{"name":"--green-200","value":"#bbf7d0"},{"name":"--green-600","value":"#16a34a"},{"name":"--green-700","value":"#15803d"},{"name":"--green-800","value":"#166534"},{"name":"--orange-50","value":"#fff7ed"},{"name":"--orange-100","value":"#ffedd5"},{"name":"--orange-200","value":"#fed7aa"},{"name":"--orange-600","value":"#ea580c"},{"name":"--orange-700","value":"#c2410c"},{"name":"--orange-800","value":"#9a3412"},{"name":"--blue-50","value":"#eff6ff"},{"name":"--blue-100","value":"#dbeafe"},{"name":"--blue-200","value":"#bfdbfe"},{"name":"--blue-600","value":"#2563eb"},{"name":"--blue-700","value":"#1d4ed8"},{"name":"--blue-800","value":"#1e40af"},{"name":"--color-bg-app","value":"var(--stone-100)"},{"name":"--color-bg-surface","value":"var(--white)"},{"name":"--color-bg-subtle","value":"var(--stone-50)"},{"name":"--color-bg-hover","value":"var(--stone-100)"},{"name":"--color-bg-pressed","value":"var(--stone-200)"},{"name":"--color-bg-disabled","value":"var(--stone-100)"},{"name":"--color-bg-canvas","value":"var(--stone-200)"},{"name":"--color-bg-inverse","value":"var(--stone-900)"},{"name":"--color-bg-scrim","value":"rgb(12 10 9 / 0.48)"},{"name":"--color-border-default","value":"var(--stone-200)"},{"name":"--color-border-strong","value":"var(--stone-450)"},{"name":"--color-border-focus","value":"var(--amber-700)"},{"name":"--color-text-primary","value":"var(--stone-900)"},{"name":"--color-text-secondary","value":"var(--stone-600)"},{"name":"--color-text-muted","value":"var(--stone-550)"},{"name":"--color-text-disabled","value":"var(--stone-400)"},{"name":"--color-text-inverse","value":"var(--stone-50)"},{"name":"--color-text-on-accent","value":"var(--stone-900)"},{"name":"--color-text-on-danger","value":"var(--white)"},{"name":"--color-text-link","value":"var(--amber-800)"},{"name":"--color-text-link-hover","value":"var(--amber-900)"},{"name":"--color-accent-default","value":"var(--amber-400)"},{"name":"--color-accent-hover","value":"var(--amber-500)"},{"name":"--color-accent-pressed","value":"var(--amber-600)"},{"name":"--color-accent-subtle","value":"var(--amber-100)"},{"name":"--color-accent-strong","value":"var(--amber-700)"},{"name":"--color-selection-bg","value":"var(--amber-100)"},{"name":"--color-selection-border","value":"var(--amber-600)"},{"name":"--color-selection-overlay","value":"var(--amber-400)"},{"name":"--color-success-fg","value":"var(--green-800)"},{"name":"--color-success-bg","value":"var(--green-50)"},{"name":"--color-success-border","value":"var(--green-200)"},{"name":"--color-success-solid","value":"var(--green-600)"},{"name":"--color-warning-fg","value":"var(--orange-800)"},{"name":"--color-warning-bg","value":"var(--orange-50)"},{"name":"--color-warning-border","value":"var(--orange-200)"},{"name":"--color-warning-solid","value":"var(--orange-600)"},{"name":"--color-danger-fg","value":"var(--red-700)"},{"name":"--color-danger-bg","value":"var(--red-50)"},{"name":"--color-danger-border","value":"var(--red-200)"},{"name":"--color-danger-solid","value":"var(--red-600)"},{"name":"--color-danger-hover","value":"var(--red-700)"},{"name":"--color-danger-pressed","value":"var(--red-800)"},{"name":"--color-info-fg","value":"var(--blue-800)"},{"name":"--color-info-bg","value":"var(--blue-50)"},{"name":"--color-info-border","value":"var(--blue-200)"},{"name":"--color-info-solid","value":"var(--blue-600)"},{"name":"--color-overlay-light","value":"var(--white)"},{"name":"--color-overlay-dark","value":"var(--stone-950)"},{"name":"--color-overlay-selected","value":"var(--amber-400)"},{"name":"--color-overlay-plate","value":"rgb(12 10 9 / 0.72)"},{"name":"--font-sans","value":"\"Inter\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif"},{"name":"--font-mono","value":"\"JetBrains Mono\", ui-monospace, \"SF Mono\", Menlo, Consolas, monospace"},{"name":"--type-heading-xl","value":"600 24px/32px var(--font-sans)"},{"name":"--type-heading-xl-tracking","value":"-0.015em"},{"name":"--type-heading-l","value":"600 20px/28px var(--font-sans)"},{"name":"--type-heading-l-tracking","value":"-0.01em"},{"name":"--type-heading-m","value":"600 16px/24px var(--font-sans)"},{"name":"--type-heading-m-tracking","value":"-0.005em"},{"name":"--type-body-m","value":"400 14px/20px var(--font-sans)"},{"name":"--type-body-m-tracking","value":"0"},{"name":"--type-body-s","value":"400 12px/16px var(--font-sans)"},{"name":"--type-body-s-tracking","value":"0"},{"name":"--type-label-m","value":"500 14px/20px var(--font-sans)"},{"name":"--type-label-m-tracking","value":"0"},{"name":"--type-label-s","value":"500 12px/16px var(--font-sans)"},{"name":"--type-label-s-tracking","value":"0.005em"},{"name":"--type-overline","value":"600 11px/16px var(--font-sans)"},{"name":"--type-overline-tracking","value":"0.08em"},{"name":"--type-mono-m","value":"400 13px/20px var(--font-mono)"},{"name":"--type-mono-m-tracking","value":"0"},{"name":"--type-mono-s","value":"400 12px/16px var(--font-mono)"},{"name":"--type-mono-s-tracking","value":"0"},{"name":"--space-0","value":"0px"},{"name":"--space-0-5","value":"2px"},{"name":"--space-1","value":"4px"},{"name":"--space-2","value":"8px"},{"name":"--space-3","value":"12px"},{"name":"--space-4","value":"16px"},{"name":"--space-5","value":"20px"},{"name":"--space-6","value":"24px"},{"name":"--space-8","value":"32px"},{"name":"--space-10","value":"40px"},{"name":"--space-12","value":"48px"},{"name":"--space-16","value":"64px"},{"name":"--radius-sm","value":"4px"},{"name":"--radius-md","value":"6px"},{"name":"--radius-lg","value":"10px"},{"name":"--radius-xl","value":"16px"},{"name":"--radius-full","value":"9999px"},{"name":"--elevation-1","value":"0 1px 2px rgb(28 25 23 / 0.08)"},{"name":"--elevation-2","value":"0 4px 12px rgb(28 25 23 / 0.10), 0 1px 3px rgb(28 25 23 / 0.08)"},{"name":"--elevation-3","value":"0 20px 48px rgb(28 25 23 / 0.20), 0 2px 8px rgb(28 25 23 / 0.10)"},{"name":"--focus-ring-width","value":"2px"},{"name":"--focus-ring-offset","value":"2px"},{"name":"--focus-ring-color","value":"var(--color-border-focus)"},{"name":"--duration-fast","value":"120ms"},{"name":"--duration-base","value":"200ms"},{"name":"--easing-standard","value":"cubic-bezier(0.2, 0, 0, 1)"},{"name":"--easing-out","value":"cubic-bezier(0, 0, 0.2, 1)"},{"name":"--duration-press-in","value":"80ms"},{"name":"--duration-press-out","value":"160ms"},{"name":"--duration-ripple","value":"400ms"},{"name":"--duration-page-fade","value":"300ms"},{"name":"--duration-flash","value":"2000ms"}]</script>
+<script>
+/* ---------- Token specimen + contrast, all from the live CSS ---------- */
+(function () {
+  const tokens = JSON.parse(document.getElementById('tokens-data').textContent);
+  const css = getComputedStyle(document.documentElement);
+  const val = (name) => css.getPropertyValue(name).trim();
+  const alias = (name) => { const t = tokens.find((x) => x.name === name); const m = t && t.value.match(/^var\((--[\w-]+)\)$/); return m ? m[1] : null; };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  /* colour helpers */
+  function rgba(str) {
+    const p = document.createElement('span'); p.style.color = str; document.body.appendChild(p);
+    const c = getComputedStyle(p).color; p.remove();
+    const n = c.match(/[\d.]+/g).map(Number); return { r: n[0], g: n[1], b: n[2], a: n[3] ?? 1 };
+  }
+  const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+
+  /* primitives */
+  const ramps = {};
+  tokens.filter((t) => !t.name.startsWith('--color') && /^--(white|stone|amber|red|green|orange|blue)/.test(t.name)).forEach((t) => {
+    const fam = t.name === '--white' ? 'white' : t.name.split('-')[2] ? t.name.slice(2).split('-')[0] : 'white';
+    (ramps[fam] = ramps[fam] || []).push(t);
+  });
+  const rampHost = document.getElementById('primitive-ramps');
+  Object.entries(ramps).forEach(([fam, list]) => {
+    const row = el('div', 'grid gap-2 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-center');
+    row.appendChild(el('p', 'text-label-s text-secondary capitalize', fam));
+    const strip = el('div', 'grid gap-1.5', null);
+    strip.style.gridTemplateColumns = `repeat(${Math.max(list.length, 6)}, minmax(0, 1fr))`;
+    list.forEach((t) => {
+      const c = rgba(val(t.name));
+      const cell = el('div', 'min-w-0');
+      const chip = el('div', 'h-10 rounded border'); chip.style.background = val(t.name);
+      cell.append(chip, el('p', 'mt-1 truncate font-mono text-mono-s text-secondary', t.name.replace('--', '').replace(fam + '-', '')), el('p', 'truncate font-mono text-mono-s text-muted', hex(c)));
+      strip.appendChild(cell);
+    });
+    row.appendChild(strip); rampHost.appendChild(row);
+  });
+
+  /* semantic */
+  const groups = {};
+  tokens.filter((t) => t.name.startsWith('--color-')).forEach((t) => {
+    const g = t.name.replace('--color-', '').split('-')[0];
+    const key = { success: 'status', warning: 'status', danger: 'status', info: 'status' }[g] || g;
+    (groups[key] = groups[key] || []).push(t);
+  });
+  const semHost = document.getElementById('semantic-groups');
+  const groupTitle = { bg: 'Background', border: 'Border', text: 'Text', accent: 'Accent', selection: 'Selection', status: 'Status', overlay: 'Hotspot overlay' };
+  Object.entries(groups).forEach(([g, list]) => {
+    const box = el('div', 'mb-6 min-w-0 break-inside-avoid');
+    box.appendChild(el('h4', 'mb-2 text-overline uppercase text-muted', groupTitle[g] || g));
+    const ul = el('ul', 'space-y-1.5');
+    list.forEach((t) => {
+      const raw = val(t.name); const c = rgba(raw);
+      const li = el('li', 'grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-2');
+      const sw = el('span', 'h-6 w-6 rounded-sm border border-strong'); sw.style.background = raw;
+      const names = el('div', 'min-w-0');
+      names.append(el('p', 'truncate font-mono text-mono-s text-primary', t.name), el('p', 'truncate font-mono text-mono-s text-muted', alias(t.name) || t.value));
+      li.append(sw, names, el('span', 'font-mono text-mono-s text-secondary', c.a < 1 ? `${hex(c)} ${Math.round(c.a * 100)}%` : hex(c)));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul); semHost.appendChild(box);
+  });
+
+  /* spacing */
+  const spHost = document.getElementById('spacing-scale');
+  tokens.filter((t) => t.name.startsWith('--space-')).forEach((t) => {
+    const px = parseFloat(val(t.name)); const step = t.name.replace('--space-', '').replace('-', '.');
+    const row = el('div', 'grid grid-cols-[96px_88px_minmax(0,1fr)] items-center gap-3');
+    const bar = el('div', 'h-3 rounded-sm bg-accent'); bar.style.width = Math.max(px, 1) * 3 + 'px'; bar.style.maxWidth = '100%';
+    if (px === 0) bar.className = 'h-3 w-px bg-pressed';
+    row.append(el('span', 'font-mono text-mono-s text-primary', t.name), el('span', 'font-mono text-mono-s text-muted tabular', `${step} · ${px}px`), bar);
+    spHost.appendChild(row);
+  });
+  /* radii */
+  const rHost = document.getElementById('radii-scale');
+  const rUse = { sm: 'badges, chips, handles', md: 'buttons, fields, rows', lg: 'cards, panels, menus', xl: 'dialogs, QR card', full: 'pills, status dots' };
+  tokens.filter((t) => t.name.startsWith('--radius-')).forEach((t) => {
+    const k = t.name.replace('--radius-', '');
+    const box = el('div', 'space-y-1');
+    const s = el('div', 'h-14 border-2 border-strong bg-accent-subtle'); s.style.borderRadius = val(t.name);
+    box.append(s, el('p', 'font-mono text-mono-s text-primary', `${t.name} · ${val(t.name) === '9999px' ? 'full' : val(t.name)}`), el('p', 'text-body-s text-muted', rUse[k] || ''));
+    rHost.appendChild(box);
+  });
+
+  /* contrast table: [fg token, bg token, kind, used for] */
+  const pairs = [
+    ['--color-text-primary', '--color-bg-surface', 'text', 'Body, values, titles'],
+    ['--color-text-primary', '--color-bg-app', 'text', 'Text on the window background'],
+    ['--color-text-primary', '--color-bg-hover', 'text', 'Hovered row'],
+    ['--color-text-primary', '--color-bg-pressed', 'text', 'Pressed ghost button'],
+    ['--color-text-secondary', '--color-bg-surface', 'text', 'Labels, descriptions'],
+    ['--color-text-secondary', '--color-bg-app', 'text', 'Inactive tab, nav'],
+    ['--color-text-secondary', '--color-bg-subtle', 'text', 'Panel header labels'],
+    ['--color-text-muted', '--color-bg-surface', 'text', 'Meta, timestamps, helper'],
+    ['--color-text-muted', '--color-bg-app', 'text', 'Meta on window background'],
+    ['--color-text-muted', '--color-bg-subtle', 'text', 'Table headers'],
+    ['--color-text-primary', '--color-selection-bg', 'text', 'Selected list item title'],
+    ['--color-text-secondary', '--color-selection-bg', 'text', 'Selected list item meta'],
+    ['--color-text-link', '--color-bg-surface', 'text', 'Links'],
+    ['--color-text-on-accent', '--color-accent-default', 'text', 'Primary button'],
+    ['--color-text-on-accent', '--color-accent-hover', 'text', 'Primary button, hover'],
+    ['--color-text-on-accent', '--color-accent-pressed', 'text', 'Primary button, pressed'],
+    ['--color-text-on-accent', '--color-overlay-selected', 'text', 'Hotspot name chip'],
+    ['--color-text-on-danger', '--color-danger-solid', 'text', 'Danger button'],
+    ['--color-text-on-danger', '--color-danger-hover', 'text', 'Danger button, hover'],
+    ['--color-text-on-danger', '--color-danger-pressed', 'text', 'Danger button, pressed'],
+    ['--color-text-inverse', '--color-bg-inverse', 'text', 'Toast, idle hotspot chip'],
+    ['--color-success-fg', '--color-success-bg', 'text', 'Connected, Sent'],
+    ['--color-warning-fg', '--color-warning-bg', 'text', 'Warning banner'],
+    ['--color-danger-fg', '--color-danger-bg', 'text', 'Error badge, error banner'],
+    ['--color-danger-fg', '--color-bg-surface', 'text', 'Field error message'],
+    ['--color-info-fg', '--color-info-bg', 'text', 'Info banner'],
+    ['--color-border-strong', '--color-bg-surface', 'ui', 'Field boundary'],
+    ['--color-border-focus', '--color-bg-surface', 'ui', 'Focus ring on panels'],
+    ['--color-border-focus', '--color-bg-app', 'ui', 'Focus ring on window'],
+    ['--color-accent-strong', '--color-bg-surface', 'ui', 'Active tab indicator'],
+    ['--color-selection-border', '--color-bg-surface', 'ui', 'Selected row edge (with fill)'],
+    ['--color-success-solid', '--color-success-bg', 'ui', 'Status dot / icon'],
+    ['--color-warning-solid', '--color-warning-bg', 'ui', 'Warning triangle'],
+    ['--color-danger-solid', '--color-bg-surface', 'ui', 'Error field border'],
+    ['--color-info-solid', '--color-info-bg', 'ui', 'Info icon'],
+    ['--color-overlay-light', '--color-overlay-dark', 'ui', 'Two-tone hotspot stroke'],
+    ['--color-text-disabled', '--color-bg-disabled', 'exempt', 'Disabled control (exempt)'],
+  ];
+  const tbody = document.getElementById('contrast-rows');
+  const white = rgba('#ffffff'); let fails = 0, checked = 0;
+  pairs.forEach(([fg, bg, kind, use]) => {
+    const b = blend(rgba(val(bg)), white); const f = blend(rgba(val(fg)), b);
+    const r = ratio(f, b); const need = kind === 'text' ? 4.5 : kind === 'ui' ? 3 : 0; const ok = r >= need;
+    if (kind !== 'exempt') { checked++; if (!ok) fails++; }
+    const tr = el('tr');
+    const sample = el('td', 'px-4 py-2'); const sp = el('span', 'inline-flex h-7 min-w-[56px] items-center justify-center gap-1 rounded-sm px-2 text-label-s', kind === 'ui' ? '' : 'Aa 12');
+    sp.style.background = val(bg); sp.style.color = val(fg);
+    if (kind === 'ui') { const bar = el('span', 'block h-1 w-8 rounded-full'); bar.style.background = val(fg); sp.appendChild(bar); }
+    sample.appendChild(sp);
+    const res = el('td', 'px-4 py-2');
+    const badge = el('span', 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-label-s');
+    if (kind === 'exempt') { badge.classList.add('bg-subtle', 'text-secondary'); badge.textContent = 'Exempt'; }
+    else if (ok) { badge.classList.add('border-success', 'bg-success-bg', 'text-success-fg'); badge.innerHTML = '<svg class="icon h-3.5 w-3.5"><use href="#i-check"/></svg>' + (kind === 'text' ? 'AA text' : 'AA UI'); }
+    else { badge.classList.add('border-danger', 'bg-danger-bg', 'text-danger-fg'); badge.innerHTML = '<svg class="icon h-3.5 w-3.5"><use href="#i-alert"/></svg>Fails'; }
+    res.appendChild(badge);
+    tr.append(sample, el('td', 'px-4 py-2 font-mono text-mono-s', fg), el('td', 'px-4 py-2 font-mono text-mono-s text-secondary', bg), el('td', 'px-4 py-2 text-body-s text-secondary', use), el('td', 'px-4 py-2 text-right font-mono text-mono-s tabular', r.toFixed(2) + ':1'), res);
+    tbody.appendChild(tr);
+  });
+  /* the two-tone stroke: worst case over every possible artwork colour */
+  let worst = 99; const L = rgba(val('--color-overlay-light')), D = rgba(val('--color-overlay-dark'));
+  for (let i = 0; i <= 255; i += 1) { const g = { r: i, g: i, b: i, a: 1 }; worst = Math.min(worst, Math.max(ratio(L, g), ratio(D, g))); }
+  document.getElementById('contrast-summary').textContent =
+    `${checked - fails} of ${checked} pairs pass AA. Hotspot overlay: whatever the artwork colour, at least one of the two stroke tones reaches ${worst.toFixed(2)}:1 against it, above the 3:1 needed for UI graphics.`;
+})();
+</script>
+</body>
+</html>

@@ -60,6 +60,9 @@ The code is not kept; the conclusions go into ADRs.
 *Done when:* every screen and state in the spec has a mock-up and every mock-up is built
 from components in the inventory.
 
+**Done 2026-10-28** — design v1.0 in [docs/design/](design/README.md): tokens, component inventory,
+prototype of every screen and state.
+
 ## 5. Implementation milestones
 
 Each milestone ends with something that can be shown.

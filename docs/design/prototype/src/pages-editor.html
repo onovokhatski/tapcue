@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Pages Editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Editor · Pages</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-12 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Step 4 · v0.3</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Pages editor</h1>
+    <p class="text-body-m text-secondary">The editor's main screen at 1440 × 900, built only from design-system components (v0.3). The canvas renders the real page artwork; hotspot outlines, handles and the safe-area marks are editor overlays drawn on top. The same artwork is used later by the player.</p>
+    <p class="text-body-m text-secondary">Demo content: stand "Demo stand", pages Home, Product A, Product B and About us; targets Resolume, Projector and Demo receiver.</p>
+  </section>
+  <div id="frames" class="space-y-14"></div>
+</main>
+
+<script src="data.js"></script>
+<script src="components.js"></script>
+<script src="pages-editor.js"></script>
+<script>
+(function () {
+  const about = page('about');
+  const aboutEmpty = Object.assign({}, about, { bg: null });
+  const FRAMES = [
+    { n: '1', title: 'Hotspot selected', note: '"Product A card" is selected: invisible hotspot (no fill, no border), press-in effect, goes to Product A and sends an OSC command to Resolume. "Send test" was just used and its result shows inline and in the log (marked Test). "Product B card" shows the hover state; the others are idle. The project is in Fill mode, so "Call our team" carries a warning marker even with "Show safe area" off.',
+      opts: { pageId: 'home', selectedId: 'hs-a', hoverId: 'hs-b', tested: true } },
+    { n: '2', title: 'Nothing selected: page properties', note: '"About us" has no background yet. The canvas shows an empty state and accepts a drop; the panel shows the upload area, the page\'s hotspots (a quick way to find invisible ones) and which stations start here. The rename just made is autosaving.',
+      opts: { pageId: 'about', pageOverride: aboutEmpty, save: 'saving' } },
+    { n: '3a', title: 'Uploading a video background', note: 'Upload progress shows in the panel (with Cancel) and on the canvas. Editing continues during the upload.',
+      opts: { pageId: 'about', pageOverride: aboutEmpty, upload: 'uploading' } },
+    { n: '3b', title: 'Upload error', note: 'The file is over the 200 MB limit. The error banner says what happened and what to do; the drop area stays available for the next try.',
+      opts: { pageId: 'about', pageOverride: aboutEmpty, upload: 'error' } },
+    { n: '4', title: 'Safe area on, canvas in Fill mode', note: 'The project uses Fill. Reference screen 16:10 (1280 × 800), an editor preference stored in this browser. Fill scales the 4:3 page to the screen width and crops 128 px at the top and bottom; those bands are hatched. "Call our team" reaches into the top band, so its chip turns to a warning and the panel explains the fix. It also shows the HTTP command fields.',
+      opts: { pageId: 'home', selectedId: 'hs-call', safe: true } },
+    { n: '5', title: 'Command log collapsed', note: 'The log folds to a single line that still shows the latest command, giving the canvas more room. Product B is open with "Show on the wall" selected, which sends raw UDP text to the projector.',
+      opts: { pageId: 'product-b', selectedId: 'pb-wall', collapsed: true } },
+  ];
+  const host = document.getElementById('frames');
+  host.innerHTML = FRAMES.map((f) => `<section aria-labelledby="f${f.n}-t" class="space-y-3">
+      <div class="max-w-[90ch] space-y-1"><p class="text-overline uppercase text-muted">Frame ${f.n}</p><h2 id="f${f.n}-t" class="text-heading-l">${f.title}</h2><p class="text-body-m text-secondary">${f.note}</p></div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface shadow-1"><div data-frame>${pagesEditor(f.opts)}</div></div>
+    </section>`).join('');
+})();
+</script>
+<script src="frames.js"></script>
+</body>
+</html>

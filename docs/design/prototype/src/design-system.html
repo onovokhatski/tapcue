@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Design System</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+
+<!-- ================= Page header ================= -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1360px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="text-body-m text-muted">Design system</span>
+    <span class="ml-auto rounded-sm border px-2 py-0.5 font-mono text-mono-s text-secondary">v0.2 · light</span>
+  </div>
+</header>
+
+<div class="gutter mx-auto grid max-w-[1360px] grid-cols-1 gap-10 py-8 lg:grid-cols-[184px_minmax(0,1fr)]">
+
+  <!-- ================= Section nav ================= -->
+  <nav aria-label="Sections" class="hidden lg:block">
+    <div class="sticky top-[88px] space-y-6">
+      <div>
+        <p class="mb-2 text-overline uppercase text-muted">Foundations</p>
+        <ul class="space-y-0.5 text-body-m">
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#colour">Colour</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#type">Type</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#spacing">Spacing &amp; radii</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#elevation">Elevation &amp; focus</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#contrast">Contrast check</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="mb-2 text-overline uppercase text-muted">Components</p>
+        <ul class="space-y-0.5 text-body-m">
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#icons">Icons</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#button">Button</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#text-field">Text field</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#select">Select</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#number-field">Number field</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#color-field">Colour field</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#segmented">Segmented control</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#tab">Tab</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#list-item">List item</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#status-badge">Status badge</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#log-row">Log row</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#hotspot">Hotspot overlay</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#connection">Connection indicator</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#dialog">Dialog</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#banner">Banner</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#qr-card">QR card</a></li>
+          <li><a class="block rounded px-2 py-1 text-secondary hover:bg-hover hover:text-primary" href="#additions">v0.2 additions</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="min-w-0 space-y-16">
+
+    <!-- Intro -->
+    <section class="max-w-[68ch] space-y-3">
+      <h1 class="text-heading-xl [text-wrap:balance]">Tapcue design system</h1>
+      <p class="text-body-m text-secondary">Tokens and components for the editor, the player and the demo receiver. The chrome is warm grey so artwork reads honestly. Amber, the standby cue light, marks selection and the primary action. Status always pairs a colour with a shape or icon and a word.</p>
+      <p class="text-body-m text-secondary">Every value on this page is read live from <span class="font-mono text-mono-m text-primary">tokens.css</span>, so the specimen cannot drift from the source. Tokens map 1:1: <span class="font-mono text-mono-m text-primary">color/text/secondary</span> → <span class="font-mono text-mono-m text-primary">--color-text-secondary</span> → Tailwind <span class="font-mono text-mono-m text-primary">text-secondary</span>.</p>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: COLOUR                                                  -->
+    <!-- =================================================================== -->
+    <section id="colour" class="scroll-mt-20 space-y-6" aria-labelledby="h-colour">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-colour" class="text-heading-l">Colour</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Primitives are the raw palette and are never used in components. Semantic tokens point at primitives; a dark mode later redefines only the semantic layer.</p>
+      </div>
+
+      <div class="rounded-lg border bg-surface p-5">
+        <h3 class="mb-4 text-heading-m">Primitives</h3>
+        <div id="primitive-ramps" class="space-y-4"></div>
+      </div>
+
+      <div class="rounded-lg border bg-surface p-5">
+        <h3 class="mb-1 text-heading-m">Semantic tokens</h3>
+        <p class="mb-4 text-body-s text-muted">Token · alias · resolved value</p>
+        <div id="semantic-groups" class="gap-8 md:columns-2 xl:columns-3"></div>
+      </div>
+
+      <!-- Accent vs warning -->
+      <div class="rounded-lg border bg-surface p-5">
+        <h3 class="text-heading-m">Accent and warning never meet</h3>
+        <p class="mb-4 mt-1 max-w-[68ch] text-body-m text-secondary">Amber is a fill that carries dark text and means "act here" or "this is selected". Warning is a red-leaning orange, always shown as a tint with a triangle and a word. They differ in hue, in form and in label.</p>
+        <div class="flex flex-wrap items-center gap-6">
+          <div class="flex items-center gap-3">
+            <button type="button" class="inline-flex h-8 items-center gap-2 rounded bg-accent px-3 text-label-m text-on-accent hover:bg-accent-hover active:bg-accent-pressed"><svg class="icon"><use href="#i-plus"/></svg>Add hotspot</button>
+            <span class="text-body-s text-muted">accent/default fill</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-6 items-center gap-1.5 rounded-full border border-warning bg-warning-bg px-2 text-label-s text-warning-fg"><svg class="icon h-3.5 w-3.5 text-warning-solid"><use href="#i-alert"/></svg>URL will change</span>
+            <span class="text-body-s text-muted">warning tint + triangle</span>
+          </div>
+          <div class="flex items-center gap-2" aria-hidden="true">
+            <span class="h-8 w-8 rounded bg-accent"></span><span class="h-8 w-8 rounded bg-warning-solid"></span>
+            <span class="text-body-s text-muted">#fbbf24 vs #ea580c, hue 43° vs 21°</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: TYPE                                                    -->
+    <!-- =================================================================== -->
+    <section id="type" class="scroll-mt-20 space-y-6" aria-labelledby="h-type">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-type" class="text-heading-l">Type</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Inter for the interface. JetBrains Mono for anything a machine reads: OSC addresses, IPs, ports, URLs, timestamps and hex values. Ligatures are off in mono so <span class="font-mono text-mono-m">-&gt;</span> stays two characters.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <table class="w-full min-w-[720px] text-left">
+          <thead class="border-b bg-subtle">
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="px-5 py-2 font-semibold">Style</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Sample</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Spec</th>
+              <th scope="col" class="px-5 py-2 font-semibold">Tailwind</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Heading XL</th><td class="px-5 py-3 text-heading-xl">Demo stand</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 24/32 −1.5%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-heading-xl</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Heading L</th><td class="px-5 py-3 text-heading-l">Replace the current project?</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 20/28 −1%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-heading-l</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Heading M</th><td class="px-5 py-3 text-heading-m">Product A</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 16/24 −0.5%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-heading-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Body M</th><td class="px-5 py-3 text-body-m">Tapping this hotspot sends a command to Resolume.</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 400 14/20</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-body-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Body S</th><td class="px-5 py-3 text-body-s">4 hotspots · Image 2048 × 1536</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 400 12/16</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-body-s</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Label M</th><td class="px-5 py-3 text-label-m">Send test</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 500 14/20</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-label-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Label S</th><td class="px-5 py-3 text-label-s">Corner radius</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 500 12/16 +0.5%</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-label-s</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Overline</th><td class="px-5 py-3 text-overline uppercase">On tap</td><td class="px-5 py-3 font-mono text-mono-s text-muted">Inter 600 11/16 +8% caps</td><td class="px-5 py-3 font-mono text-mono-s text-muted">text-overline uppercase</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Mono M</th><td class="px-5 py-3 font-mono text-mono-m">/composition/columns/2/connect</td><td class="px-5 py-3 font-mono text-mono-s text-muted">JetBrains Mono 400 13/20</td><td class="px-5 py-3 font-mono text-mono-s text-muted">font-mono text-mono-m</td></tr>
+            <tr><th scope="row" class="px-5 py-3 text-label-s text-secondary">Mono S</th><td class="px-5 py-3 font-mono text-mono-s">14:32:07.418 · 192.168.1.20:7000</td><td class="px-5 py-3 font-mono text-mono-s text-muted">JetBrains Mono 400 12/16</td><td class="px-5 py-3 font-mono text-mono-s text-muted">font-mono text-mono-s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: SPACING & RADII                                         -->
+    <!-- =================================================================== -->
+    <section id="spacing" class="scroll-mt-20 space-y-6" aria-labelledby="h-spacing">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-spacing" class="text-heading-l">Spacing and radii</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">A 4 px grid on the Tailwind scale (1 = 4 px). The 2 px half step is only for hairline offsets such as the segmented control's inner padding.</p>
+      </div>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="rounded-lg border bg-surface p-5">
+          <h3 class="mb-4 text-heading-m">Spacing</h3>
+          <div id="spacing-scale" class="space-y-2"></div>
+        </div>
+        <div class="rounded-lg border bg-surface p-5">
+          <h3 class="mb-4 text-heading-m">Radii</h3>
+          <div id="radii-scale" class="grid grid-cols-2 gap-4 sm:grid-cols-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: ELEVATION & FOCUS                                       -->
+    <!-- =================================================================== -->
+    <section id="elevation" class="scroll-mt-20 space-y-6" aria-labelledby="h-elevation">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-elevation" class="text-heading-l">Elevation and focus</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Panels sit flat and are separated by borders. Shadow is kept for things that float above the work.</p>
+      </div>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="grid gap-5 rounded-lg border bg-subtle p-6 sm:grid-cols-3">
+          <div class="rounded-lg border bg-surface p-4 shadow-1"><p class="text-label-m">Elevation 1</p><p class="text-body-s text-muted">Raised: thumbnails, QR card, dragged row at rest</p><p class="mt-3 font-mono text-mono-s text-muted">--elevation-1</p></div>
+          <div class="rounded-lg border bg-surface p-4 shadow-2"><p class="text-label-m">Elevation 2</p><p class="text-body-s text-muted">Floating: select menu, toast, dragged row</p><p class="mt-3 font-mono text-mono-s text-muted">--elevation-2</p></div>
+          <div class="rounded-xl bg-surface p-4 shadow-3"><p class="text-label-m">Elevation 3</p><p class="text-body-s text-muted">Modal: dialogs over the scrim</p><p class="mt-3 font-mono text-mono-s text-muted">--elevation-3</p></div>
+        </div>
+        <div class="rounded-lg border bg-surface p-5">
+          <h3 class="text-heading-m">Focus ring</h3>
+          <p class="mb-4 mt-1 text-body-s text-muted">2 px <span class="font-mono">--color-border-focus</span> (amber 700), 2 px offset. Text fields draw it on their own edge instead. Shown on every keyboard focus; never removed.</p>
+          <div class="flex flex-wrap items-center gap-4">
+            <button type="button" class="is-focus inline-flex h-8 items-center rounded bg-accent px-3 text-label-m text-on-accent">Primary</button>
+            <button type="button" class="is-focus inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m">Secondary</button>
+            <input aria-label="Focus specimen" class="field-focus h-8 w-36 rounded border border-strong bg-surface px-3 text-body-m" value="Product A">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- FOUNDATIONS: CONTRAST                                                -->
+    <!-- =================================================================== -->
+    <section id="contrast" class="scroll-mt-20 space-y-6" aria-labelledby="h-contrast">
+      <div class="space-y-1">
+        <p class="text-overline uppercase text-muted">Foundations</p>
+        <h2 id="h-contrast" class="text-heading-l">Contrast check, WCAG 2.2 AA</h2>
+        <p class="max-w-[68ch] text-body-m text-secondary">Every text and UI-boundary pair used by the components below, computed in the browser from the live token values. Text needs 4.5:1; icons, field borders, focus rings and selection indicators need 3:1. Disabled controls are exempt and listed for reference.</p>
+      </div>
+      <div class="relative overflow-x-auto rounded-lg border bg-surface">
+        <table class="w-full min-w-[760px] text-left">
+          <thead class="border-b bg-subtle">
+            <tr class="text-overline uppercase text-muted">
+              <th scope="col" class="px-4 py-2 font-semibold">Sample</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Foreground</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Background</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Used for</th>
+              <th scope="col" class="px-4 py-2 text-right font-semibold">Ratio</th>
+              <th scope="col" class="px-4 py-2 font-semibold">Result</th>
+            </tr>
+          </thead>
+          <tbody id="contrast-rows" class="divide-y"></tbody>
+        </table>
+      </div>
+      <p id="contrast-summary" class="text-body-s text-secondary"></p>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- COMPONENTS                                                           -->
+    <!-- =================================================================== -->
+    <!-- include:components.html -->
+
+  </main>
+</div>
+
+<script src="components.js"></script>
+<script src="data.js"></script>
+<script src="hotspot-matrix.js"></script>
+<script src="additions.js"></script>
+<script id="tokens-data" type="application/json">/* build:tokens */</script>
+<script>
+/* ---------- Token specimen + contrast, all from the live CSS ---------- */
+(function () {
+  const tokens = JSON.parse(document.getElementById('tokens-data').textContent);
+  const css = getComputedStyle(document.documentElement);
+  const val = (name) => css.getPropertyValue(name).trim();
+  const alias = (name) => { const t = tokens.find((x) => x.name === name); const m = t && t.value.match(/^var\((--[\w-]+)\)$/); return m ? m[1] : null; };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  /* colour helpers */
+  function rgba(str) {
+    const p = document.createElement('span'); p.style.color = str; document.body.appendChild(p);
+    const c = getComputedStyle(p).color; p.remove();
+    const n = c.match(/[\d.]+/g).map(Number); return { r: n[0], g: n[1], b: n[2], a: n[3] ?? 1 };
+  }
+  const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+
+  /* primitives */
+  const ramps = {};
+  tokens.filter((t) => !t.name.startsWith('--color') && /^--(white|stone|amber|red|green|orange|blue)/.test(t.name)).forEach((t) => {
+    const fam = t.name === '--white' ? 'white' : t.name.split('-')[2] ? t.name.slice(2).split('-')[0] : 'white';
+    (ramps[fam] = ramps[fam] || []).push(t);
+  });
+  const rampHost = document.getElementById('primitive-ramps');
+  Object.entries(ramps).forEach(([fam, list]) => {
+    const row = el('div', 'grid gap-2 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-center');
+    row.appendChild(el('p', 'text-label-s text-secondary capitalize', fam));
+    const strip = el('div', 'grid gap-1.5', null);
+    strip.style.gridTemplateColumns = `repeat(${Math.max(list.length, 6)}, minmax(0, 1fr))`;
+    list.forEach((t) => {
+      const c = rgba(val(t.name));
+      const cell = el('div', 'min-w-0');
+      const chip = el('div', 'h-10 rounded border'); chip.style.background = val(t.name);
+      cell.append(chip, el('p', 'mt-1 truncate font-mono text-mono-s text-secondary', t.name.replace('--', '').replace(fam + '-', '')), el('p', 'truncate font-mono text-mono-s text-muted', hex(c)));
+      strip.appendChild(cell);
+    });
+    row.appendChild(strip); rampHost.appendChild(row);
+  });
+
+  /* semantic */
+  const groups = {};
+  tokens.filter((t) => t.name.startsWith('--color-')).forEach((t) => {
+    const g = t.name.replace('--color-', '').split('-')[0];
+    const key = { success: 'status', warning: 'status', danger: 'status', info: 'status' }[g] || g;
+    (groups[key] = groups[key] || []).push(t);
+  });
+  const semHost = document.getElementById('semantic-groups');
+  const groupTitle = { bg: 'Background', border: 'Border', text: 'Text', accent: 'Accent', selection: 'Selection', status: 'Status', overlay: 'Hotspot overlay' };
+  Object.entries(groups).forEach(([g, list]) => {
+    const box = el('div', 'mb-6 min-w-0 break-inside-avoid');
+    box.appendChild(el('h4', 'mb-2 text-overline uppercase text-muted', groupTitle[g] || g));
+    const ul = el('ul', 'space-y-1.5');
+    list.forEach((t) => {
+      const raw = val(t.name); const c = rgba(raw);
+      const li = el('li', 'grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-2');
+      const sw = el('span', 'h-6 w-6 rounded-sm border border-strong'); sw.style.background = raw;
+      const names = el('div', 'min-w-0');
+      names.append(el('p', 'truncate font-mono text-mono-s text-primary', t.name), el('p', 'truncate font-mono text-mono-s text-muted', alias(t.name) || t.value));
+      li.append(sw, names, el('span', 'font-mono text-mono-s text-secondary', c.a < 1 ? `${hex(c)} ${Math.round(c.a * 100)}%` : hex(c)));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul); semHost.appendChild(box);
+  });
+
+  /* spacing */
+  const spHost = document.getElementById('spacing-scale');
+  tokens.filter((t) => t.name.startsWith('--space-')).forEach((t) => {
+    const px = parseFloat(val(t.name)); const step = t.name.replace('--space-', '').replace('-', '.');
+    const row = el('div', 'grid grid-cols-[96px_88px_minmax(0,1fr)] items-center gap-3');
+    const bar = el('div', 'h-3 rounded-sm bg-accent'); bar.style.width = Math.max(px, 1) * 3 + 'px'; bar.style.maxWidth = '100%';
+    if (px === 0) bar.className = 'h-3 w-px bg-pressed';
+    row.append(el('span', 'font-mono text-mono-s text-primary', t.name), el('span', 'font-mono text-mono-s text-muted tabular', `${step} · ${px}px`), bar);
+    spHost.appendChild(row);
+  });
+  /* radii */
+  const rHost = document.getElementById('radii-scale');
+  const rUse = { sm: 'badges, chips, handles', md: 'buttons, fields, rows', lg: 'cards, panels, menus', xl: 'dialogs, QR card', full: 'pills, status dots' };
+  tokens.filter((t) => t.name.startsWith('--radius-')).forEach((t) => {
+    const k = t.name.replace('--radius-', '');
+    const box = el('div', 'space-y-1');
+    const s = el('div', 'h-14 border-2 border-strong bg-accent-subtle'); s.style.borderRadius = val(t.name);
+    box.append(s, el('p', 'font-mono text-mono-s text-primary', `${t.name} · ${val(t.name) === '9999px' ? 'full' : val(t.name)}`), el('p', 'text-body-s text-muted', rUse[k] || ''));
+    rHost.appendChild(box);
+  });
+
+  /* contrast table: [fg token, bg token, kind, used for] */
+  const pairs = [
+    ['--color-text-primary', '--color-bg-surface', 'text', 'Body, values, titles'],
+    ['--color-text-primary', '--color-bg-app', 'text', 'Text on the window background'],
+    ['--color-text-primary', '--color-bg-hover', 'text', 'Hovered row'],
+    ['--color-text-primary', '--color-bg-pressed', 'text', 'Pressed ghost button'],
+    ['--color-text-secondary', '--color-bg-surface', 'text', 'Labels, descriptions'],
+    ['--color-text-secondary', '--color-bg-app', 'text', 'Inactive tab, nav'],
+    ['--color-text-secondary', '--color-bg-subtle', 'text', 'Panel header labels'],
+    ['--color-text-muted', '--color-bg-surface', 'text', 'Meta, timestamps, helper'],
+    ['--color-text-muted', '--color-bg-app', 'text', 'Meta on window background'],
+    ['--color-text-muted', '--color-bg-subtle', 'text', 'Table headers'],
+    ['--color-text-primary', '--color-selection-bg', 'text', 'Selected list item title'],
+    ['--color-text-secondary', '--color-selection-bg', 'text', 'Selected list item meta'],
+    ['--color-text-link', '--color-bg-surface', 'text', 'Links'],
+    ['--color-text-on-accent', '--color-accent-default', 'text', 'Primary button'],
+    ['--color-text-on-accent', '--color-accent-hover', 'text', 'Primary button, hover'],
+    ['--color-text-on-accent', '--color-accent-pressed', 'text', 'Primary button, pressed'],
+    ['--color-text-on-accent', '--color-overlay-selected', 'text', 'Hotspot name chip'],
+    ['--color-text-on-danger', '--color-danger-solid', 'text', 'Danger button'],
+    ['--color-text-on-danger', '--color-danger-hover', 'text', 'Danger button, hover'],
+    ['--color-text-on-danger', '--color-danger-pressed', 'text', 'Danger button, pressed'],
+    ['--color-text-inverse', '--color-bg-inverse', 'text', 'Toast, idle hotspot chip'],
+    ['--color-success-fg', '--color-success-bg', 'text', 'Connected, Sent'],
+    ['--color-warning-fg', '--color-warning-bg', 'text', 'Warning banner'],
+    ['--color-danger-fg', '--color-danger-bg', 'text', 'Error badge, error banner'],
+    ['--color-danger-fg', '--color-bg-surface', 'text', 'Field error message'],
+    ['--color-info-fg', '--color-info-bg', 'text', 'Info banner'],
+    ['--color-border-strong', '--color-bg-surface', 'ui', 'Field boundary'],
+    ['--color-border-focus', '--color-bg-surface', 'ui', 'Focus ring on panels'],
+    ['--color-border-focus', '--color-bg-app', 'ui', 'Focus ring on window'],
+    ['--color-accent-strong', '--color-bg-surface', 'ui', 'Active tab indicator'],
+    ['--color-selection-border', '--color-bg-surface', 'ui', 'Selected row edge (with fill)'],
+    ['--color-success-solid', '--color-success-bg', 'ui', 'Status dot / icon'],
+    ['--color-warning-solid', '--color-warning-bg', 'ui', 'Warning triangle'],
+    ['--color-danger-solid', '--color-bg-surface', 'ui', 'Error field border'],
+    ['--color-info-solid', '--color-info-bg', 'ui', 'Info icon'],
+    ['--color-overlay-light', '--color-overlay-dark', 'ui', 'Two-tone hotspot stroke'],
+    ['--color-text-disabled', '--color-bg-disabled', 'exempt', 'Disabled control (exempt)'],
+  ];
+  const tbody = document.getElementById('contrast-rows');
+  const white = rgba('#ffffff'); let fails = 0, checked = 0;
+  pairs.forEach(([fg, bg, kind, use]) => {
+    const b = blend(rgba(val(bg)), white); const f = blend(rgba(val(fg)), b);
+    const r = ratio(f, b); const need = kind === 'text' ? 4.5 : kind === 'ui' ? 3 : 0; const ok = r >= need;
+    if (kind !== 'exempt') { checked++; if (!ok) fails++; }
+    const tr = el('tr');
+    const sample = el('td', 'px-4 py-2'); const sp = el('span', 'inline-flex h-7 min-w-[56px] items-center justify-center gap-1 rounded-sm px-2 text-label-s', kind === 'ui' ? '' : 'Aa 12');
+    sp.style.background = val(bg); sp.style.color = val(fg);
+    if (kind === 'ui') { const bar = el('span', 'block h-1 w-8 rounded-full'); bar.style.background = val(fg); sp.appendChild(bar); }
+    sample.appendChild(sp);
+    const res = el('td', 'px-4 py-2');
+    const badge = el('span', 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-label-s');
+    if (kind === 'exempt') { badge.classList.add('bg-subtle', 'text-secondary'); badge.textContent = 'Exempt'; }
+    else if (ok) { badge.classList.add('border-success', 'bg-success-bg', 'text-success-fg'); badge.innerHTML = '<svg class="icon h-3.5 w-3.5"><use href="#i-check"/></svg>' + (kind === 'text' ? 'AA text' : 'AA UI'); }
+    else { badge.classList.add('border-danger', 'bg-danger-bg', 'text-danger-fg'); badge.innerHTML = '<svg class="icon h-3.5 w-3.5"><use href="#i-alert"/></svg>Fails'; }
+    res.appendChild(badge);
+    tr.append(sample, el('td', 'px-4 py-2 font-mono text-mono-s', fg), el('td', 'px-4 py-2 font-mono text-mono-s text-secondary', bg), el('td', 'px-4 py-2 text-body-s text-secondary', use), el('td', 'px-4 py-2 text-right font-mono text-mono-s tabular', r.toFixed(2) + ':1'), res);
+    tbody.appendChild(tr);
+  });
+  /* the two-tone stroke: worst case over every possible artwork colour */
+  let worst = 99; const L = rgba(val('--color-overlay-light')), D = rgba(val('--color-overlay-dark'));
+  for (let i = 0; i <= 255; i += 1) { const g = { r: i, g: i, b: i, a: 1 }; worst = Math.min(worst, Math.max(ratio(L, g), ratio(D, g))); }
+  document.getElementById('contrast-summary').textContent =
+    `${checked - fails} of ${checked} pairs pass AA. Hotspot overlay: whatever the artwork colour, at least one of the two stroke tones reaches ${worst.toFixed(2)}:1 against it, above the 3:1 needed for UI graphics.`;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Review and Handoff</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Review and handoff</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-10 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Step 10</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Review and handoff</h1>
+    <p class="text-body-m text-secondary">A pass over every screen against the brief, the fixes made, and the handoff for the React + Tailwind build: tokens as CSS variables, the component inventory, and which components each screen uses.</p>
+    <nav aria-label="Sections" class="flex flex-wrap gap-2"><a href="#audit" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">One-off audit</a><a href="#states" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">States</a><a href="#contrast" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Contrast and focus</a><a href="#overlay" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Overlay check</a><a href="#tokens" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Tokens</a><a href="#inventory" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Components</a><a href="#screens" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Per screen</a></nav>
+  </section>
+  <div id="review" class="space-y-10"></div>
+</main>
+<script src="data.js"></script><script src="qr.js"></script><script src="components.js"></script><script src="pages-editor.js"></script><script src="player.js"></script><script src="review.js"></script>
+<script>
+(function () {
+  const aboutEmpty = Object.assign({}, page('about'), { bg: null });
+  const ct = (() => { const host = document.createElement('div'); return null; })();
+  const parts = [];
+  parts.push(sectionHead('audit', '1 · Components and tokens only', 'One-off audit', 'Every element on every screen was checked against the design system. These were one-offs; each is now a component or token, or deliberately kept outside the system.'));
+  parts.push(table(['Element', 'Where', 'Resolution'], AUDIT.map(([a, b, c]) => [a, b, c])));
+  parts.push(sectionHead('states', '2 · Every state', 'State coverage', 'Frame references point to the screen pages (F = Pages, T = Targets, S = Stations, G = Settings, P = Player, R = Demo receiver). Five frames were missing and are added below. Behaviour in E2 and E3 is a proposal: please confirm.'));
+  parts.push(table(['Screen', ...STATES], COVERAGE, 1200));
+  parts.push(frameBox('E1', 'Editor loading', 'First open, before the project arrives. The layout is in place with skeletons, so nothing jumps when content loads. Actions are disabled; the top bar says Connecting….', editorLoading()));
+  parts.push(frameBox('E2', 'Editor disconnected', 'The WebSocket link to the server dropped. A warning strip explains it; edits stay in the tab and save on reconnect (badge: Unsaved changes). Send test and uploads are paused, so Send test is disabled with a reason.', pagesEditor({ pageId: 'home', selectedId: 'hs-a', conn: 'disconnected', save: 'unsaved', bannerH: 40, shellBanner: shellBanner({ tone: 'warning', title: 'Connection to the server lost.', body: 'Reconnecting… Your changes stay in this tab and are saved when the connection is back.' }) })));
+  parts.push(frameBox('E3', 'Save error', 'Connected, but the server could not store the change. The badge turns to Save error and an error strip gives the reason and a retry; the editor keeps retrying on its own.', pagesEditor({ pageId: 'product-b', save: 'error', bannerH: 40, shellBanner: shellBanner({ tone: 'error', title: 'Changes not saved.', body: 'The server could not write the project file because its disk is full. Free some space, then retry.', action: button({ size: 's', label: 'Retry now' }) }) })));
+  parts.push(frameBox('E4', 'Demo mode on the Pages tab', 'The top bar shows Demo mode instead of the save status, and the upload area is disabled with a reason. Everything else stays editable in the tab.', pagesEditor({ pageId: 'about', pageOverride: aboutEmpty, demo: true })));
+  parts.push(frameBox('P0', 'Player loading', 'While pages preload, the player shows only the canvas colour. If loading takes longer than 3 s, the same small indicator as Reconnecting says Loading….', playerFrame(loadingIndicator())));
+  const c = contrastTable();
+  parts.push(sectionHead('contrast', '3 · WCAG 2.2 AA', 'Contrast and focus', `The design system checks its 36 base pairs live on its own page (all pass). The pairs added since then are checked here, in the browser, from the live tokens: ${c.pass} of ${c.total} pass.`));
+  parts.push(c.html);
+  parts.push(`<div class="grid gap-4 lg:grid-cols-2"><div class="space-y-2 rounded-lg border bg-surface p-5"><h3 class="text-heading-m">Focus</h3><ul class="list-disc space-y-1.5 pl-5 text-body-m text-secondary">
+    <li>Every control is a native button, link, input or textarea, and all share one <span class="font-mono text-mono-s">:focus-visible</span> ring: 2 px amber 700, 2 px offset (5.0:1 on white).</li>
+    <li>Text-like fields draw the ring on their own edge (<span class="font-mono text-mono-s">.field</span>), so it never collides with the label.</li>
+    <li>Page, target and station rows are now buttons (they were divs). The page grip reorders with Alt + ↑ / ↓.</li>
+    <li>Hotspots on the canvas: Tab moves through them in list order and shows the new Focus state; arrow keys nudge 1 px, Shift + arrow 10 px; Enter selects.</li>
+    <li>Dialogs trap focus; a Danger dialog opens with focus on Cancel; Esc cancels.</li>
+    <li>The player has no focusable UI by design. "Station not found" links are focusable.</li></ul></div>
+    <div class="space-y-2 rounded-lg border bg-surface p-5"><h3 class="text-heading-m">Colour is never alone</h3><ul class="list-disc space-y-1.5 pl-5 text-body-m text-secondary">
+    <li>Status badges pair colour with a shape or icon and a word.</li><li>Selected rows add an edge and <span class="font-mono text-mono-s">aria-current</span> to the tint.</li>
+    <li>Cropped hotspots carry a triangle icon, not only an orange chip.</li><li>Log results show an icon and a word; error rows also state the reason.</li>
+    <li>Fresh rows and tiles add a "New" or "Just changed" label to the amber tint.</li></ul></div></div>`);
+  parts.push(sectionHead('overlay', '4 · Light and dark artwork', 'Overlay check', 'Real pages at 25%: idle (dashed), hover, selected, the new keyboard focus state and the cropped warning (top right on Home). At least one stroke tone reaches 4.47:1 on any colour.'));
+  parts.push(`<div class="relative overflow-x-auto rounded-lg border">${overlayCheck()}</div>`);
+  parts.push(sectionHead('tokens', 'Handoff', 'Tokens as CSS variables', 'tokens.css is the source of truth. Semantic tokens point at primitives; a dark mode redefines only the semantic layer under <span class="font-mono text-mono-s">[data-theme="dark"]</span>. Tailwind utilities map 1:1 (see tailwind.config.js).'));
+  parts.push(`<div class="space-y-2"><div class="flex justify-end"><button type="button" id="copy-tokens" class="inline-flex h-8 items-center gap-2 rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">${icon('copy')}<span>Copy tokens.css</span></button></div>
+    <pre id="tokens-css" tabindex="0" class="max-h-[560px] overflow-auto rounded-lg border bg-surface p-4 font-mono text-mono-s text-primary">__TOKENS_CSS__</pre></div>`);
+  parts.push(sectionHead('inventory', 'Handoff', 'Component inventory', 'Each component exists as a template function in components.js with the same props the React component should take. Specimens are on the design-system page.'));
+  parts.push(table(['Component', 'Variants', 'States', 'Props', 'Reference'], INVENTORY.map(([a, b, cc, d, e]) => [a, b, cc, `<span class="font-mono text-mono-s">${d}</span>`, code(e)]), 1200));
+  parts.push(sectionHead('screens', 'Handoff', 'Components per screen'));
+  parts.push(table(['Screen', 'Components'], PER_SCREEN));
+  document.getElementById('review').innerHTML = parts.join('');
+  const btn = document.getElementById('copy-tokens');
+  btn.addEventListener('click', () => {
+    const text = document.getElementById('tokens-css').textContent;
+    const done = () => { btn.lastElementChild.textContent = 'Copied'; setTimeout(() => { btn.lastElementChild.textContent = 'Copy tokens.css'; }, 2000); };
+    try { navigator.clipboard.writeText(text).then(done, () => { getSelection().selectAllChildren(document.getElementById('tokens-css')); }); }
+    catch (e) { getSelection().selectAllChildren(document.getElementById('tokens-css')); }
+  });
+})();
+</script>
+<script src="frames.js"></script>
+</body>
+</html>

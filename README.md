@@ -2,8 +2,9 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** pre-implementation — no code yet. The specification, architecture and decisions
-> and the technical spike are complete; the design phase comes next. See the [roadmap](docs/roadmap.md).
+> **Status:** pre-implementation — no code yet. The specification, architecture, decisions,
+> technical spike and design are complete; implementation starts with milestone M0.
+> See the [roadmap](docs/roadmap.md) and the [design](docs/design/README.md).
 
 <!-- Screenshot / short video of the editor and player goes here (milestone M5). -->
 

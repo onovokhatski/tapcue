@@ -100,7 +100,9 @@ IDs are referenced from issues and tests.
 ### 5.5 Actions
 
 - **ACT-1** A hotspot action can navigate to a page, send a command to a target, or both.
-- **ACT-2** When an action does both, the command is sent first, then the page changes.
+- **ACT-2** A tap fires on release (lifting the finger), so a visitor can cancel by sliding off.
+  The command is sent at once; the page change starts after the short release effect (at most
+  160 ms). A ripple keeps playing over the transition and never delays it.
 - **ACT-3** Navigation happens immediately on the tablet and does not wait for the command result.
 - **ACT-4** The editor has a "Send test" button for the selected hotspot's command. The server
   sends it exactly as if the hotspot had been tapped, so commands can be checked during setup
@@ -119,6 +121,8 @@ IDs are referenced from issues and tests.
 - **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
   and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
   confirm arrival. HTTP reports *error* on a non-2xx response or after a 2-second timeout.
+- **TGT-6** Every HTTP command carries `X-Tapcue-Station` (station id, or `test`) and
+  `X-Tapcue-Hotspot` (hotspot name) headers, so the receiving side can tell where it came from.
 
 ### 5.7 Stations
 
@@ -142,6 +146,8 @@ IDs are referenced from issues and tests.
 - **PLY-5** Applies project changes saved in the editor without a manual reload.
 - **PLY-6** If the current page no longer exists after an update, returns to the start page.
 - **PLY-7** Prevents accidental zoom, text selection and context menus.
+- **PLY-8** An unknown station id shows a plain "Station not found" page with links to the
+  project's stations, to help during setup.
 
 ### 5.9 Editor
 
@@ -151,13 +157,18 @@ IDs are referenced from issues and tests.
   preference, not saved in the project), the editor can mark the parts of the page that `fill`
   mode crops. In `fill` mode, a hotspot that reaches into a cropped band is flagged on the canvas
   and in its properties, with how much is cropped — even when the safe-area marks are hidden.
-- **ED-8** The canvas is always scaled to fit the available space; the editor shows the current
-  scale as a percentage. No manual zoom or panning in MVP.
 - **ED-4** Provides management of pages, hotspots, targets, stations and canvas settings.
 - **ED-5** Saves changes to the server; saved changes reach open players (see PLY-5).
-- **ED-6** Shows the command log (TGT-4).
+- **ED-6** Shows the command log (TGT-4) as described in ED-9.
 - **ED-7** Shows the editor's own connection to the server (connected / disconnected) and the
   save status (saving / saved / save error). Per-target reachability is not shown (TGT-5).
+- **ED-8** The canvas is always scaled to fit the available space; the editor shows the current
+  scale as a percentage. No manual zoom or panning in MVP.
+- **ED-9** The command log is a panel at the bottom of every editor tab, collapsible to one line that
+  still shows the latest entry.
+- **ED-10** An invalid value in a form (e.g. a bad host or port) is shown with its error but never
+  saved: the project keeps the last valid value until the field is fixed (PRJ-2).
+- **ED-11** Opening the server root `/` goes to the editor.
 
 ### 5.10 Demo receiver
 
@@ -181,8 +192,9 @@ IDs are referenced from issues and tests.
 | Editor — Targets | Integrator | Manage command destinations |
 | Editor — Stations | Integrator | Manage stations, their URLs and QR codes |
 | Editor — Settings | Integrator | Canvas size and scale mode, import/export |
-| Editor — Command log | Integrator | Sent commands and errors |
+| Command log (panel in every editor tab) | Integrator | Sent commands and errors |
 | Player | Visitor | Full-screen station, nothing else |
+| Station not found | Integrator | Unknown station id, links to existing stations |
 | Demo receiver | Reviewer | Live log of received commands |
 
 ### 6.2 Flows

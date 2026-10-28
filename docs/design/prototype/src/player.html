@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Player</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Player · 1024 × 768</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-12 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Step 8</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Player</h1>
+    <p class="text-body-m text-secondary">What the visitor sees on the iPad: the designer's artwork, full screen, and nothing else. Tapcue's own UI appears only when the network drops, and on the setup page for an unknown station.</p>
+  </section>
+  <div id="frames" class="space-y-14"></div>
+</main>
+<script src="data.js"></script><script src="components.js"></script><script src="player.js"></script><script src="render-frames.js"></script>
+<script>
+renderFrames([{ frames: [
+  { n: 'P1', size: '1024 × 768', title: 'The page as the visitor sees it', note: 'Home, scaled from 2048 × 1536 to 1024 × 768. Same aspect ratio, so Fill crops nothing on the iPad. No Tapcue branding, no controls, no cursor.', html: playerFrame(art('home')) },
+  { n: 'P2', size: '1024 × 768 + legend', title: 'Hotspot areas, annotated for handoff', note: 'Annotation layer only. Numbers match the legend; every hotspot here is invisible to visitors (no fill, no border).', html: annotatedHome() },
+  { n: 'P3', title: 'Press effects in progress', note: 'Product A card at mid-effect, cropped from the 1024 × 768 page. Effects follow the hotspot shape and corner radius. Navigation and the command happen on release, after the effect.', html: pressEffects() },
+  { n: 'P4', title: 'Fade from Home to Product A', note: 'The new page fades in on top of the old one, which stays fully opaque, so dark-to-light changes never flash the background colour. 300 ms, ease-out.', html: fadeFrames() },
+  { n: 'P5', size: '1024 × 768', title: 'Network lost', note: 'The connection indicator sits in the bottom-right corner, 12 px from the edges plus safe-area insets. Taps made while disconnected are kept for 5 s and sent on reconnect; older ones are dropped. Page changes keep working offline.', html: playerFrame(art('product-a') + connectionIndicator()) },
+  { n: 'P6', size: '1024 × 768', title: 'Station not found', note: 'A plain Tapcue page for the integrator during setup: the unknown id, and links to the stations that exist.', html: stationNotFound() },
+] }]);
+</script>
+<script src="frames.js"></script>
+</body>
+</html>

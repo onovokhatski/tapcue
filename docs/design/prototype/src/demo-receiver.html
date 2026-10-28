@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Demo Receiver</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Demo receiver · 1280 × 800</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-12 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Step 9</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Demo receiver</h1>
+    <p class="text-body-m text-secondary">The page a reviewer opens next to the player. It stands in for the stand's screens: every HTTP command a tap sends arrives here, and the tile for the screen named in the path shows what that screen would now play.</p>
+  </section>
+  <div id="frames" class="space-y-14"></div>
+</main>
+<script src="data.js"></script><script src="components.js"></script><script src="demo-receiver.js"></script><script src="render-frames.js"></script>
+<script>
+renderFrames([{ frames: [
+  { n: 'R1', size: '1280 × 800', title: 'Waiting for the first command', note: 'No tiles yet, because tiles appear only for screen names that have been received. The empty state gives the one action that matters (open the player and tap) and explains the flow in three steps.', html: receiver({ state: 'waiting' }) },
+  { n: 'R2', size: '1280 × 800', title: 'Receiving', note: 'Three screens seen so far. Each tile shows its current content in large mono, when it changed and which station and hotspot caused it. Below, every request with method, path, body and status. The screen and content parts of the path are emphasised.', html: receiver({ state: 'receiving' }) },
+  { n: 'R3', size: '1280 × 800', title: 'A new command just arrived', note: 'Screen 1 changes from product-b to product-a. The tile gets an amber ring and a "Just changed" tag, and the new request row is tinted and marked "New". Both fade back after 2 s, or at once with reduced motion.', html: receiver({ state: 'fresh' }) },
+] }]);
+</script>
+<script src="frames.js"></script>
+</body>
+</html>

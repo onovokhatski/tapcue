@@ -70,7 +70,7 @@ server/src/
       driver.ts      the common Driver interface
       osc-udp.ts
       udp.ts
-      http.ts
+      http.ts        adds X-Tapcue-Station / X-Tapcue-Hotspot, 2 s timeout
       osc-encode.ts  OSC message encoder (pure function)
   network.ts         local IP addresses for station URLs / QR codes
   demo/
@@ -149,8 +149,9 @@ what the visitor sees ([spec ED-2](spec.md#59-editor)).
   visible again; on iPad over `http://` staying awake is a stand-setup step
   ([ADR 0015](adr/0015-screen-wake.md)).
 - Uses **feature detection** only — iPad Safari reports a desktop user agent.
-- Navigation is local and instant; commands are fire-and-forget over WebSocket
-  ([spec ACT-3](spec.md#55-actions)).
+- A tap fires on pointer release: the `tap` message is sent at once, the page change starts after
+  the release effect (≤ 160 ms). Navigation is local; commands are fire-and-forget over WebSocket
+  ([spec ACT-2, ACT-3](spec.md#55-actions)).
 
 ## 5. Communication
 

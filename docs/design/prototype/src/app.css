@@ -1,0 +1,106 @@
+@import "./tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: var(--font-sans); color: var(--color-text-primary); background: var(--color-bg-app); -webkit-font-smoothing: antialiased; }
+  body { font: var(--type-body-m); background: var(--color-bg-app); color: var(--color-text-primary); }
+  code, kbd, samp, .font-mono { font-variant-ligatures: none; }
+  /* One focus treatment everywhere. .is-focus forces it for static state specimens. */
+  :focus-visible, .is-focus {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  }
+}
+
+@layer components {
+  /* ---------- Icon: 16 px line icon from the sprite ---------- */
+  .icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- Colour field: "None" swatch ---------- */
+  .swatch-none {
+    background:
+      linear-gradient(to top right, transparent calc(50% - 1px), var(--color-danger-solid) calc(50% - 1px), var(--color-danger-solid) calc(50% + 1px), transparent calc(50% + 1px)),
+      var(--color-bg-surface);
+  }
+
+  /* ---------- Hotspot overlay (editor canvas only) ----------
+     Drawn as SVG so the same markup serves rectangle and ellipse.
+     Every line is two-tone: a dark under-stroke plus a light stroke on top,
+     so at least one tone contrasts with any artwork. */
+  .hs { position: absolute; overflow: visible; pointer-events: none; }
+  .hs .hs-under { fill: none; stroke: var(--color-overlay-dark); stroke-opacity: .72; stroke-width: 3; vector-effect: non-scaling-stroke; }
+  .hs .hs-line  { fill: none; stroke: var(--color-overlay-light); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .hs[data-state="idle"] .hs-line { stroke-dasharray: 5 4; }
+  .hs[data-state="idle"] .hs-under { stroke-width: 2.5; stroke-opacity: .55; }
+  .hs[data-state="hover"] .hs-fill { fill: var(--color-overlay-light); fill-opacity: .14; }
+  .hs[data-state="hover"] .hs-line { stroke-width: 2; }
+  .hs[data-state="selected"] .hs-under { stroke-width: 4; stroke-opacity: .8; }
+  .hs[data-state="selected"] .hs-line { stroke: var(--color-overlay-selected); stroke-width: 2; }
+  .hs-fill { fill: transparent; }
+
+  .hs-chip {
+    position: absolute; left: -1px; bottom: calc(100% + 6px);
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    padding: 2px 6px; border-radius: var(--radius-sm);
+    background: var(--color-overlay-selected); color: var(--color-text-on-accent);
+    font: var(--type-label-s); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-dark) 55%, transparent);
+  }
+  .hs-chip-idle { background: var(--color-overlay-dark); color: var(--color-overlay-light); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 50%, transparent); }
+  .hs-handle {
+    position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px;
+    background: var(--color-overlay-light); border: 1.5px solid var(--color-overlay-dark); border-radius: 2px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 60%, transparent);
+  }
+
+  /* ---------- Press-effect ripple (player) ---------- */
+  @keyframes tc-ripple { from { transform: scale(0); opacity: .45; } to { transform: scale(2.4); opacity: 0; } }
+}
+
+@layer components {
+  .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  @media (min-width: 1024px) { .gutter { padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); } }
+  /* Text-like fields: focus = 2 px ring drawn on the field edge (no offset) */
+  .field-focus, .field:focus, .field:focus-within { outline: none; border-color: var(--color-border-focus); box-shadow: 0 0 0 1px var(--color-border-focus); }
+  .field-error, .field-error:focus, .field-error:focus-within { border-color: var(--color-danger-solid); box-shadow: 0 0 0 1px var(--color-danger-solid); }
+  .spinner { width: 12px; height: 12px; border-radius: 9999px; border: 1.5px solid currentColor; border-right-color: transparent; animation: tc-spin .8s linear infinite; flex: none; }
+  @keyframes tc-spin { to { transform: rotate(360deg); } }
+}
+
+@layer components {
+  /* ---------- Safe-area overlay (editor canvas, added v0.2) ---------- */
+  .crop-zone {
+    position: absolute; left: 0; right: 0;
+    background: repeating-linear-gradient(135deg,
+      color-mix(in srgb, var(--color-overlay-dark) 62%, transparent) 0 6px,
+      color-mix(in srgb, var(--color-overlay-dark) 48%, transparent) 6px 12px);
+  }
+  .safe-line { position: absolute; left: 0; right: 0; height: 2px; margin-top: -1px;
+    background: repeating-linear-gradient(90deg, var(--color-overlay-light) 0 6px, var(--color-overlay-dark) 6px 12px); }
+  .canvas-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-sm);
+    background: var(--color-overlay-plate); color: var(--color-overlay-light); font: var(--type-label-s);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 30%, transparent); white-space: nowrap; }
+  .hs-chip-warn { background: var(--color-warning-bg); color: var(--color-warning-fg); box-shadow: 0 0 0 1px var(--color-overlay-dark); }
+  /* ---------- Empty canvas (added v0.2) ---------- */
+  .canvas-empty { border: 1.5px dashed color-mix(in srgb, var(--color-overlay-light) 40%, transparent); color: var(--color-overlay-light); }
+}
+
+@layer components {
+  /* ---------- v0.3 ---------- */
+  /* Hotspot keyboard focus: the overlay wrapper gets the standard ring, offset clear of the handles */
+  .hs-focus { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: 6px; border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-overlay-light) 70%, transparent); }
+  /* Player connection indicator (the only Tapcue UI a visitor can see) */
+  .tc-indicator { position: absolute; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full);
+    background: var(--color-overlay-plate); color: var(--color-overlay-light); font: var(--type-label-s);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 30%, transparent); backdrop-filter: blur(4px);
+    right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  /* Skeleton (loading) */
+  .skeleton { background: var(--color-bg-pressed); border-radius: var(--radius-sm); animation: tc-pulse 1.6s var(--easing-standard) infinite; }
+  @keyframes tc-pulse { 50% { opacity: .55; } }
+}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Editor Tabs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Editor · Targets, Stations, Settings</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-12 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Steps 5–7</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Targets, Stations and Settings</h1>
+    <p class="text-body-m text-secondary">The other three editor tabs at 1440 × 900, in the same shell as Pages: top bar, list on the left where the tab has one, command log at the bottom. Built only from design-system components (v0.3).</p>
+    <nav aria-label="Sections" class="flex flex-wrap gap-2"><a href="#targets" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Targets</a><a href="#stations" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Stations</a><a href="#settings" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Settings</a></nav>
+  </section>
+  <div id="frames" class="space-y-14"></div>
+</main>
+<script src="data.js"></script><script src="qr.js"></script><script src="components.js"></script><script src="editor-tabs.js"></script><script src="render-frames.js"></script>
+<script>
+renderFrames([
+  { id: 'targets', eyebrow: 'Step 5', title: 'Targets', note: 'A target is where commands go. Protocol decides the fields: OSC over UDP and UDP need host and port; HTTP needs a base URL.', frames: [
+    { n: 'T1', title: 'Populated', note: 'Resolume selected. The protocol line explains each choice; "Used by" lists the hotspots that send here, each with a link to open it on the canvas. Recent commands for this target sit beside the form.', html: targetsScreen() },
+    { n: 'T1b', title: 'HTTP target', note: 'Demo receiver selected: the HTTP protocol replaces host and port with a base URL. Hotspot paths are added to it.', html: targetsScreen({ selected: 'demo' }) },
+    { n: 'T2', title: 'Empty state', note: 'No targets yet. One clear first action, and a sentence on what a target is. The command log is empty too.', html: targetsScreen({ empty: true }) },
+    { n: 'T3', title: 'Invalid host and port', note: 'Each field explains its own error. Invalid values are not saved: hotspots keep using the last valid address, which the list still shows, with a warning marker.', html: targetsScreen({ hostError: 'Each part of an IP address must be 0–255.', portError: 'Use 1–65535.' }) },
+    { n: 'T4', title: 'Delete confirmation', note: 'Danger dialog. It names the hotspots that lose their command and says that page links stay. Focus starts on Cancel.', html: targetsScreen({ modal: DELETE_TARGET_DIALOG }) },
+  ] },
+  { id: 'stations', eyebrow: 'Step 6', title: 'Stations', note: 'A station is a tablet entry point: start page, idle timeout and a URL shown as a QR code.', frames: [
+    { n: 'S1', title: 'Populated', note: 'Main catalog selected. The QR card is next to the form so the integrator can scan it with the tablet while standing at the stand.', html: stationsScreen() },
+    { n: 'S2', title: 'Empty state', note: 'No stations yet: what a station is, and one action.', html: stationsScreen({ empty: true }) },
+    { n: 'S3', title: 'Id being edited', note: 'The id field has focus. A warning appears as soon as the id differs from the saved one; the QR code and URL update live, and the change autosaves.', html: stationsScreen({ editingId: 'main-catalog' }) },
+    { n: 'S4', title: 'URL copied', note: 'Copy turns into a "Copied" confirmation for 2 s, the URL is highlighted and the change is announced to screen readers.', html: stationsScreen({ copied: true }) },
+  ] },
+  { id: 'settings', eyebrow: 'Step 7', title: 'Settings', note: 'Canvas size, background colour and scale mode, plus project export and import. The command log is collapsed here because nothing on this tab sends commands.', frames: [
+    { n: 'G1', title: 'Default', note: 'The diagram shows the same 4:3 page on a 16:10 tablet and a 16:9 display. Fit: dark bars at the sides. Fill: the pale dashed parts fall outside the screen and are cropped.', html: settingsScreen() },
+    { n: 'G2', title: 'Import confirmation', note: 'Import replaces the whole project, so it asks first and suggests exporting.', html: settingsScreen({ modal: IMPORT_DIALOG }) },
+    { n: 'G3', title: 'Import error', note: 'The file is not a Tapcue export. The banner names the file, the reason and what to do; the current project is unchanged.', html: settingsScreen({ importError: true }) },
+    { n: 'G4', title: 'Demo mode', note: 'The top bar shows "Demo mode · not saved" instead of the save status. An Info banner explains that changes stay in this tab; Import is disabled with a reason. Uploads on the Pages tab are disabled the same way.', html: settingsScreen({ demo: true }) },
+  ] },
+]);
+</script>
+<script src="frames.js"></script>
+</body>
+</html>

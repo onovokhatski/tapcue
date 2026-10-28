@@ -188,4 +188,11 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+  /* player press effects and page transition */
+  --duration-press-in: 80ms;     /* highlight / press-in on touch-down */
+  --duration-press-out: 160ms;   /* highlight release (press-in: 120ms = --duration-fast) */
+  --duration-ripple: 400ms;
+  --duration-page-fade: 300ms;   /* new page fades in over the old one */
+  --duration-flash: 2000ms;      /* "Copied", "Just changed", "New" markers */
 }
