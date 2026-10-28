@@ -84,3 +84,7 @@ expose a Tapcue server to the internet except in demo mode.
 ## Getting started
 
 *Available from milestone M1.*
+
+## License
+
+[MIT](LICENSE) © Oleg Novokhatskyi
