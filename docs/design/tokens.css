@@ -1,0 +1,191 @@
+/* =====================================================================
+   Tapcue design tokens  v0.1
+   Two layers:
+     1. Primitives  (--stone-500, --amber-400 ...)  raw palette, never used
+        directly in components.
+     2. Semantic    (--color-text-secondary ...)   what components use.
+   Token path  color/text/secondary  ->  --color-text-secondary.
+   Only the semantic layer will be redefined for a future dark mode
+   (:root[data-theme="dark"] { --color-bg-surface: ... }).
+   ===================================================================== */
+
+:root {
+  /* ---------- Primitives: stone (warm grey) ---------- */
+  --white: #ffffff;
+  --stone-50: #fafaf9;
+  --stone-100: #f5f5f4;
+  --stone-200: #e7e5e4;
+  --stone-300: #d6d3d1;
+  --stone-400: #a8a29e;
+  --stone-450: #8c8580; /* added: 3:1 boundary for field borders */
+  --stone-500: #78716c;
+  --stone-550: #6f6863; /* added: muted text that passes 4.5:1 on stone-100 */
+  --stone-600: #57534e;
+  --stone-700: #44403c;
+  --stone-800: #292524;
+  --stone-900: #1c1917;
+  --stone-950: #0c0a09;
+
+  /* ---------- Primitives: amber (cue light) ---------- */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-800: #92400e;
+  --amber-900: #78350f;
+
+  /* ---------- Primitives: status hues ---------- */
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-800: #991b1b;
+
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+
+  /* Warning is a red-leaning orange, so it never reads as the amber accent */
+  --orange-50: #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-200: #fed7aa;
+  --orange-600: #ea580c;
+  --orange-700: #c2410c;
+  --orange-800: #9a3412;
+
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+
+  /* =================== Semantic: colour =================== */
+  /* bg */
+  --color-bg-app: var(--stone-100);        /* window behind panels */
+  --color-bg-surface: var(--white);        /* panels, cards, fields */
+  --color-bg-subtle: var(--stone-50);      /* panel headers, sunken areas */
+  --color-bg-hover: var(--stone-100);      /* row / ghost hover on surface */
+  --color-bg-pressed: var(--stone-200);    /* row / ghost pressed */
+  --color-bg-disabled: var(--stone-100);
+  --color-bg-canvas: var(--stone-200);     /* neutral surround of the artwork */
+  --color-bg-inverse: var(--stone-900);    /* tooltips, toasts */
+  --color-bg-scrim: rgb(12 10 9 / 0.48);   /* behind dialogs */
+
+  /* border */
+  --color-border-default: var(--stone-200); /* dividers, card edges */
+  --color-border-strong: var(--stone-450);  /* field boundaries, 3:1 */
+  --color-border-focus: var(--amber-700);   /* focus ring */
+
+  /* text */
+  --color-text-primary: var(--stone-900);
+  --color-text-secondary: var(--stone-600);
+  --color-text-muted: var(--stone-550);
+  --color-text-disabled: var(--stone-400);  /* disabled controls, exempt from 1.4.3 */
+  --color-text-inverse: var(--stone-50);
+  --color-text-on-accent: var(--stone-900);
+  --color-text-on-danger: var(--white);
+  --color-text-link: var(--amber-800);
+  --color-text-link-hover: var(--amber-900);
+
+  /* accent (cue light) */
+  --color-accent-default: var(--amber-400);
+  --color-accent-hover: var(--amber-500);
+  --color-accent-pressed: var(--amber-600);
+  --color-accent-subtle: var(--amber-100);
+  --color-accent-strong: var(--amber-700);  /* icons / borders on white, never body text */
+
+  /* selection */
+  --color-selection-bg: var(--amber-100);
+  --color-selection-border: var(--amber-600);
+  --color-selection-overlay: var(--amber-400); /* hotspot outline on artwork */
+
+  /* status (fg = text & icon, bg = tint, border = tint edge, solid = shape / dot) */
+  --color-success-fg: var(--green-800);
+  --color-success-bg: var(--green-50);
+  --color-success-border: var(--green-200);
+  --color-success-solid: var(--green-600);
+
+  --color-warning-fg: var(--orange-800);
+  --color-warning-bg: var(--orange-50);
+  --color-warning-border: var(--orange-200);
+  --color-warning-solid: var(--orange-600);
+
+  --color-danger-fg: var(--red-700);
+  --color-danger-bg: var(--red-50);
+  --color-danger-border: var(--red-200);
+  --color-danger-solid: var(--red-600);
+  --color-danger-hover: var(--red-700);
+  --color-danger-pressed: var(--red-800);
+
+  --color-info-fg: var(--blue-800);
+  --color-info-bg: var(--blue-50);
+  --color-info-border: var(--blue-200);
+  --color-info-solid: var(--blue-600);
+
+  /* editor overlay on artwork (theme-independent: artwork is never themed) */
+  --color-overlay-light: var(--white);
+  --color-overlay-dark: var(--stone-950);
+  --color-overlay-selected: var(--amber-400);
+  --color-overlay-plate: rgb(12 10 9 / 0.72); /* player connection pill */
+
+  /* =================== Type =================== */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* size / line-height / weight / tracking */
+  --type-heading-xl: 600 24px/32px var(--font-sans);   --type-heading-xl-tracking: -0.015em;
+  --type-heading-l: 600 20px/28px var(--font-sans);    --type-heading-l-tracking: -0.01em;
+  --type-heading-m: 600 16px/24px var(--font-sans);    --type-heading-m-tracking: -0.005em;
+  --type-body-m: 400 14px/20px var(--font-sans);       --type-body-m-tracking: 0;
+  --type-body-s: 400 12px/16px var(--font-sans);       --type-body-s-tracking: 0;
+  --type-label-m: 500 14px/20px var(--font-sans);      --type-label-m-tracking: 0;
+  --type-label-s: 500 12px/16px var(--font-sans);      --type-label-s-tracking: 0.005em;
+  --type-overline: 600 11px/16px var(--font-sans);     --type-overline-tracking: 0.08em;
+  --type-mono-m: 400 13px/20px var(--font-mono);       --type-mono-m-tracking: 0;
+  --type-mono-s: 400 12px/16px var(--font-mono);       --type-mono-s-tracking: 0;
+
+  /* =================== Spacing (4 px grid, Tailwind scale) =================== */
+  --space-0: 0px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* =================== Radii =================== */
+  --radius-sm: 4px;    /* chips, badges, handles, checkbox */
+  --radius-md: 6px;    /* buttons, fields, list items */
+  --radius-lg: 10px;   /* cards, panels, popovers */
+  --radius-xl: 16px;   /* dialogs, QR card */
+  --radius-full: 9999px;
+
+  /* =================== Elevation =================== */
+  --elevation-1: 0 1px 2px rgb(28 25 23 / 0.08);                                         /* raised: cards, thumbnails */
+  --elevation-2: 0 4px 12px rgb(28 25 23 / 0.10), 0 1px 3px rgb(28 25 23 / 0.08);       /* floating: menus, popovers, toasts */
+  --elevation-3: 0 20px 48px rgb(28 25 23 / 0.20), 0 2px 8px rgb(28 25 23 / 0.10);      /* modal: dialogs */
+
+  /* =================== Focus =================== */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-border-focus);
+
+  /* =================== Motion =================== */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+}
