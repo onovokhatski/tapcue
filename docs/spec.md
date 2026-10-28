@@ -116,7 +116,7 @@ IDs are referenced from issues and tests.
   Each entry names its source: the station that tapped, or "Test" for a send from the editor (ACT-4).
 - **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
   and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
-  confirm arrival. HTTP reports *error* on timeout or a non-2xx response.
+  confirm arrival. HTTP reports *error* on a non-2xx response or after a 2-second timeout.
 
 ### 5.7 Stations
 
@@ -131,7 +131,9 @@ IDs are referenced from issues and tests.
 
 - **PLY-1** Renders the station's pages exactly as in the editor, scaled by the canvas scale mode.
 - **PLY-2** Shows an unobtrusive indicator when the connection to the server is lost; hides it when restored.
-- **PLY-3** Reconnects to the server automatically.
+- **PLY-3** Reconnects to the server automatically. Taps made while disconnected are queued
+  for up to 5 seconds and sent on reconnect; older ones are dropped, so a late reconnect never
+  starts content the visitor has already moved on from.
 - **PLY-4** Requests a screen wake lock where the browser offers one. On iPad over `http://` it
   does not, so staying awake is a stand-setup step described in the setup guide
   ([ADR 0015](adr/0015-screen-wake.md)).
@@ -202,8 +204,8 @@ IDs are referenced from issues and tests.
 
 **F5. Network drop**
 1. Tablet loses Wi-Fi: the connection indicator appears.
-2. Taps still navigate between pages; commands cannot be delivered.
-3. Wi-Fi returns: player reconnects, indicator disappears.
+2. Taps still navigate between pages; their commands wait in a 5-second queue (PLY-3).
+3. Wi-Fi returns: player reconnects, sends the commands still in the queue, indicator disappears.
 
 **F6. Demo without hardware (reviewer)**
 1. Starts Tapcue with one command; the demo project is loaded.
