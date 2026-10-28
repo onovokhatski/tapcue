@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Wireframes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Process · Wireframes</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-10 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Process · 2 of 2</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Wireframes</h1>
+    <p class="text-body-m text-secondary">These are the steps before the design system (screen map → wireframes → design system → screens), recreated from the original Figma work.</p>
+    <p class="text-body-m text-secondary">Greyscale wireframes of every screen at its real size, with real demo content. Numbered notes explain the layout decisions; crossed boxes stand for the designer’s artwork.</p>
+    <p class="inline-flex items-center gap-2 rounded-sm border border-strong px-2 py-1 text-label-s text-secondary">Low fidelity · documentation, not part of the product</p>
+  </section>
+  <div id="frames" class="space-y-12"></div>
+</main>
+<script src="data.js"></script><script src="components.js"></script><script src="wf.js"></script>
+<script>
+const WF = [
+  ['Pages · hotspot selected', '1440 × 900', wfPages()],
+  ['Targets', '1440 × 900', wfTargets()],
+  ['Stations · with the QR card', '1440 × 900', wfStations()],
+  ['Settings', '1440 × 900', wfSettings()],
+  ['Player', '1024 × 768', wfPlayer(false)],
+  ['Player · connection indicator', '1024 × 768', wfPlayer(true)],
+  ['Station not found', '1024 × 768', wfNotFound()],
+  ['Demo receiver', '1280 × 800', wfReceiver()],
+];
+document.getElementById('frames').innerHTML = WF.map(([name, size, f]) => `<section class="space-y-3">
+  <p class="text-label-m">${name} <span class="font-normal text-secondary">· ${size}</span></p>
+  <div class="relative overflow-x-auto rounded-lg border"><div data-frame>${f.html}</div></div>
+  <ol class="grid max-w-[1200px] gap-x-8 gap-y-2 md:grid-cols-2">${f.notes.map((n, i) => `<li class="flex gap-2 text-body-m text-secondary"><span class="wf-note flex-none" style="position:relative">${i + 1}</span><span>${n}</span></li>`).join('')}</ol>
+</section>`).join('');
+</script>
+<script src="frames.js"></script>
+</body>
+</html>

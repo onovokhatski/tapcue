@@ -25,6 +25,9 @@ module.exports = {
     },
     boxShadow: { none: 'none', 1: v('elevation-1'), 2: v('elevation-2'), 3: v('elevation-3') },
     extend: {
+      /* Editor breakpoints: rail + 304 px properties from 1280, full list + 320 px from 1440;
+         command log expanded by default only when the window is at least 900 px tall. */
+      screens: { 'editor-compact': '1280px', 'editor-wide': '1440px', 'editor-tall': { raw: '(min-height: 900px)' } },
       backgroundColor: {
         app: v('color-bg-app'), surface: v('color-bg-surface'), subtle: v('color-bg-subtle'),
         hover: v('color-bg-hover'), pressed: v('color-bg-pressed'), disabled: v('color-bg-disabled'),

@@ -30,6 +30,7 @@
   <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
   <symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75"/></symbol>
   <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.75v7.75M5 7.5l3 3 3-3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+  <symbol id="i-panel-left" viewBox="0 0 16 16"><rect x="2" y="2.75" width="12" height="10.5" rx="1.5"/><path d="M6.25 2.75v10.5"/></symbol>
 </svg>
 
 <header class="sticky top-0 z-30 border-b bg-surface">
@@ -401,8 +402,8 @@ function logPanel({ collapsed, rows = LOG } = {}) {
 const toolbarMeta = (text, label) => `<span class="inline-flex h-8 flex-none items-center gap-1.5 rounded bg-subtle px-2.5 text-body-s text-secondary"${label ? ` aria-label="${esc(label)}"` : ''}><span class="tabular">${text}</span></span>`;
 
 /* ---------- Editor shell: top bar, body, command log, optional modal ---------- */
-function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '' }) {
-  return `<div class="relative flex h-[900px] w-[1440px] flex-col overflow-hidden bg-app text-primary">
+function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '', w = 1440, h = 900 }) {
+  return `<div class="relative flex flex-col overflow-hidden bg-app text-primary" style="width:${w}px;height:${h}px">
     ${topBar({ tab, save: demo ? null : save, conn, demo })}${shellBanner}
     <div class="flex min-h-0 flex-1">${body}</div>
     ${logPanel({ collapsed, rows: logRows })}
@@ -524,6 +525,11 @@ const skeleton = (cls, style = '') => `<span class="skeleton block ${cls}" ${sty
 /* Pages editor screen: composed only from components.js */
 
 const FRAME_W = 1440, FRAME_H = 900, LEFT_W = 264, RIGHT_W = 320, TOPBAR_H = 48, TOOLBAR_H = 44;
+/* Editor breakpoints (see the handoff page):
+   wide    >= 1440 px: page list 264, properties 320
+   compact 1280-1439: page rail 72 (list opens as an overlay drawer), properties 304
+   < 1280 or < 720 tall: "needs a wider window" notice */
+const EDITOR_LAYOUT = { wide: { left: 264, right: 320 }, compact: { left: 72, right: 304 } };
 const LOG_H = { open: 176, collapsed: 36 };
 
 /* ---------- Left: page list ---------- */
@@ -555,6 +561,19 @@ function pagesPanel(pages, selectedId, hoverId) {
     </div>
     <ul class="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">${pages.map((p) => pageListItem(p, { selected: p.id === selectedId, hover: p.id === hoverId })).join('')}</ul>
     <p class="border-t px-4 py-2.5 text-body-s text-muted">Drag to reorder. Order sets the page list in selects only; visitors move between pages by tapping.</p>
+  </aside>`;
+}
+
+function pagesRail(pages, selectedId, drawerOpen) {
+  const items = pages.map((p) => {
+    const sel = p.id === selectedId;
+    return `<li><button type="button" aria-label="${esc(p.name)}, ${pageMeta(p)}" ${sel ? 'aria-current="true"' : ''} class="flex w-[60px] flex-col items-center gap-1 rounded border p-1 ${sel ? 'border-selection bg-selection' : 'border-transparent hover:bg-hover'}">
+      ${pageThumb(p)}<span class="line-clamp-2 w-full break-words text-center text-body-s leading-[14px] ${sel ? 'text-primary' : 'text-secondary'}">${esc(p.name)}</span></button></li>`;
+  }).join('');
+  return `<aside aria-label="Pages" class="flex w-[72px] flex-none flex-col items-center border-r bg-surface">
+    <div class="flex h-11 w-full flex-none items-center justify-center border-b">${button({ variant: 'ghost', size: 's', icon: 'panel-left', ariaLabel: drawerOpen ? 'Hide page list' : 'Show page list', pressed: !!drawerOpen })}</div>
+    <ul class="min-h-0 flex-1 space-y-1 overflow-y-auto py-2">${items}</ul>
+    <div class="flex h-11 w-full flex-none items-center justify-center border-t">${button({ variant: 'ghost', size: 's', icon: 'plus', ariaLabel: 'Add page' })}</div>
   </aside>`;
 }
 
@@ -689,20 +708,23 @@ function pageProps(p, { upload, demo } = {}) {
 }
 
 /* ---------- Whole screen ---------- */
-function pagesEditor({ pageId, pageOverride, selectedId, hoverId, listHoverId, safe, collapsed, save = 'saved', conn = 'connected', upload, tested, ref = '16:10', shellBanner = '', bannerH = 0, modal = '', demo }) {
+function pagesEditor({ pageId, pageOverride, selectedId, hoverId, listHoverId, safe, collapsed, save = 'saved', conn = 'connected', upload, tested, ref = '16:10', shellBanner = '', bannerH = 0, modal = '', demo, w = FRAME_W, h: frameH = FRAME_H, drawer }) {
+  const layout = w >= 1440 ? 'wide' : 'compact', L = EDITOR_LAYOUT[layout];
   const pages = PROJECT.pages.map((p) => (pageOverride && p.id === pageOverride.id ? pageOverride : p));
   const p = pages.find((x) => x.id === pageId);
   const logH = collapsed ? LOG_H.collapsed : LOG_H.open;
-  const stageW = FRAME_W - LEFT_W - RIGHT_W, stageH = FRAME_H - TOPBAR_H - TOOLBAR_H - logH - bannerH;
+  const stageW = w - L.left - L.right, stageH = frameH - TOPBAR_H - TOOLBAR_H - logH - bannerH;
   const scale = Math.min((stageW - 48) / PROJECT.canvas.w, (stageH - 40) / PROJECT.canvas.h);
   const h = p.hotspots.find((x) => x.id === selectedId);
-  const body = `${pagesPanel(pages, pageId, listHoverId)}
-      <main class="flex min-w-0 flex-1 flex-col" aria-label="Canvas">
+  const left = layout === 'wide' ? pagesPanel(pages, pageId, listHoverId) : pagesRail(pages, pageId, drawer);
+  const drawerHtml = layout === 'compact' && drawer ? `<div class="absolute bottom-0 left-0 top-0 z-10 flex shadow-2">${pagesPanel(pages, pageId, listHoverId)}</div>` : '';
+  const body = `${left}
+      <main class="relative flex min-w-0 flex-1 flex-col" aria-label="Canvas">${drawerHtml}
         ${canvasToolbar({ safe, zoom: Math.round(scale * 100), addDisabled: false, ref })}
         ${canvasStage({ p, scale, selectedId, hoverId, safe, upload, ref })}
       </main>
-      <aside aria-label="Properties" class="w-[320px] flex-none overflow-y-auto border-l bg-surface">${h ? hotspotProps(h, { tested, ref, offline: conn === 'disconnected' }) : pageProps(p, { upload, demo })}</aside>`;
-  return shell({ tab: 'Pages', body, collapsed, save, conn, demo, modal, banner: shellBanner });
+      <aside aria-label="Properties" class="${layout === 'wide' ? 'w-[320px]' : 'w-[304px]'} flex-none overflow-y-auto border-l bg-surface">${h ? hotspotProps(h, { tested, ref, offline: conn === 'disconnected' }) : pageProps(p, { upload, demo })}</aside>`;
+  return shell({ tab: 'Pages', body, collapsed, save, conn, demo, modal, banner: shellBanner, w, h: frameH });
 }
 
 /* ---------- Loading: first open of the editor, project not yet received ---------- */
@@ -713,6 +735,19 @@ function editorLoading() {
       <div class="flex flex-1 items-center justify-center bg-canvas"><div class="flex flex-col items-center gap-3">${skeleton('h-[452px] w-[602px] rounded-none')}<p class="text-body-s text-secondary" role="status">Loading “Demo stand”…</p></div></div></main>
     <aside aria-label="Properties" class="w-[320px] flex-none space-y-4 border-l bg-surface p-4">${skeleton('h-3 w-16')}${skeleton('h-7 w-full')}${skeleton('h-3 w-20')}${skeleton('h-7 w-full')}${skeleton('h-7 w-full')}</aside>`;
   return `<div class="relative flex h-[900px] w-[1440px] flex-col overflow-hidden bg-app text-primary">${topBar({ tab: 'Pages', conn: 'waiting', save: null })}<div class="flex min-h-0 flex-1">${body}</div>${logPanel({ collapsed: true, rows: [] })}</div>`;
+}
+
+/* ---------- Below the supported size: notice instead of the editor ---------- */
+function editorTooNarrow({ w = 1024, h = 768 } = {}) {
+  const rows = PROJECT.stations.map((st) => compactRow({ title: esc(st.name), meta: `<span class="font-mono text-mono-s text-secondary">/play/${st.id}</span>`, trailing: icon('arrow-right', 'text-secondary') })).join('');
+  return `<div class="flex items-center justify-center bg-app p-8" style="width:${w}px;height:${h}px">
+    <main class="w-[520px] space-y-5 rounded-xl border bg-surface p-8 shadow-1">
+      <div class="flex items-center gap-2"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj4KPGRlZnM+PHJhZGlhbEdyYWRpZW50IGlkPSJmLWxhbXAiIGN4PSI0MCUiIGN5PSIzNCUiIHI9IjcyJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmVmM2M3Ii8+PHN0b3Agb2Zmc2V0PSIuMzUiIHN0b3AtY29sb3I9IiNmY2QzNGQiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmNTllMGIiLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI3IiBmaWxsPSIjMWMxOTE3Ii8+CiAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTEiIGZpbGw9IiMwYzBhMDkiIHN0cm9rZT0iIzU3NTM0ZSIgc3Ryb2tlLXdpZHRoPSIxLjI1Ii8+CiAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iOCIgZmlsbD0idXJsKCNmLWxhbXApIi8+CiAgPGVsbGlwc2UgY3g9IjEzLjIiIGN5PSIxMi45IiByeD0iMi42IiByeT0iMS41IiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9Ii42IiB0cmFuc2Zvcm09InJvdGF0ZSgtMzUgMTMuMiAxMi45KSIvPgo8L3N2Zz4=" alt="" class="h-6 w-6"><span class="text-heading-m">Tapcue</span></div>
+      <div class="space-y-2"><h1 class="text-heading-xl">The editor needs a wider window</h1>
+        <p class="text-body-m text-secondary">The editor is built for windows at least <span class="tabular">1280 × 800</span> px. This one is <span class="tabular">${w} × ${h}</span>. Make the window wider, or open <span class="font-mono text-mono-m text-primary">/edit</span> on a laptop or desktop.</p></div>
+      <div class="space-y-2"><p class="text-label-m">Setting up a tablet? Open its station instead:</p><ul class="-mx-2 space-y-0.5">${rows}</ul></div>
+      <p class="text-body-s text-muted">The player works at any size; only the editor has a minimum.</p>
+    </main></div>`;
 }
 </script>
 <script>

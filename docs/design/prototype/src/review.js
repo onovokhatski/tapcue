@@ -97,7 +97,7 @@ function overlayCheck() {
 
 /* ---------- 5. Handoff: component inventory ---------- */
 const INVENTORY = [
-  ['Icon', 'plus, trash, copy, external, chevron-down, grip, close, check, alert, wifi-off, arrow-right, info, image, video, upload, crop, download', '—', 'name, className', 'icon()'],
+  ['Icon', 'plus, trash, copy, external, chevron-down, grip, close, check, alert, wifi-off, arrow-right, info, image, video, upload, crop, download, panel-left', '—', 'name, className', 'icon()'],
   ['Button', 'Primary, Secondary, Ghost, Danger · size M 32 / S 28 · icon-only · toggle', 'Default, Hover, Pressed, Disabled, Focus, Busy, Toggle on', 'variant, size, icon, label, ariaLabel, disabled, pressed, busy', 'button()'],
   ['Text field', 'Single line, multiline · mono · size M / S · prefix', 'Default, Focus, Error, Disabled, Read-only', 'id, label, value, placeholder, helper, error, mono, multiline, rows, prefix, size, disabled, readonly', 'textField()'],
   ['Select', 'Size M / S · with meta', 'Default, Hover, Open, Disabled', 'id, label, value, meta, options, placeholder, size, helper, disabled', 'select()'],

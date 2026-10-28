@@ -248,8 +248,8 @@ function logPanel({ collapsed, rows = LOG } = {}) {
 const toolbarMeta = (text, label) => `<span class="inline-flex h-8 flex-none items-center gap-1.5 rounded bg-subtle px-2.5 text-body-s text-secondary"${label ? ` aria-label="${esc(label)}"` : ''}><span class="tabular">${text}</span></span>`;
 
 /* ---------- Editor shell: top bar, body, command log, optional modal ---------- */
-function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '' }) {
-  return `<div class="relative flex h-[900px] w-[1440px] flex-col overflow-hidden bg-app text-primary">
+function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '', w = 1440, h = 900 }) {
+  return `<div class="relative flex flex-col overflow-hidden bg-app text-primary" style="width:${w}px;height:${h}px">
     ${topBar({ tab, save: demo ? null : save, conn, demo })}${shellBanner}
     <div class="flex min-h-0 flex-1">${body}</div>
     ${logPanel({ collapsed, rows: logRows })}

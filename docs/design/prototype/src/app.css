@@ -104,3 +104,38 @@
   .skeleton { background: var(--color-bg-pressed); border-radius: var(--radius-sm); animation: tc-pulse 1.6s var(--easing-standard) infinite; }
   @keyframes tc-pulse { 50% { opacity: .55; } }
 }
+
+/* =====================================================================
+   Process pages only: low-fidelity wireframe kit. Deliberately NOT built
+   on the product tokens: neutral greys, one plain sans, no shadows.
+   ===================================================================== */
+@layer components {
+  .wf { --wf-bg: #ffffff; --wf-page: #f4f4f4; --wf-fill: #e9e9e9; --wf-fill-2: #d6d6d6; --wf-line: #a3a3a3;
+        --wf-ink: #262626; --wf-ink-2: #5f5f5f; --wf-select: #5d7290;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; font-size: 13px; line-height: 1.35; color: var(--wf-ink); background: var(--wf-page); }
+  .wf * { box-shadow: none !important; }
+  .wf-box { background: var(--wf-bg); border: 1px solid var(--wf-line); }
+  .wf-fill { background: var(--wf-fill); }
+  .wf-muted { color: var(--wf-ink-2); }
+  .wf-small { font-size: 11px; }
+  .wf-h { font-weight: 700; }
+  .wf-mono { font-size: 12px; } /* same single sans-serif; marks addresses only by size */
+  .wf-btn { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border: 1px solid var(--wf-ink-2); border-radius: 3px; font-size: 12px; background: var(--wf-bg); white-space: nowrap; }
+  .wf-btn-primary { background: var(--wf-ink-2); color: #ffffff; }
+  .wf-field { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 1px solid var(--wf-line); background: var(--wf-bg); font-size: 12px; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .wf-label { display: block; margin-bottom: 3px; font-size: 11px; color: var(--wf-ink-2); }
+  .wf-art { border: 1px solid var(--wf-line);
+    background: linear-gradient(to top right, transparent calc(50% - .6px), var(--wf-line) calc(50% - .6px), var(--wf-line) calc(50% + .6px), transparent calc(50% + .6px)),
+                linear-gradient(to bottom right, transparent calc(50% - .6px), var(--wf-line) calc(50% - .6px), var(--wf-line) calc(50% + .6px), transparent calc(50% + .6px)),
+                var(--wf-fill); }
+  .wf-art-label { display: inline-block; padding: 2px 6px; background: var(--wf-bg); border: 1px solid var(--wf-line); font-size: 11px; color: var(--wf-ink-2); }
+  .wf-hs { position: absolute; border: 1.5px dashed var(--wf-ink-2); }
+  .wf-hs-label { position: absolute; left: 4px; top: 4px; padding: 1px 4px; background: var(--wf-bg); font-size: 10px; color: var(--wf-ink-2); }
+  .wf-hs-sel { border: 2px solid var(--wf-select); }
+  .wf-hs-sel .wf-hs-label { color: var(--wf-select); font-weight: 700; }
+  .wf-handle { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; background: var(--wf-bg); border: 1.5px solid var(--wf-select); }
+  .wf-note { position: absolute; z-index: 5; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 9999px;
+    background: var(--wf-ink); color: #ffffff; font: 700 11px/1 Arial, sans-serif; }
+  .wf-tab-active { border-bottom: 2px solid var(--wf-ink); font-weight: 700; }
+  .wf-row { border-bottom: 1px solid var(--wf-fill-2); }
+}

@@ -169,6 +169,13 @@ IDs are referenced from issues and tests.
 - **ED-10** An invalid value in a form (e.g. a bad host or port) is shown with its error but never
   saved: the project keeps the last valid value until the field is fixed (PRJ-2).
 - **ED-11** Opening the server root `/` goes to the editor.
+- **ED-12** Window sizes:
+  - 1440 px wide and up: full layout (page list 264 px, properties 320 px);
+  - 1280–1439 px: the page list folds into a 72 px thumbnail rail that opens the full list as a
+    drawer; properties narrow to 304 px;
+  - under 900 px tall: the command log starts collapsed; the user's choice is kept in the browser;
+  - under 1280 px wide or 720 px tall: the editor shows a "needs a wider window" notice instead.
+  The player and demo receiver have no minimum size.
 
 ### 5.10 Demo receiver
 
@@ -235,7 +242,8 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 
 ## 7. Non-functional requirements
 
-- **NFR-1 Platforms.** Player: Safari on iPadOS and Chrome (desktop and Android), latest two major versions. Editor: desktop Chrome, Safari, Firefox, latest two major versions.
+- **NFR-1 Platforms.** Player: Safari on iPadOS and Chrome (desktop and Android), latest two major versions. Editor: desktop Chrome, Safari, Firefox, latest two major versions, in windows of at least
+  1280 × 800 px (ED-12).
 - **NFR-2 Latency.** From tap to command leaving the server: under 100 ms on a local network.
 - **NFR-3 Reliability.** Runs for a full exhibition day (10 h) without restart; recovers from network drops without human action.
 - **NFR-4 Network.** Works on a local network with no internet access.

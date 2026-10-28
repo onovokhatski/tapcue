@@ -44,14 +44,14 @@ function recentCard(name) {
     ${rows.length ? `<ul class="divide-y">${rows.map(logRowCompact).join('')}</ul>`
       : `<p class="px-5 py-6 text-body-s text-muted">Nothing sent to this target yet.</p>`}</section>`;
 }
-function targetsScreen({ selected = 'resolume', empty, hostError, portError, modal } = {}) {
+function targetsScreen({ selected = 'resolume', empty, hostError, portError, modal, w, h, collapsed } = {}) {
   const targets = empty ? [] : PROJECT.targets;
   const items = targets.map((t) => ({ title: t.name, meta: `${PROTOCOL_LABEL[t.protocol]} · ${mono(addr(t))}`, selected: t.id === selected, warn: t.id === selected && hostError }));
   const t = target(selected);
   const main = empty
     ? `<main class="flex min-w-0 flex-1 items-center justify-center p-6">${emptyState({ icon: 'arrow-right', title: 'Add your first target', body: 'A target is a device that receives commands: a media server, a projector, a lighting console. Hotspots send their commands to targets.', action: button({ variant: 'primary', icon: 'plus', label: 'Add target' }) })}</main>`
     : mainScroll(`<div class="grid max-w-[1080px] grid-cols-[minmax(0,600px)_minmax(0,1fr)] items-start gap-6 p-6">${targetForm(t, { hostError, portError })}${recentCard(t.name)}</div>`);
-  return shell({ tab: 'Targets', body: listPanel({ title: 'Targets', items, addLabel: 'Add target', empty: 'No targets yet.' }) + main, logRows: empty ? [] : LOG, modal });
+  return shell({ tab: 'Targets', body: listPanel({ title: 'Targets', items, addLabel: 'Add target', empty: 'No targets yet.' }) + main, logRows: empty ? [] : LOG, modal, w, h, collapsed });
 }
 
 /* ================= Stations ================= */

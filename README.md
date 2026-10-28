@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/design/brand/tapcue-logo-dark.svg">
+    <img src="docs/design/brand/tapcue-logo-light.svg" alt="Tapcue" width="280">
+  </picture>
+</p>
+
 # Tapcue
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**

@@ -30,6 +30,7 @@
   <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
   <symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75"/></symbol>
   <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.75v7.75M5 7.5l3 3 3-3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+  <symbol id="i-panel-left" viewBox="0 0 16 16"><rect x="2" y="2.75" width="12" height="10.5" rx="1.5"/><path d="M6.25 2.75v10.5"/></symbol>
 </svg>
 
 
@@ -272,8 +273,10 @@
           <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-video"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-video"/></svg><span class="font-mono text-mono-s text-secondary">video <span class="text-muted">+</span></span></li>
           <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-upload"/></svg><span class="font-mono text-mono-s text-secondary">upload <span class="text-muted">+</span></span></li>
           <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-crop"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-crop"/></svg><span class="font-mono text-mono-s text-secondary">crop <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-panel-left"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-panel-left"/></svg><span class="font-mono text-mono-s text-secondary">panel-left <span class="text-muted">+</span></span></li>
+          <li class="flex items-center gap-3 rounded border border-dashed p-3"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><svg class="icon h-8 w-8 text-secondary" style="stroke-width:1" aria-hidden="true"><use href="#i-download"/></svg><span class="font-mono text-mono-s text-secondary">download <span class="text-muted">+</span></span></li>
         </ul>
-        <p class="mt-3 text-body-s text-muted">Dashed tiles marked + are additions the components need: arrow-right (page navigation in the log), info (Info banner), image and video (backgrounds), upload (dropzone), crop (safe area).</p>
+        <p class="mt-3 text-body-s text-muted">Dashed tiles marked + are additions the components need: arrow-right (page navigation in the log), info (Info banner), image and video (backgrounds), upload (dropzone), crop (safe area), download (export), panel-left (page rail at 1280 px).</p>
       </div>
     </section>
 
@@ -1191,8 +1194,8 @@ function logPanel({ collapsed, rows = LOG } = {}) {
 const toolbarMeta = (text, label) => `<span class="inline-flex h-8 flex-none items-center gap-1.5 rounded bg-subtle px-2.5 text-body-s text-secondary"${label ? ` aria-label="${esc(label)}"` : ''}><span class="tabular">${text}</span></span>`;
 
 /* ---------- Editor shell: top bar, body, command log, optional modal ---------- */
-function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '' }) {
-  return `<div class="relative flex h-[900px] w-[1440px] flex-col overflow-hidden bg-app text-primary">
+function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '', w = 1440, h = 900 }) {
+  return `<div class="relative flex flex-col overflow-hidden bg-app text-primary" style="width:${w}px;height:${h}px">
     ${topBar({ tab, save: demo ? null : save, conn, demo })}${shellBanner}
     <div class="flex min-h-0 flex-1">${body}</div>
     ${logPanel({ collapsed, rows: logRows })}

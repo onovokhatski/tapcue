@@ -16,7 +16,7 @@ const tokens = [...tokensCss.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([, name, 
 let html = include(fs.readFileSync(`src/${page}.html`, 'utf8')).replace('/* build:tokens */', JSON.stringify(tokens))
   .replace('__TOKENS_CSS__', fs.readFileSync('src/tokens.css', 'utf8').replace(/&/g, '&amp;').replace(/</g, '&lt;'));
 // artwork: inline as data URIs so pages are self-contained
-html = html.replace(/art\/([\w-]+)\.svg/g, (m, n) => 'data:image/svg+xml;base64,' + fs.readFileSync(`src/art/${n}.svg`).toString('base64'));
+html = html.replace(/(art|brand)\/([\w-]+)\.(svg|png)/g, (m, d, n, ext) => `data:image/${ext === 'svg' ? 'svg+xml' : 'png'};base64,` + fs.readFileSync(`src/${d}/${n}.${ext}`).toString('base64'));
 fs.writeFileSync(`dist/${page}.html`, html);
 
 const css = fs.readFileSync('dist/tapcue.css', 'utf8');
@@ -25,5 +25,10 @@ let art = html
   .replace(/<!doctype html>\s*/i, '').replace(/<html[^>]*>\s*/, '').replace(/<\/html>\s*/, '')
   .replace(/<head>\s*/, '').replace(/<\/head>\s*/, '').replace(/<body[^>]*>\s*/, '').replace(/<\/body>\s*/, '')
   .replace(/<meta charset="utf-8">\s*/, '').replace(/<meta name="viewport"[^>]*>\s*/, '');
+// links between pages: relative in dist/, artifact URLs in the published copies
+if (fs.existsSync('artifact-links.json')) {
+  const links = JSON.parse(fs.readFileSync('artifact-links.json', 'utf8'));
+  art = art.replace(/href="([\w-]+\.html)"/g, (m, f) => (links[f] ? `href="${links[f]}"` : m));
+}
 fs.writeFileSync(`dist/artifact/${page}.html`, art);
 console.log(page, 'html', html.length, 'artifact', art.length, 'css', css.length);

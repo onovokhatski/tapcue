@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Project Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.75 4.5h10.5M6.25 4.5V2.75h3.5V4.5M4.25 4.5l.6 8.75h6.3l.6-8.75M6.75 7v4M9.25 7v4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></symbol>
+  <symbol id="i-external" viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M13.5 2.5l-6 6M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 16 16"><g fill="currentColor" stroke="none"><circle cx="6" cy="4" r="1.1"/><circle cx="10" cy="4" r="1.1"/><circle cx="6" cy="8" r="1.1"/><circle cx="10" cy="8" r="1.1"/><circle cx="6" cy="12" r="1.1"/><circle cx="10" cy="12" r="1.1"/></g></symbol>
+  <symbol id="i-close" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3 8.5l3.25 3.25L13 5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M7.13 2.5a1 1 0 0 1 1.74 0l5.4 9.5a1 1 0 0 1-.87 1.5H2.6a1 1 0 0 1-.87-1.5z"/><path d="M8 6.25v3"/><circle cx="8" cy="11.25" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 16 16"><path d="M2.5 2.5l11 11M1.75 6.1A9.4 9.4 0 0 1 4.7 4.2M7.2 3.5a9.4 9.4 0 0 1 7.05 2.6M4 8.6a6 6 0 0 1 2.4-1.4M9.9 7.4a6 6 0 0 1 2.1 1.2M6.1 10.9a2.9 2.9 0 0 1 3.8 0"/><circle cx="8" cy="13" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <!-- additions needed by components -->
+  <symbol id="i-arrow-right" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7.25v3.75"/><circle cx="8" cy="5" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-image" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.75" cy="6.25" r="1.1"/><path d="M2.5 11.5l3.25-3 2.75 2.5 2-1.75 3 2.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 16 16"><rect x="1.75" y="4" width="9" height="8" rx="1.5"/><path d="M10.75 7l3.5-2v6l-3.5-2"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75"/></symbol>
+  <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.75v7.75M5 7.5l3 3 3-3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+  <symbol id="i-panel-left" viewBox="0 0 16 16"><rect x="2" y="2.75" width="12" height="10.5" rx="1.5"/><path d="M6.25 2.75v10.5"/></symbol>
+</svg>
+
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Project index</span>
+      </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1100px] space-y-10 py-10">
+  <section class="max-w-[68ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Tapcue · project</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">From screen map to handoff</h1>
+    <p class="text-body-m text-secondary">Tapcue turns designer artwork into a tablet interface for exhibition stands. The pages below follow the work in order: screen map → wireframes → design system → screens → handoff.</p>
+  </section>
+  <section class="space-y-3" aria-labelledby="g-process">
+    <h2 id="g-process" class="text-overline uppercase text-muted">Process · documentation, low fidelity</h2>
+    <ul class="grid gap-3 sm:grid-cols-2">
+      <li><a href="process-map.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 border-dashed border-strong bg-subtle hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">1 · Screen map<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">Every screen of the three apps with its route, contents and states, and how the apps connect.</span></a></li>
+      <li><a href="process-wireframes.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 border-dashed border-strong bg-subtle hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">2 · Wireframes<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">Greyscale wireframes of every screen at real size, with numbered layout notes.</span></a></li>
+    </ul>
+  </section>
+  <section class="space-y-3" aria-labelledby="g-design">
+    <h2 id="g-design" class="text-overline uppercase text-muted">Design · final</h2>
+    <ul class="grid gap-3 sm:grid-cols-2">
+      <li><a href="design-system.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 bg-surface hover:border-strong hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">Design system<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">Tokens, contrast check and every component with its variants and states.</span></a></li>
+      <li><a href="pages-editor.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 bg-surface hover:border-strong hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">Pages editor<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">The main editor screen at 1440 × 900: hotspots, uploads, safe area, command log.</span></a></li>
+      <li><a href="editor-tabs.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 bg-surface hover:border-strong hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">Targets, Stations, Settings<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">The other editor tabs, with empty, error, dialog and demo-mode states.</span></a></li>
+      <li><a href="player.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 bg-surface hover:border-strong hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">Player<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">What visitors see on the iPad: artwork, press effects, fade, reconnecting.</span></a></li>
+      <li><a href="demo-receiver.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 bg-surface hover:border-strong hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">Demo receiver<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">The page a reviewer opens next to the player to watch commands arrive.</span></a></li>
+    </ul>
+  </section>
+  <section class="space-y-3" aria-labelledby="g-handoff">
+    <h2 id="g-handoff" class="text-overline uppercase text-muted">Handoff</h2>
+    <ul class="grid gap-3 sm:grid-cols-2">
+      <li><a href="review.html" class="flex h-full flex-col gap-1 rounded-lg border p-4 bg-surface hover:border-strong hover:bg-hover"><span class="flex items-center justify-between gap-2 text-heading-m">Review and handoff<svg class="icon text-secondary" aria-hidden="true"><use href="#i-arrow-right"/></svg></span><span class="text-body-m text-secondary">One-off audit, state coverage, contrast and focus, 1280 × 800 layout, app icon and logo, tokens and component inventory.</span></a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

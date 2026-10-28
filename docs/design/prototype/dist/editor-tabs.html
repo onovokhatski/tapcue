@@ -30,6 +30,7 @@
   <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
   <symbol id="i-crop" viewBox="0 0 16 16"><path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75"/></symbol>
   <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.75v7.75M5 7.5l3 3 3-3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2"/></symbol>
+  <symbol id="i-panel-left" viewBox="0 0 16 16"><rect x="2" y="2.75" width="12" height="10.5" rx="1.5"/><path d="M6.25 2.75v10.5"/></symbol>
 </svg>
 
 <header class="sticky top-0 z-30 border-b bg-surface">
@@ -402,8 +403,8 @@ function logPanel({ collapsed, rows = LOG } = {}) {
 const toolbarMeta = (text, label) => `<span class="inline-flex h-8 flex-none items-center gap-1.5 rounded bg-subtle px-2.5 text-body-s text-secondary"${label ? ` aria-label="${esc(label)}"` : ''}><span class="tabular">${text}</span></span>`;
 
 /* ---------- Editor shell: top bar, body, command log, optional modal ---------- */
-function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '' }) {
-  return `<div class="relative flex h-[900px] w-[1440px] flex-col overflow-hidden bg-app text-primary">
+function shell({ tab, body, collapsed, save = 'saved', conn = 'connected', demo, logRows = LOG, modal = '', banner: shellBanner = '', w = 1440, h = 900 }) {
+  return `<div class="relative flex flex-col overflow-hidden bg-app text-primary" style="width:${w}px;height:${h}px">
     ${topBar({ tab, save: demo ? null : save, conn, demo })}${shellBanner}
     <div class="flex min-h-0 flex-1">${body}</div>
     ${logPanel({ collapsed, rows: logRows })}
@@ -567,14 +568,14 @@ function recentCard(name) {
     ${rows.length ? `<ul class="divide-y">${rows.map(logRowCompact).join('')}</ul>`
       : `<p class="px-5 py-6 text-body-s text-muted">Nothing sent to this target yet.</p>`}</section>`;
 }
-function targetsScreen({ selected = 'resolume', empty, hostError, portError, modal } = {}) {
+function targetsScreen({ selected = 'resolume', empty, hostError, portError, modal, w, h, collapsed } = {}) {
   const targets = empty ? [] : PROJECT.targets;
   const items = targets.map((t) => ({ title: t.name, meta: `${PROTOCOL_LABEL[t.protocol]} · ${mono(addr(t))}`, selected: t.id === selected, warn: t.id === selected && hostError }));
   const t = target(selected);
   const main = empty
     ? `<main class="flex min-w-0 flex-1 items-center justify-center p-6">${emptyState({ icon: 'arrow-right', title: 'Add your first target', body: 'A target is a device that receives commands: a media server, a projector, a lighting console. Hotspots send their commands to targets.', action: button({ variant: 'primary', icon: 'plus', label: 'Add target' }) })}</main>`
     : mainScroll(`<div class="grid max-w-[1080px] grid-cols-[minmax(0,600px)_minmax(0,1fr)] items-start gap-6 p-6">${targetForm(t, { hostError, portError })}${recentCard(t.name)}</div>`);
-  return shell({ tab: 'Targets', body: listPanel({ title: 'Targets', items, addLabel: 'Add target', empty: 'No targets yet.' }) + main, logRows: empty ? [] : LOG, modal });
+  return shell({ tab: 'Targets', body: listPanel({ title: 'Targets', items, addLabel: 'Add target', empty: 'No targets yet.' }) + main, logRows: empty ? [] : LOG, modal, w, h, collapsed });
 }
 
 /* ================= Stations ================= */

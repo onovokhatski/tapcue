@@ -29,19 +29,75 @@
 
 <main class="gutter mx-auto max-w-[1520px] space-y-10 py-8">
   <section class="max-w-[72ch] space-y-3">
-    <p class="text-overline uppercase text-muted">Step 10</p>
+    <p class="text-overline uppercase text-muted">Step 10 · v1.1</p>
     <h1 class="text-heading-xl [text-wrap:balance]">Review and handoff</h1>
     <p class="text-body-m text-secondary">A pass over every screen against the brief, the fixes made, and the handoff for the React + Tailwind build: tokens as CSS variables, the component inventory, and which components each screen uses.</p>
-    <nav aria-label="Sections" class="flex flex-wrap gap-2"><a href="#audit" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">One-off audit</a><a href="#states" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">States</a><a href="#contrast" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Contrast and focus</a><a href="#overlay" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Overlay check</a><a href="#tokens" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Tokens</a><a href="#inventory" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Components</a><a href="#screens" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Per screen</a></nav>
+    <nav aria-label="Sections" class="flex flex-wrap gap-2"><a href="#narrow" class="inline-flex h-8 items-center rounded border border-selection bg-selection px-3 text-label-m hover:bg-accent-subtle">v1.1 Narrow screens</a><a href="#brand" class="inline-flex h-8 items-center rounded border border-selection bg-selection px-3 text-label-m hover:bg-accent-subtle">v1.1 App icon and logo</a><a href="#audit" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">One-off audit</a><a href="#states" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">States</a><a href="#contrast" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Contrast and focus</a><a href="#overlay" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Overlay check</a><a href="#tokens" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Tokens</a><a href="#inventory" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Components</a><a href="#screens" class="inline-flex h-8 items-center rounded border border-strong bg-surface px-3 text-label-m hover:bg-hover">Per screen</a></nav>
   </section>
   <div id="review" class="space-y-10"></div>
 </main>
-<script src="data.js"></script><script src="qr.js"></script><script src="components.js"></script><script src="pages-editor.js"></script><script src="player.js"></script><script src="review.js"></script>
+<script src="data.js"></script><script src="qr.js"></script><script src="components.js"></script><script src="pages-editor.js"></script><script src="editor-tabs.js"></script><script src="player.js"></script><script src="review.js"></script>
 <script>
 (function () {
   const aboutEmpty = Object.assign({}, page('about'), { bg: null });
   const ct = (() => { const host = document.createElement('div'); return null; })();
   const parts = [];
+  /* ================= v1.1: narrow screens ================= */
+  parts.push(sectionHead('narrow', 'v1.1 · Smallest supported editor', 'Editor at 1280 × 800', 'The editor supports windows from 1280 × 800. Between 1280 and 1439 px the page list folds into a thumbnail rail and the properties panel narrows; everything else keeps its size. The rule below is written so it maps to breakpoints.'));
+  parts.push(table(['Window', 'Page list (Pages tab)', 'Properties', 'List + form tabs', 'Command log'], [
+    ['≥ 1440 px wide', '264 px list', '320 px', 'List 264 px · form 480–600 px with the side column (QR card, recent commands, 288–360 px) beside it', 'Expanded (176 px) by default when the window is ≥ 900 px tall'],
+    ['1280–1439 px wide', '72 px rail: thumbnail + short name. The rail button or a click on the canvas edge opens the full 264 px list as a drawer over the canvas; Esc or a page choice closes it', '304 px', 'Unchanged: 264 + 600 + 344 still fits in 1280 px. The side column moves under the form only if the main column drops below 912 px', 'Collapsed (36 px) by default when the window is < 900 px tall; the user can expand it, and the choice is kept in this browser'],
+    ['< 1280 px wide, or < 720 px tall', 'Editor replaced by a notice', '—', '—', '—'],
+    ['Player, demo receiver', 'No minimum. The player scales the canvas with Fit or Fill at any size', '', '', ''],
+  ], 1100));
+  parts.push(`<p class="max-w-[90ch] text-body-s text-secondary">Tailwind screens added to tailwind.config.js: <span class="font-mono text-mono-s">editor-compact: 1280px</span>, <span class="font-mono text-mono-s">editor-wide: 1440px</span>, <span class="font-mono text-mono-s">editor-tall: (min-height: 900px)</span>. The properties panel never collapses: it holds the work, and the canvas loses less by narrowing the list than by hiding the panel. Heights from 720 to 799 px still work, with a smaller canvas.</p>`);
+  parts.push(frameBox('N1', 'Pages at 1280 × 800, hotspot selected', 'Page rail on the left, 304 px properties, command log collapsed because the window is under 900 px tall. The canvas is bigger than at 1440 × 900 with the log open (41% vs 39%).', pagesEditor({ pageId: 'home', selectedId: 'hs-a', w: 1280, h: 800, collapsed: true, tested: true })));
+  parts.push(frameBox('N2', 'Page list opened as a drawer', 'The rail button is pressed and the full list (rename, reorder, delete) slides over the canvas with elevation 2. The canvas does not resize, so nothing jumps.', pagesEditor({ pageId: 'home', w: 1280, h: 800, collapsed: true, drawer: true })));
+  parts.push(frameBox('N3', 'Targets at 1280 × 800', 'List + form tabs keep their layout: the list stays 264 px and the form and recent-commands column still sit side by side.', targetsScreen({ w: 1280, h: 800, collapsed: true })));
+  parts.push(frameBox('N4', 'Below 1280 px: the notice', 'Shown instead of the editor at 1024 × 768 (for example /edit opened on the iPad). It gives the size needed and the actual size, plus direct links to the stations, which is what someone at a tablet usually wants.', editorTooNarrow()));
+
+  /* ================= v1.1: brand ================= */
+  const homeScreen = (bg, label, dark) => `<figure class="space-y-2"><div class="flex h-[200px] w-[300px] max-w-full items-start gap-5 rounded-lg p-5" style="background:${bg}">
+      ${[76, 60, 40].map((s) => `<div class="flex flex-col items-center gap-1.5"><img src="brand/tapcue-icon.svg" alt="" style="width:${s}px;height:${s}px;border-radius:${Math.round(s * 0.2237)}px"><span class="text-body-s" style="color:${dark ? '#f5f5f4' : '#1c1917'}">${s === 76 ? 'Tapcue' : ''}</span></div>`).join('')}
+    </div><figcaption class="text-body-s text-secondary">${label}</figcaption></figure>`;
+  parts.push(sectionHead('brand', 'v1.1 · Brand', 'App icon and logo', 'The mark is the cue light from the top bar, drawn as a real standby lamp: an amber lens in a dark console housing, with a soft glow. The dark tile keeps it legible on light and dark home screens; the amber lens carries the brand colour at every size.'));
+  parts.push(`<div class="grid gap-4 rounded-lg border bg-surface p-5 lg:grid-cols-3">${homeScreen('#e8ecf2', 'Light home screen · 76, 60, 40 px', false)}${homeScreen('#141418', 'Dark home screen', true)}${homeScreen('linear-gradient(135deg,#6d8fbf,#b07fb0)', 'Photo wallpaper', true)}</div>`);
+  parts.push(`<div class="grid gap-4 lg:grid-cols-3">
+    <figure class="space-y-2 rounded-lg border bg-surface p-5"><div class="flex items-center gap-5"><img src="brand/tapcue-icon.svg" alt="App icon, full bleed" class="h-[120px] w-[120px]"><img src="brand/tapcue-icon.svg" alt="" class="h-[120px] w-[120px] rounded-[27px]"></div>
+      <figcaption class="text-body-s text-secondary"><span class="text-label-m text-primary">apple-touch-icon.png · 180 × 180</span><br>Full-bleed and opaque; iPadOS applies its own corner mask (right).</figcaption></figure>
+    <figure class="space-y-2 rounded-lg border bg-surface p-5"><div class="flex items-center gap-5"><img src="brand/tapcue-icon-rounded.svg" alt="PWA icon" class="h-[120px] w-[120px]"><div class="relative h-[120px] w-[120px]"><img src="brand/tapcue-icon-maskable.svg" alt="Maskable icon" class="h-full w-full rounded-full"><span class="absolute inset-[12px] rounded-full border border-dashed" style="border-color:#fde68a"></span></div></div>
+      <figcaption class="text-body-s text-secondary"><span class="text-label-m text-primary">icon-512.png and icon-maskable-512.png</span><br>"any": rounded tile with transparent corners. "maskable": full bleed, lamp inside the 80% safe zone (dashed), shown with a circle mask.</figcaption></figure>
+    <figure class="space-y-2 rounded-lg border bg-surface p-5"><div class="space-y-2">
+      ${[['#ffffff', '#1c1917', '#dee1e6'], ['#35363a', '#e8eaed', '#202124']].map(([tab, ink, bar]) => `<div class="flex h-10 items-end gap-2 rounded px-2" style="background:${bar}"><div class="flex h-8 items-center gap-2 rounded-t-lg px-3" style="background:${tab};color:${ink}"><img src="brand/favicon.svg" alt="" class="h-4 w-4"><span class="text-body-s">Tapcue · Demo stand</span></div></div>`).join('')}
+      <div class="flex items-center gap-3"><img src="brand/favicon.svg" alt="" class="h-4 w-4"><img src="brand/favicon.svg" alt="" class="h-8 w-8"><img src="brand/favicon.svg" alt="" class="h-16 w-16"></div></div>
+      <figcaption class="text-body-s text-secondary"><span class="text-label-m text-primary">favicon.svg and favicon-32.png</span><br>Redrawn on a 32 grid without the glow so it stays crisp at 16 px, on light and dark tab bars.</figcaption></figure>
+  </div>`);
+  parts.push(`<div class="grid gap-4 lg:grid-cols-2">
+    <figure class="space-y-2"><div class="flex items-center gap-8 rounded-lg border bg-surface p-6"><img src="brand/tapcue-logo-light.svg" alt="Tapcue" class="h-16 w-auto"><img src="brand/tapcue-logo-light.svg" alt="" class="h-8 w-auto"></div><figcaption class="text-body-s text-secondary">tapcue-logo-light · for light backgrounds (README in light mode)</figcaption></figure>
+    <figure class="space-y-2"><div class="flex items-center gap-8 rounded-lg p-6" style="background:#0d1117"><img src="brand/tapcue-logo-dark.svg" alt="Tapcue" class="h-16 w-auto"><img src="brand/tapcue-logo-dark.svg" alt="" class="h-8 w-auto"></div><figcaption class="text-body-s text-secondary">tapcue-logo-dark · for dark backgrounds; the tile gets a 1.5 px stone-700 edge</figcaption></figure>
+  </div>`);
+  parts.push(table(['File', 'Size', 'Use'], [
+    ['tapcue-icon.svg', '512 master', 'Source for every raster export; full bleed'],
+    ['apple-touch-icon.png', '180 × 180, opaque', '&lt;link rel="apple-touch-icon"&gt; for Add to Home Screen on iPad'],
+    ['icon-192.png · icon-512.png', '192, 512, transparent corners', 'Web app manifest, purpose "any"'],
+    ['icon-maskable-512.png', '512, full bleed', 'Web app manifest, purpose "maskable"'],
+    ['favicon.svg · favicon-32.png', '32 grid', 'Browser tab; PNG fallback for older browsers'],
+    ['tapcue-logo-light.svg / -dark.svg (+ @2x PNG)', '404 × 128 (PNG 808 × 256)', 'README header. Wordmark outlined from Inter Display SemiBold, so no font is needed'],
+  ]));
+  parts.push(`<div class="grid grid-cols-1 gap-4 lg:grid-cols-2"><div class="min-w-0 space-y-1"><p class="text-label-m">HTML head</p><pre class="overflow-x-auto rounded-lg border bg-surface p-4 font-mono text-mono-s">&lt;link rel="icon" href="/favicon.svg" type="image/svg+xml"&gt;
+&lt;link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"&gt;
+&lt;link rel="apple-touch-icon" href="/apple-touch-icon.png"&gt;
+&lt;link rel="manifest" href="/manifest.webmanifest"&gt;
+&lt;meta name="theme-color" content="#1c1917"&gt;</pre></div>
+  <div class="min-w-0 space-y-1"><p class="text-label-m">README (picks the logo for the reader's theme)</p><pre class="overflow-x-auto rounded-lg border bg-surface p-4 font-mono text-mono-s">&lt;picture&gt;
+  &lt;source media="(prefers-color-scheme: dark)" srcset="docs/tapcue-logo-dark.svg"&gt;
+  &lt;img alt="Tapcue" src="docs/tapcue-logo-light.svg" height="64"&gt;
+&lt;/picture&gt;</pre><p class="text-label-m">manifest.webmanifest (icons)</p><pre class="overflow-x-auto rounded-lg border bg-surface p-4 font-mono text-mono-s">"icons": [
+  { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+  { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+  { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+]</pre></div></div>`);
+
   parts.push(sectionHead('audit', '1 · Components and tokens only', 'One-off audit', 'Every element on every screen was checked against the design system. These were one-offs; each is now a component or token, or deliberately kept outside the system.'));
   parts.push(table(['Element', 'Where', 'Resolution'], AUDIT.map(([a, b, c]) => [a, b, c])));
   parts.push(sectionHead('states', '2 · Every state', 'State coverage', 'Frame references point to the screen pages (F = Pages, T = Targets, S = Stations, G = Settings, P = Player, R = Demo receiver). Five frames were missing and are added below. Behaviour in E2 and E3 is a proposal: please confirm.'));

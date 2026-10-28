@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tapcue Screen Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- build:css --><link rel="stylesheet" href="tapcue.css"><!-- /build:css -->
+</head>
+<body class="bg-app text-primary">
+<!-- include:icons.svg -->
+<header class="sticky top-0 z-30 border-b bg-surface">
+  <div class="gutter mx-auto flex h-14 max-w-[1520px] items-center gap-3">
+    <span class="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_3px_var(--color-accent-subtle)]" aria-hidden="true"></span>
+    <span class="text-heading-m">Tapcue</span>
+    <span class="hidden text-body-m text-muted sm:inline">Process · Screen map</span>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="hidden text-body-s text-muted md:inline">Frames at</span>
+      <div role="group" aria-label="Frame size" class="inline-flex rounded bg-pressed p-0.5">
+        <button type="button" data-zoom="fit" aria-pressed="true" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">Fit width</button>
+        <button type="button" data-zoom="actual" aria-pressed="false" class="h-6 rounded-sm px-2.5 text-label-s text-secondary aria-pressed:bg-surface aria-pressed:text-primary aria-pressed:shadow-1">1440 × 900</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="gutter mx-auto max-w-[1520px] space-y-10 py-8">
+  <section class="max-w-[72ch] space-y-3">
+    <p class="text-overline uppercase text-muted">Process · 1 of 2</p>
+    <h1 class="text-heading-xl [text-wrap:balance]">Screen map</h1>
+    <p class="text-body-m text-secondary">These are the steps before the design system (screen map → wireframes → design system → screens), recreated from the original Figma work.</p>
+    <p class="text-body-m text-secondary">Three apps, one product: every screen with its route, purpose, contents and the states it must show, plus how the apps connect.</p>
+    <p class="inline-flex items-center gap-2 rounded-sm border border-strong px-2 py-1 text-label-s text-secondary">Low fidelity · documentation, not part of the product</p>
+  </section>
+  <div id="frames" class="space-y-12"></div>
+</main>
+<script src="data.js"></script><script src="components.js"></script><script src="process-map.js"></script>
+<script>
+document.getElementById('frames').innerHTML = `<section class="space-y-3"><p class="text-label-m text-secondary">Screen map · 1440 px wide</p><div class="relative overflow-x-auto rounded-lg border"><div data-frame>${screenMap()}</div></div></section>`;
+</script>
+<script src="frames.js"></script>
+</body>
+</html>
