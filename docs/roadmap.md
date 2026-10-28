@@ -97,7 +97,7 @@ Editor layout, page list, uploads, page backgrounds, add / select / move / resiz
 numeric position fields, stacking order, safe-area overlay, auto-save, live update of
 players.
 
-- **Requirements:** PG-1, PG-6, HS-1, HS-2, HS-6, ED-1, ED-2, ED-3, ED-5, ED-7, PLY-5, PLY-6
+- **Requirements:** PG-1, PG-6, HS-1, HS-2, HS-6, HS-7, ED-8, ED-1, ED-2, ED-3, ED-5, ED-7, PLY-5, PLY-6
 - **Done when:** the demo project's pages can be rebuilt from scratch in the editor, and an open player follows every change within a second.
 
 ### M4 — Editor: complete

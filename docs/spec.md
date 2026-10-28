@@ -94,6 +94,8 @@ IDs are referenced from issues and tests.
 - **HS-4** Style: invisible, or fill colour, border colour and width, opacity.
 - **HS-5** Press effect: none, highlight, press-in, or ripple.
 - **HS-6** Hotspots can be deleted and their stacking order changed.
+- **HS-7** A hotspot can be duplicated: the copy gets a new id, the same properties and a small
+  offset, clamped to the canvas, and becomes the selection.
 
 ### 5.5 Actions
 
@@ -110,7 +112,7 @@ IDs are referenced from issues and tests.
 - **TGT-2** Supported protocols:
   - **OSC over UDP** — host, port; command = OSC address + arguments (int, float, string).
   - **UDP** — host, port; command = text string.
-  - **HTTP** — base URL; command = method (GET/POST), path, optional body.
+  - **HTTP** — base URL; command = method (GET/POST/PUT), path, optional body.
 - **TGT-3** Every driver implements one common interface, so a new protocol can be added without changing the rest of the system.
 - **TGT-4** Every sent command and every delivery error is recorded in a command log visible in the editor.
   Each entry names its source: the station that tapped, or "Test" for a send from the editor (ACT-4).
@@ -145,7 +147,12 @@ IDs are referenced from issues and tests.
 
 - **ED-1** No authentication in MVP: anyone on the local network can open the editor (see [§8](#8-assumptions-and-constraints)).
 - **ED-2** Renders pages with the same component as the player, with a selection layer on top.
-- **ED-3** Shows the canvas edges that may be cropped in `fill` mode (safe area).
+- **ED-3** Safe area: for a chosen reference screen (16:10 1280×800 or 16:9 1920×1080; an editor
+  preference, not saved in the project), the editor can mark the parts of the page that `fill`
+  mode crops. In `fill` mode, a hotspot that reaches into a cropped band is flagged on the canvas
+  and in its properties, with how much is cropped — even when the safe-area marks are hidden.
+- **ED-8** The canvas is always scaled to fit the available space; the editor shows the current
+  scale as a percentage. No manual zoom or panning in MVP.
 - **ED-4** Provides management of pages, hotspots, targets, stations and canvas settings.
 - **ED-5** Saves changes to the server; saved changes reach open players (see PLY-5).
 - **ED-6** Shows the command log (TGT-4).
@@ -234,6 +241,7 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 ## 9. Out of scope for MVP (planned later)
 
 - Undo/redo in the editor (the architecture must allow adding it).
+- Manual zoom and panning on the editor canvas.
 - Editor password.
 - A command sent when a station returns to its start page after the idle timeout.
 - Image-based hotspot states (a separate "pressed" image).

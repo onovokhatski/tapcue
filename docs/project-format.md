@@ -163,7 +163,7 @@ command is sent first, then the page changes ([spec ACT-2](spec.md#55-actions)).
 |---|---|---|
 | `"osc-udp"` | `targetId`, `address`, `args` | `address` starts with `/`, no spaces. `args`: list of `{ "type": "i" \| "f" \| "s", "value": … }` — 32-bit integer, 32-bit float, string. |
 | `"udp"` | `targetId`, `text` | 1–1024 characters, sent as UTF-8. Line endings must be written explicitly (`"PLAY\r\n"`). |
-| `"http"` | `targetId`, `method`, `path`, `body` | `method`: `"GET"` \| `"POST"`. `path` starts with `/` and is appended to the target's `baseUrl`. `body`: string or `null`; only allowed with `POST`, sent as `text/plain` unless it is valid JSON, then `application/json`. |
+| `"http"` | `targetId`, `method`, `path`, `body` | `method`: `"GET"` \| `"POST"` \| `"PUT"`. `path` starts with `/` and is appended to the target's `baseUrl`. `body`: string or `null`; only allowed with `POST` and `PUT`, sent as `text/plain` unless it is valid JSON, then `application/json`. |
 
 Example OSC arguments:
 
