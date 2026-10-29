@@ -4,10 +4,10 @@ Design phase: **done** (design v1.2, 2026-10-29).
 
 | File | Content |
 |---|---|
-| [tokens.css](tokens.css) | **Source of truth for design tokens**: primitives and semantic colours, type, spacing, radii, elevation, focus, motion |
+| [tokens.css](../../packages/web/src/styles/tokens.css) | **Source of truth for design tokens**: primitives and semantic colours, type, spacing, radii, elevation, focus, motion. Lives in the web app since M1; `theme.css` next to it maps the tokens to Tailwind v4 utilities |
 | [components.md](components.md) | Component inventory: variants, states, props; components per screen; state coverage |
 | [design-system.md](design-system.md) | Usage rules for foundations and components (written for v0.1, still valid) |
-| [tailwind.config.js](tailwind.config.js) | Tailwind v3 mapping of every utility to a token; ported to Tailwind v4 `@theme` in M0 |
+| [tailwind.config.js](tailwind.config.js) | The designer's Tailwind v3 mapping, kept for reference; the app uses the v4 `@theme` in `packages/web/src/styles/theme.css` |
 | [brand/](brand/) | App icon (iPad home screen, PWA, maskable), favicon, horizontal logo for light and dark backgrounds |
 | [prototype/](prototype/) | HTML/Tailwind prototype from Claude Design. Open `prototype/dist/index.html` in a browser |
 | [claude-design-prompts.md](claude-design-prompts.md) | Prompts used to produce the design |

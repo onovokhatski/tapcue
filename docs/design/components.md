@@ -2,7 +2,7 @@
 
 Handoff from design v1.0 (Claude Design). Each component lists its variants, states and props;
 the last column is the reference function in the prototype (`prototype/src/components.js`).
-Tokens: [tokens.css](tokens.css). Rendered frames: `prototype/dist/*.html`.
+Tokens: [tokens.css](../../packages/web/src/styles/tokens.css). Rendered frames: `prototype/dist/*.html`.
 
 ## Components
 

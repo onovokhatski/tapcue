@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './theme.css';
+
+/* Spacing uses Tailwind's default 4 px step (p-4 = 16 px), which matches the --space-* tokens. */
+
+body {
+  margin: 0;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
