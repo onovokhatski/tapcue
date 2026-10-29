@@ -39,3 +39,10 @@ export const AssetPath = z
     'Expected a file name, not "." or ".."',
   );
 export type AssetPath = z.infer<typeof AssetPath>;
+
+/** Display name of a project, page, target or station. */
+export const Name = z
+  .string()
+  .min(1, 'Expected a name')
+  .max(100, 'Expected at most 100 characters');
+export type Name = z.infer<typeof Name>;
