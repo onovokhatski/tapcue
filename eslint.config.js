@@ -12,6 +12,10 @@ export default defineConfig(
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
+    rules: {
+      // `const { field: _, ...rest } = obj` is the idiomatic way to copy an object without a field.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
   },
   {
     // Config files at the root are not part of any package tsconfig, so they get untyped rules only.

@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ZodType } from 'zod';
+import { errorOf } from '../test/errors';
 import { AssetPath, Color, HotspotId, PageId, StationId, TargetId } from './values';
-
-/** Returns the first error message, or null when the value is valid. */
-function errorOf(schema: ZodType, value: unknown): string | null {
-  const result = schema.safeParse(value);
-  return result.success ? null : (result.error.issues[0]?.message ?? 'unknown error');
-}
 
 describe('generated ids', () => {
   it.each([
