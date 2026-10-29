@@ -1,0 +1,117 @@
+/* Tailwind theme built from the design tokens (tokens.css stays the source of truth).
+   `inline` makes utilities use the token variables directly, e.g. bg-surface → var(--color-bg-surface).
+   Tailwind's default palette and radii are cleared, so only token-based utilities exist.
+   Where a theme name equals a token name (--color-success-fg, --radius-sm, --font-sans), the
+   unlayered value in tokens.css wins over Tailwind's theme layer, so there is no loop. */
+@theme inline {
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  /* Backgrounds: bg-app, bg-surface, … */
+  --color-app: var(--color-bg-app);
+  --color-surface: var(--color-bg-surface);
+  --color-subtle: var(--color-bg-subtle);
+  --color-hover: var(--color-bg-hover);
+  --color-pressed: var(--color-bg-pressed);
+  --color-disabled: var(--color-bg-disabled);
+  --color-canvas: var(--color-bg-canvas);
+  --color-inverse: var(--color-bg-inverse);
+  --color-scrim: var(--color-bg-scrim);
+
+  /* Text: text-primary, text-secondary, … */
+  --color-primary: var(--color-text-primary);
+  --color-secondary: var(--color-text-secondary);
+  --color-muted: var(--color-text-muted);
+  --color-text-disabled: var(--color-text-disabled);
+  --color-text-inverse: var(--color-text-inverse);
+  --color-on-accent: var(--color-text-on-accent);
+  --color-on-danger: var(--color-text-on-danger);
+  --color-link: var(--color-text-link);
+  --color-link-hover: var(--color-text-link-hover);
+
+  /* Borders: border-default, border-strong, border-focus */
+  --color-default: var(--color-border-default);
+  --color-strong: var(--color-border-strong);
+  --color-focus: var(--color-border-focus);
+
+  /* Accent and selection */
+  --color-accent: var(--color-accent-default);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-pressed: var(--color-accent-pressed);
+  --color-accent-subtle: var(--color-accent-subtle);
+  --color-accent-strong: var(--color-accent-strong);
+  --color-selection: var(--color-selection-bg);
+  --color-selection-border: var(--color-selection-border);
+
+  /* Status: text-success-fg, bg-success-bg, … */
+  --color-success-fg: var(--color-success-fg);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-border: var(--color-success-border);
+  --color-success-solid: var(--color-success-solid);
+  --color-warning-fg: var(--color-warning-fg);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-border: var(--color-warning-border);
+  --color-warning-solid: var(--color-warning-solid);
+  --color-danger-fg: var(--color-danger-fg);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-danger-border: var(--color-danger-border);
+  --color-danger-solid: var(--color-danger-solid);
+  --color-info-fg: var(--color-info-fg);
+  --color-info-bg: var(--color-info-bg);
+  --color-info-border: var(--color-info-border);
+  --color-info-solid: var(--color-info-solid);
+
+  /* Editor overlay on artwork */
+  --color-overlay-light: var(--color-overlay-light);
+  --color-overlay-dark: var(--color-overlay-dark);
+  --color-overlay-selected: var(--color-overlay-selected);
+  --color-overlay-plate: var(--color-overlay-plate);
+
+  /* Fonts and radii */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-1: var(--elevation-1);
+  --shadow-2: var(--elevation-2);
+  --shadow-3: var(--elevation-3);
+
+  /* Type scale. Tailwind needs size, line height, weight and tracking as separate values, so
+     they repeat the --type-* shorthands in tokens.css; keep both in sync. */
+  --text-heading-xl: 24px;
+  --text-heading-xl--line-height: 32px;
+  --text-heading-xl--font-weight: 600;
+  --text-heading-xl--letter-spacing: -0.015em;
+  --text-heading-l: 20px;
+  --text-heading-l--line-height: 28px;
+  --text-heading-l--font-weight: 600;
+  --text-heading-l--letter-spacing: -0.01em;
+  --text-heading-m: 16px;
+  --text-heading-m--line-height: 24px;
+  --text-heading-m--font-weight: 600;
+  --text-heading-m--letter-spacing: -0.005em;
+  --text-body-m: 14px;
+  --text-body-m--line-height: 20px;
+  --text-body-s: 12px;
+  --text-body-s--line-height: 16px;
+  --text-label-m: 14px;
+  --text-label-m--line-height: 20px;
+  --text-label-m--font-weight: 500;
+  --text-label-s: 12px;
+  --text-label-s--line-height: 16px;
+  --text-label-s--font-weight: 500;
+  --text-label-s--letter-spacing: 0.005em;
+  --text-overline: 11px;
+  --text-overline--line-height: 16px;
+  --text-overline--font-weight: 600;
+  --text-overline--letter-spacing: 0.08em;
+  --text-mono-m: 13px;
+  --text-mono-m--line-height: 20px;
+  --text-mono-s: 12px;
+  --text-mono-s--line-height: 16px;
+}

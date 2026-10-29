@@ -12,6 +12,8 @@
     "node": ">=22.12"
   },
   "scripts": {
+    "dev": "concurrently --names server,web --prefix-colors blue,magenta --kill-others \"npm run dev -w @tapcue/server\" \"npm run dev -w @tapcue/web\"",
+    "build": "npm run build -w @tapcue/web",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -21,7 +23,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
     "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
