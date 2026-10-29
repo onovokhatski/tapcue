@@ -10,6 +10,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@fastify/static": "^10.1.8",
     "@tapcue/shared": "*",
     "fastify": "^5.12.7",
     "tsx": "^4.23.15"
