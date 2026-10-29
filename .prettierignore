@@ -1,0 +1,6 @@
+# Generated, third-party, or design reference files kept as delivered
+package-lock.json
+docs/
+
+# Prose: formatting Markdown tables and line breaks would only add noise to doc diffs
+*.md
