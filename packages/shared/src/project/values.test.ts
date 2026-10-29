@@ -10,10 +10,10 @@ function errorOf(schema: ZodType, value: unknown): string | null {
 
 describe('generated ids', () => {
   it.each([
-    [PageId, 'p_a1b2c3'],
-    [HotspotId, 'h_000000'],
-    [TargetId, 't_zzzzzz'],
-  ])('accepts %#: %s', (schema, value) => {
+    { kind: 'page', schema: PageId, value: 'p_a1b2c3' },
+    { kind: 'hotspot', schema: HotspotId, value: 'h_000000' },
+    { kind: 'target', schema: TargetId, value: 't_zzzzzz' },
+  ])('accepts a $kind id: $value', ({ schema, value }) => {
     expect(errorOf(schema, value)).toBeNull();
   });
 
