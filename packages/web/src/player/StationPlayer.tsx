@@ -1,5 +1,5 @@
-// One station on a tablet: navigation by taps, the idle return, and page changes that fade
-// without a blank frame (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, ADR 0014).
+// One station on a tablet: navigation by taps, the idle return, page changes that fade
+// without a blank frame, and kiosk behaviour (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-7, ADR 0014).
 import type { Canvas, Hotspot, Page, Project, Station } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
@@ -21,6 +21,7 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
   const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
   const later = useLater();
   usePreloadedImages(project);
+  useNoPinchZoom();
 
   function tap(hotspot: Hotspot) {
     // The page change waits for the press effect to let go; the command (M2) will not.
@@ -40,7 +41,13 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
 
   return (
     // Any touch counts as activity, on a hotspot or not; capture sees it before the hotspots do.
-    <main className="relative h-dvh w-screen overflow-hidden" onPointerDownCapture={touched}>
+    // `player` in player.css: no zoom, selection, long-press callout or overscroll (spec PLY-7).
+    <main
+      className="player relative h-dvh w-screen overflow-hidden"
+      onPointerDownCapture={touched}
+      // A long press (or a right click) must not open a menu over the artwork.
+      onContextMenu={(event) => event.preventDefault()}
+    >
       {/* Project order, not stacking order: a layer keeps its place in the DOM as its role changes. */}
       {project.pages.map((page) => {
         const layer = layerOf(page);
@@ -133,4 +140,16 @@ function usePreloadedImages(project: Project) {
       images.length = 0;
     };
   }, [project]);
+}
+
+/**
+ * Safari zooms on a two-finger pinch even when the page asks it not to; its own gesture events
+ * are the one place to stop that. Only while the player runs, so the editor keeps zoom.
+ */
+function useNoPinchZoom() {
+  useEffect(() => {
+    const prevent = (event: Event) => event.preventDefault();
+    document.addEventListener('gesturestart', prevent);
+    return () => document.removeEventListener('gesturestart', prevent);
+  }, []);
 }
