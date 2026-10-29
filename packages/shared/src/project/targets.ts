@@ -30,21 +30,21 @@ const Port = z
 
 const targetBase = { id: TargetId, name: Name };
 
-export const OscUdpTarget = z.object({
+export const OscUdpTarget = z.strictObject({
   ...targetBase,
   protocol: z.literal('osc-udp'),
   host: Host,
   port: Port,
 });
 
-export const UdpTarget = z.object({
+export const UdpTarget = z.strictObject({
   ...targetBase,
   protocol: z.literal('udp'),
   host: Host,
   port: Port,
 });
 
-export const HttpTarget = z.object({
+export const HttpTarget = z.strictObject({
   ...targetBase,
   protocol: z.literal('http'),
   baseUrl: z.url({
@@ -64,23 +64,23 @@ const INT32_MAX = 2 ** 31 - 1;
 
 /** One OSC argument: 32-bit integer (i), 32-bit float (f) or string (s). */
 export const OscArgument = z.discriminatedUnion('type', [
-  z.object({
+  z.strictObject({
     type: z.literal('i'),
     value: z.int('Expected a whole number').min(INT32_MIN).max(INT32_MAX),
   }),
-  z.object({ type: z.literal('f'), value: z.number('Expected a number') }),
-  z.object({ type: z.literal('s'), value: z.string() }),
+  z.strictObject({ type: z.literal('f'), value: z.number('Expected a number') }),
+  z.strictObject({ type: z.literal('s'), value: z.string() }),
 ]);
 export type OscArgument = z.infer<typeof OscArgument>;
 
-export const OscUdpCommand = z.object({
+export const OscUdpCommand = z.strictObject({
   type: z.literal('osc-udp'),
   targetId: TargetId,
   address: z.string().regex(/^\/\S*$/, 'Expected an OSC address starting with "/", without spaces'),
   args: z.array(OscArgument),
 });
 
-export const UdpCommand = z.object({
+export const UdpCommand = z.strictObject({
   type: z.literal('udp'),
   targetId: TargetId,
   text: z
@@ -90,7 +90,7 @@ export const UdpCommand = z.object({
 });
 
 export const HttpCommand = z
-  .object({
+  .strictObject({
     type: z.literal('http'),
     targetId: TargetId,
     method: z.enum(['GET', 'POST', 'PUT']),

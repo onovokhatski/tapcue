@@ -11,7 +11,7 @@ const Pixels = z
 export const ScaleMode = z.enum(['fit', 'fill']);
 export type ScaleMode = z.infer<typeof ScaleMode>;
 
-export const Canvas = z.object({
+export const Canvas = z.strictObject({
   width: Pixels,
   height: Pixels,
   scaleMode: ScaleMode,
