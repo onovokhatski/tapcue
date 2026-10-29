@@ -5,10 +5,14 @@
   "description": "Stores the project, serves the web app and delivers commands to media servers.",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@tapcue/shared": "*"
+    "@tapcue/shared": "*",
+    "fastify": "^5.12.7",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
     "@types/node": "^22.20.5"
