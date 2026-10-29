@@ -207,7 +207,8 @@ slugs because they appear in URLs.
 
 Validation happens in two layers:
 
-1. **Shape** — every field has the right type and range (the tables above).
+1. **Shape** — every field has the right type and range (the tables above). Unknown fields are rejected,
+   so a typo in a hand-edited file is reported instead of being silently dropped on the next save.
 2. **References** — checked across the whole project:
    - all IDs are unique within their kind;
    - every `goTo` and `startPageId` points to an existing page;
