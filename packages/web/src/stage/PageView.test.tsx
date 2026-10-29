@@ -101,7 +101,7 @@ describe('PageView', () => {
     it('places a hotspot in canvas pixels with its corner radius (spec HS-3)', () => {
       stubViewport(1024, 768);
       const el = renderPage(page({ hotspots: [hotspot] })).hotspotEl('h_test00');
-      expect(el?.style.position).toBe('absolute');
+      expect(el).toHaveClass('hotspot'); // position: absolute comes from hotspot.css
       expect(el?.style.left).toBe('100px');
       expect(el?.style.top).toBe('200px');
       expect(el?.style.width).toBe('300px');
@@ -123,16 +123,20 @@ describe('PageView', () => {
         style: { fill: '#3a7bff', border: { color: '#ffffff', width: 4 }, opacity: 0.5 },
       };
       const el = renderPage(page({ hotspots: [styled] })).hotspotEl('h_test00');
-      expect(el?.style.backgroundColor).toBe('#3a7bff');
-      expect(el?.style.border).toBe('4px solid #ffffff');
-      expect(el?.style.opacity).toBe('0.5');
+      const layer = el?.querySelector<HTMLElement>('.hotspot-style');
+      expect(layer?.style.backgroundColor).toBe('#3a7bff');
+      expect(layer?.style.border).toBe('4px solid #ffffff');
+      expect(layer?.style.opacity).toBe('0.5');
+      // Only the style layer is faded, so a press effect stays fully visible.
+      expect(el?.style.opacity).toBe('');
     });
 
     it('draws nothing for an invisible hotspot, but keeps its area', () => {
       stubViewport(1024, 768);
       const el = renderPage(page({ hotspots: [hotspot] })).hotspotEl('h_test00');
-      expect(el?.style.backgroundColor).toBe('');
-      expect(el?.style.border).toBe('');
+      const layer = el?.querySelector<HTMLElement>('.hotspot-style');
+      expect(layer?.style.backgroundColor).toBe('');
+      expect(layer?.style.border).toBe('');
       expect(el?.style.width).toBe('300px');
     });
 
