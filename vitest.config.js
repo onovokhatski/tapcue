@@ -4,7 +4,5 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     projects: ['packages/*'],
-    // Temporary: no package has tests yet. Removed with the first schema tests (#6).
-    passWithNoTests: true,
   },
 });

@@ -4,7 +4,13 @@
   "private": true,
   "description": "Project format and message schemas shared by the server and the web app.",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }
