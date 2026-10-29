@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "name": "Demo stand",
+  "canvas": { "width": 2048, "height": 1536, "scaleMode": "fit", "backgroundColor": "#000000" },
+  "pages": [
+    {
+      "id": "p_home00",
+      "name": "Home",
+      "background": { "type": "image", "asset": "assets/home.jpg" },
+      "hotspots": [
+        {
+          "id": "h_carda0",
+          "name": "Product A card",
+          "x": 144,
+          "y": 500,
+          "width": 560,
+          "height": 720,
+          "shape": { "type": "rect", "cornerRadius": 40 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "press",
+          "action": {
+            "goTo": "p_proda0",
+            "command": {
+              "type": "osc-udp",
+              "targetId": "t_resolm",
+              "address": "/composition/columns/2/connect",
+              "args": [{ "type": "i", "value": 1 }]
+            }
+          }
+        },
+        {
+          "id": "h_cardb0",
+          "name": "Product B card",
+          "x": 744,
+          "y": 500,
+          "width": 560,
+          "height": 720,
+          "shape": { "type": "rect", "cornerRadius": 40 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "press",
+          "action": {
+            "goTo": "p_prodb0",
+            "command": {
+              "type": "osc-udp",
+              "targetId": "t_resolm",
+              "address": "/composition/columns/3/connect",
+              "args": [{ "type": "i", "value": 1 }]
+            }
+          }
+        },
+        {
+          "id": "h_cardc0",
+          "name": "Product C card",
+          "x": 1344,
+          "y": 500,
+          "width": 560,
+          "height": 720,
+          "shape": { "type": "rect", "cornerRadius": 40 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "ripple",
+          "action": {
+            "goTo": null,
+            "command": {
+              "type": "osc-udp",
+              "targetId": "t_resolm",
+              "address": "/composition/columns/4/connect",
+              "args": [{ "type": "i", "value": 1 }]
+            }
+          }
+        },
+        {
+          "id": "h_about0",
+          "name": "About",
+          "x": 1760,
+          "y": 1244,
+          "width": 144,
+          "height": 144,
+          "shape": { "type": "ellipse" },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "highlight",
+          "action": { "goTo": "p_about0", "command": null }
+        },
+        {
+          "id": "h_call00",
+          "name": "Call our team",
+          "x": 1592,
+          "y": 76,
+          "width": 312,
+          "height": 96,
+          "shape": { "type": "rect", "cornerRadius": 48 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "highlight",
+          "action": {
+            "goTo": null,
+            "command": {
+              "type": "http",
+              "targetId": "t_demo00",
+              "method": "POST",
+              "path": "/demo/screen-3/call-staff",
+              "body": "{ \"stand\": \"B12\" }"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "p_proda0",
+      "name": "Product A",
+      "background": { "type": "image", "asset": "assets/product-a.jpg" },
+      "hotspots": [
+        {
+          "id": "h_aback0",
+          "name": "Back",
+          "x": 120,
+          "y": 176,
+          "width": 236,
+          "height": 88,
+          "shape": { "type": "rect", "cornerRadius": 44 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "highlight",
+          "action": { "goTo": "p_home00", "command": null }
+        },
+        {
+          "id": "h_aplay0",
+          "name": "Play demo",
+          "x": 1120,
+          "y": 1040,
+          "width": 600,
+          "height": 112,
+          "shape": { "type": "rect", "cornerRadius": 56 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "press",
+          "action": {
+            "goTo": null,
+            "command": {
+              "type": "http",
+              "targetId": "t_demo00",
+              "method": "POST",
+              "path": "/demo/screen-1/product-a",
+              "body": null
+            }
+          }
+        },
+        {
+          "id": "h_anext0",
+          "name": "Next product",
+          "x": 1104,
+          "y": 1224,
+          "width": 400,
+          "height": 72,
+          "shape": { "type": "rect", "cornerRadius": 8 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "highlight",
+          "action": { "goTo": "p_prodb0", "command": null }
+        }
+      ]
+    },
+    {
+      "id": "p_prodb0",
+      "name": "Product B",
+      "background": { "type": "image", "asset": "assets/product-b.jpg" },
+      "hotspots": [
+        {
+          "id": "h_bback0",
+          "name": "Back",
+          "x": 120,
+          "y": 176,
+          "width": 236,
+          "height": 88,
+          "shape": { "type": "rect", "cornerRadius": 44 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "highlight",
+          "action": { "goTo": "p_home00", "command": null }
+        },
+        {
+          "id": "h_bplay0",
+          "name": "Play demo",
+          "x": 144,
+          "y": 940,
+          "width": 600,
+          "height": 112,
+          "shape": { "type": "rect", "cornerRadius": 56 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "press",
+          "action": {
+            "goTo": null,
+            "command": {
+              "type": "http",
+              "targetId": "t_demo00",
+              "method": "POST",
+              "path": "/demo/screen-1/product-b",
+              "body": null
+            }
+          }
+        },
+        {
+          "id": "h_bwall0",
+          "name": "Show on the wall",
+          "x": 144,
+          "y": 1092,
+          "width": 600,
+          "height": 112,
+          "shape": { "type": "rect", "cornerRadius": 56 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "press",
+          "action": {
+            "goTo": null,
+            "command": { "type": "udp", "targetId": "t_projec", "text": "%1INPT 31\r" }
+          }
+        }
+      ]
+    },
+    {
+      "id": "p_about0",
+      "name": "About us",
+      "background": { "type": "video", "asset": "assets/about-loop.mp4" },
+      "hotspots": [
+        {
+          "id": "h_abtbk0",
+          "name": "Back",
+          "x": 120,
+          "y": 176,
+          "width": 236,
+          "height": 88,
+          "shape": { "type": "rect", "cornerRadius": 44 },
+          "style": { "fill": null, "border": null, "opacity": 1 },
+          "pressEffect": "highlight",
+          "action": { "goTo": "p_home00", "command": null }
+        }
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "id": "t_resolm",
+      "name": "Resolume",
+      "protocol": "osc-udp",
+      "host": "192.168.1.20",
+      "port": 7000
+    },
+    {
+      "id": "t_projec",
+      "name": "Projector",
+      "protocol": "udp",
+      "host": "192.168.1.40",
+      "port": 4352
+    },
+    {
+      "id": "t_demo00",
+      "name": "Demo receiver",
+      "protocol": "http",
+      "baseUrl": "http://localhost:4000"
+    }
+  ],
+  "stations": [
+    { "id": "main", "name": "Main catalog", "startPageId": "p_home00", "idleTimeoutSeconds": 90 },
+    { "id": "small", "name": "Small screen", "startPageId": "p_proda0", "idleTimeoutSeconds": 60 }
+  ]
+}
