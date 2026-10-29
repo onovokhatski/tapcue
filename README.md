@@ -7,6 +7,8 @@
 
 # Tapcue
 
+[![CI](https://github.com/onovokhatski/tapcue/actions/workflows/ci.yml/badge.svg)](https://github.com/onovokhatski/tapcue/actions/workflows/ci.yml)
+
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
 > **Status:** pre-implementation — no code yet. The specification, architecture, decisions,
@@ -99,6 +101,9 @@ npm install
 | `npm run lint` | Lints the code (ESLint with type-aware rules) |
 | `npm run format` | Formats the code (Prettier); `format:check` only reports |
 | `npm test` | Runs the tests of every package once (Vitest); `test:watch` re-runs on change |
+
+CI runs type check, lint, format check and tests on every pull request; `main` only changes through
+pull requests with a green CI.
 
 The repository is an npm workspace with three packages:
 
