@@ -1,9 +1,9 @@
-// Shows the station's start page full-screen. Navigation, idle return and the not-found page come
-// with the player runtime (#27).
+// The player at /play/:stationId: loads the project, then runs the station or explains why it cannot.
 import type { Project } from '@tapcue/shared';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { PageView } from '../stage/PageView';
+import { StationNotFound } from './StationNotFound';
+import { StationPlayer } from './StationPlayer';
 
 type Load = { state: 'loading' } | { state: 'failed' } | { state: 'loaded'; project: Project };
 
@@ -35,14 +35,10 @@ export function PlayerRoute() {
 
   const { project } = load;
   const station = project.stations.find((s) => s.id === stationId);
-  const page = project.pages.find((p) => p.id === station?.startPageId);
-  if (!page) return <Message text={`Station not found: ${stationId}`} />;
+  if (!station) return <StationNotFound stationId={stationId ?? ''} stations={project.stations} />;
 
-  return (
-    <main className="h-dvh w-screen">
-      <PageView page={page} canvas={project.canvas} />
-    </main>
-  );
+  // The key starts a fresh player when a link switches to another station.
+  return <StationPlayer key={station.id} project={project} station={station} />;
 }
 
 function Message({ text }: { text: string }) {

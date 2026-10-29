@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import demoProject from '../../../examples/demo-stand/project.json?raw';
 import { routes } from './routes';
+import { demoProjectJson } from './test/demoProject';
 
 function routerAt(path: string) {
   return createMemoryRouter(routes, { initialEntries: [path] });
@@ -32,7 +32,9 @@ describe('routes', () => {
 
   describe('player', () => {
     const projectResponse = () =>
-      new Response(JSON.stringify({ revision: 1, project: JSON.parse(demoProject) as unknown }));
+      new Response(
+        JSON.stringify({ revision: 1, project: JSON.parse(demoProjectJson) as unknown }),
+      );
 
     it('shows the start page of the station from the URL (spec PLY-1)', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
@@ -45,10 +47,47 @@ describe('routes', () => {
       expect(fetch).toHaveBeenCalledWith('/api/project');
     });
 
-    it('says so when the station does not exist', async () => {
+    it('starts another station afresh when the URL switches to it', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
-      renderAt('/play/nowhere');
-      expect(await screen.findByText('Station not found: nowhere')).toBeInTheDocument();
+      const router = renderAt('/play/main');
+      const page = await screen.findByTestId('page-canvas');
+      // On "main", go from Home to Product B.
+      const cardB = page.querySelector('[data-hotspot="h_cardb0"]')!;
+      fireEvent.pointerDown(cardB, { pointerId: 1, button: 0 });
+      fireEvent.pointerUp(cardB, { pointerId: 1, button: 0 });
+      expect(document.querySelector('img')).toHaveAttribute('src', '/assets/product-b.jpg');
+
+      await act(() => router.navigate('/play/small'));
+      // "small" starts on Product A, not where "main" was left.
+      expect(document.querySelector('img')).toHaveAttribute('src', '/assets/product-a.jpg');
+    });
+
+    describe('an unknown station (spec PLY-8)', () => {
+      it('names the id and links to the stations of the project', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
+        renderAt('/play/mian');
+        expect(
+          await screen.findByRole('heading', { name: 'Station not found' }),
+        ).toBeInTheDocument();
+        expect(screen.getByText('mian', { selector: 'code' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /Main catalog/ })).toHaveAttribute(
+          'href',
+          '/play/main',
+        );
+        expect(screen.getByRole('link', { name: /Small screen/ })).toHaveAttribute(
+          'href',
+          '/play/small',
+        );
+      });
+
+      it('opens a station from its link', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
+        const router = renderAt('/play/mian');
+        fireEvent.click(await screen.findByRole('link', { name: /Small screen/ }));
+        expect(router.state.location.pathname).toBe('/play/small');
+        // Station "small" starts on Product A.
+        expect(document.querySelector('img')).toHaveAttribute('src', '/assets/product-a.jpg');
+      });
     });
 
     it('says so when the server cannot be reached', async () => {
