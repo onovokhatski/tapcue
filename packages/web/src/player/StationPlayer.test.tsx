@@ -199,3 +199,24 @@ describe('StationPlayer', () => {
     });
   });
 });
+
+describe('kiosk behaviour (spec PLY-7)', () => {
+  it('marks the player for the kiosk styles: no zoom, selection, callout or bounce', () => {
+    const { container } = renderStation();
+    expect(container.querySelector('main')).toHaveClass('player');
+  });
+
+  it('opens no menu on a long press or right click', () => {
+    const { container } = renderStation();
+    const opened = fireEvent.contextMenu(container.querySelector('img')!);
+    expect(opened).toBe(false); // default prevented
+  });
+
+  it("blocks Safari's pinch zoom only while the player runs", () => {
+    const pinch = () => document.dispatchEvent(new Event('gesturestart', { cancelable: true }));
+    const { unmount } = render(<StationPlayer project={project} station={main} />);
+    expect(pinch()).toBe(false);
+    unmount();
+    expect(pinch()).toBe(true);
+  });
+});

@@ -1,3 +1,23 @@
+/* Kiosk behaviour (spec PLY-7): a stray touch must never zoom, select, open a menu or bounce
+   the page on a stand. */
+.player {
+  touch-action: none; /* no double-tap zoom, no pinch zoom, no panning */
+  user-select: none;
+  -webkit-user-select: none; /* Safari still needs the prefix */
+  -webkit-touch-callout: none; /* no "Save Image" sheet on a long press */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.player img,
+.player video {
+  -webkit-user-drag: none; /* artwork cannot be dragged out of the page */
+}
+
+/* No rubber-band bounce of the whole page while the player is on screen. */
+html:has(.player) {
+  overscroll-behavior: none;
+}
+
 /* Page layers of the player (spec PG-4, PG-5, ADR 0014). The DOM order of layers never changes —
    moving a video element in the DOM pauses it — so their stacking is set here. */
 
