@@ -24,8 +24,9 @@ export default defineConfig(
     extends: [reactHooks.configs.flat['recommended-latest']],
   },
   {
-    // Config files at the root are not part of any package tsconfig, so they get untyped rules only.
-    files: ['*.js'],
+    // Root config files and example scripts are not part of any package tsconfig, so they get
+    // untyped rules only.
+    files: ['*.js', 'examples/**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 );
