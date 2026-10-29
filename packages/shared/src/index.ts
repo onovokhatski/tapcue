@@ -5,3 +5,4 @@ export * from './project/targets';
 export * from './project/pages';
 export * from './project/stations';
 export * from './project/project';
+export * from './project/validate';
