@@ -1,16 +1,73 @@
-import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
+import { DEFAULT_PROJECT_DIR } from './config';
+import { loadProjectStore, type ProjectStore } from './project/store';
+
+let store: ProjectStore;
+beforeAll(async () => {
+  store = await loadProjectStore(DEFAULT_PROJECT_DIR);
+});
+
+// inject() sends a request straight to the app: no port, no network, fast and parallel-safe.
+const get = (url: string, headers: Record<string, string> = {}) =>
+  buildApp({ store }).inject({ method: 'GET', url, headers });
 
 describe('buildApp', () => {
   it('answers the health check', async () => {
-    // inject() sends a request straight to the app: no port, no network, fast and parallel-safe.
-    const response = await buildApp().inject({ method: 'GET', url: '/api/health' });
+    const response = await get('/api/health');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ ok: true });
   });
 
   it('returns 404 for an unknown route', async () => {
-    const response = await buildApp().inject({ method: 'GET', url: '/api/nothing' });
-    expect(response.statusCode).toBe(404);
+    expect((await get('/api/nothing')).statusCode).toBe(404);
+  });
+
+  it('serves the project with its revision', async () => {
+    const response = await get('/api/project');
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ revision: 1, project: store.project });
+  });
+
+  describe('assets', () => {
+    const file = (name: string) => readFile(join(DEFAULT_PROJECT_DIR, 'assets', name));
+
+    it('serves an image with its type and size', async () => {
+      const response = await get('/assets/home.jpg');
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-type']).toBe('image/jpeg');
+      expect(response.rawPayload).toEqual(await file('home.jpg'));
+    });
+
+    it('serves a video and announces that it accepts byte ranges', async () => {
+      const response = await get('/assets/about-loop.mp4');
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-type']).toBe('video/mp4');
+      expect(response.headers['accept-ranges']).toBe('bytes');
+    });
+
+    it('answers a Range request with exactly those bytes (Safari needs this for video)', async () => {
+      const video = await file('about-loop.mp4');
+      const response = await get('/assets/about-loop.mp4', { range: 'bytes=100-199' });
+      expect(response.statusCode).toBe(206);
+      expect(response.headers['content-range']).toBe(`bytes 100-199/${video.length}`);
+      expect(response.rawPayload).toEqual(video.subarray(100, 200));
+    });
+
+    it('returns 404 for a file that does not exist', async () => {
+      expect((await get('/assets/nothing.jpg')).statusCode).toBe(404);
+    });
+
+    it.each([
+      '/assets/../project.json',
+      '/assets/%2e%2e/project.json',
+      '/assets/..%2fproject.json',
+    ])('never serves files outside the assets folder: %s', async (url) => {
+      const response = await get(url);
+      expect(response.statusCode).not.toBe(200);
+      expect(response.body).not.toContain('schemaVersion');
+    });
   });
 });
