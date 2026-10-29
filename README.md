@@ -98,6 +98,7 @@ npm install
 | `npm run typecheck` | Type-checks every package (TypeScript, strict mode) |
 | `npm run lint` | Lints the code (ESLint with type-aware rules) |
 | `npm run format` | Formats the code (Prettier); `format:check` only reports |
+| `npm test` | Runs the tests of every package once (Vitest); `test:watch` re-runs on change |
 
 The repository is an npm workspace with three packages:
 
