@@ -9,5 +9,8 @@
   },
   "dependencies": {
     "@tapcue/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5"
   }
 }
