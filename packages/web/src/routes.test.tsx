@@ -41,25 +41,32 @@ describe('routes', () => {
       const { container } = render(<RouterProvider router={routerAt('/play/main')} />);
       expect(screen.getByText('Loading…')).toBeInTheDocument();
       // Station "main" starts on Home: its artwork and its five hotspots.
-      await waitFor(() => expect(container.querySelector('img')).toBeInTheDocument());
-      expect(container.querySelector('img')).toHaveAttribute('src', '/assets/home.jpg');
-      expect(container.querySelectorAll('[data-hotspot]')).toHaveLength(5);
+      const shown = await waitFor(() => {
+        const layer = container.querySelector('[data-layer="shown"]');
+        expect(layer).toBeInTheDocument();
+        return layer!;
+      });
+      expect(shown).toHaveAttribute('data-page', 'p_home00');
+      expect(shown.querySelector('img')).toHaveAttribute('src', '/assets/home.jpg');
+      expect(shown.querySelectorAll('[data-hotspot]')).toHaveLength(5);
       expect(fetch).toHaveBeenCalledWith('/api/project');
     });
 
     it('starts another station afresh when the URL switches to it', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
       const router = renderAt('/play/main');
-      const page = await screen.findByTestId('page-canvas');
-      // On "main", go from Home to Product B.
-      const cardB = page.querySelector('[data-hotspot="h_cardb0"]')!;
+      const layer = (role: string) => document.querySelector(`[data-layer="${role}"]`);
+      await waitFor(() => expect(layer('shown')).toBeInTheDocument());
+      // On "main", head from Home to Product B.
+      const cardB = layer('shown')!.querySelector('[data-hotspot="h_cardb0"]')!;
       fireEvent.pointerDown(cardB, { pointerId: 1, button: 0 });
       fireEvent.pointerUp(cardB, { pointerId: 1, button: 0 });
-      expect(document.querySelector('img')).toHaveAttribute('src', '/assets/product-b.jpg');
+      await waitFor(() => expect(layer('incoming')).toHaveAttribute('data-page', 'p_prodb0'));
 
       await act(() => router.navigate('/play/small'));
       // "small" starts on Product A, not where "main" was left.
-      expect(document.querySelector('img')).toHaveAttribute('src', '/assets/product-a.jpg');
+      expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+      expect(layer('incoming')).toBeNull();
     });
 
     describe('an unknown station (spec PLY-8)', () => {
@@ -86,7 +93,10 @@ describe('routes', () => {
         fireEvent.click(await screen.findByRole('link', { name: /Small screen/ }));
         expect(router.state.location.pathname).toBe('/play/small');
         // Station "small" starts on Product A.
-        expect(document.querySelector('img')).toHaveAttribute('src', '/assets/product-a.jpg');
+        expect(document.querySelector('[data-layer="shown"]')).toHaveAttribute(
+          'data-page',
+          'p_proda0',
+        );
       });
     });
 
