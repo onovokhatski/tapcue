@@ -1,0 +1,76 @@
+/* Hotspot press effects (spec HS-5, ADR 0008): plain CSS driven by data attributes, timed by
+   the motion tokens. Sizes are canvas pixels; the whole page is scaled down on screen. */
+
+.hotspot {
+  position: absolute;
+  overflow: hidden; /* clips the ripple to the shape and corner radius */
+  touch-action: none; /* the browser must not turn a press into a pan or zoom */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Layers fill the hotspot and follow its shape; only the hotspot itself receives the pointer. */
+.hotspot > * {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* highlight and press: a layer that fades in on touch-down, holds while pressed, fades out on release. */
+.press-layer {
+  opacity: 0;
+  transition: opacity var(--duration-press-out) var(--easing-out);
+}
+
+.hotspot[data-effect='highlight'] > .press-layer {
+  background: color-mix(in srgb, var(--color-overlay-light) 24%, transparent);
+}
+
+/* press-in: darker, with an inner shadow, as if pushed into the screen. */
+.hotspot[data-effect='press'] > .press-layer {
+  background: color-mix(in srgb, var(--color-overlay-dark) 10%, transparent);
+  box-shadow: inset 0 12px 36px color-mix(in srgb, var(--color-overlay-dark) 35%, transparent);
+  transition-duration: var(--duration-fast);
+}
+
+/* Last, so the faster fade-in wins over each effect's release timing. */
+.hotspot[data-pressed] > .press-layer {
+  opacity: 1;
+  transition-duration: var(--duration-press-in);
+}
+
+/* ripple: a light circle grows from the touch point and fades; its size is set inline. */
+.hotspot > .ripple {
+  inset: auto;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-overlay-light) 34%, transparent);
+  animation: hotspot-ripple var(--duration-ripple) var(--easing-out) forwards;
+}
+
+@keyframes hotspot-ripple {
+  from {
+    transform: scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the ripple only fades, without growing. The fades of highlight and press stay. */
+@media (prefers-reduced-motion: reduce) {
+  .hotspot > .ripple {
+    animation-name: hotspot-ripple-fade;
+  }
+}
+
+@keyframes hotspot-ripple-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

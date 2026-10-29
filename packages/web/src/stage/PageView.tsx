@@ -1,15 +1,17 @@
 // Draws one page — background and hotspots — at canvas size, scaled to fill its parent (ADR 0004).
 import type { Background, Canvas, Hotspot, Page } from '@tapcue/shared';
-import type { CSSProperties } from 'react';
 import { stageGeometry } from './geometry';
+import { HotspotView } from './HotspotView';
 import { useElementSize } from './useElementSize';
 
 interface PageViewProps {
   page: Page;
   canvas: Canvas;
+  /** Called when a hotspot is tapped: released inside after being pressed (spec ACT-2). */
+  onTap?: (hotspot: Hotspot) => void;
 }
 
-export function PageView({ page, canvas }: PageViewProps) {
+export function PageView({ page, canvas, onTap }: PageViewProps) {
   const [ref, viewport] = useElementSize<HTMLDivElement>();
   const { scale, offsetX, offsetY } = stageGeometry(canvas, viewport, canvas.scaleMode);
 
@@ -32,7 +34,7 @@ export function PageView({ page, canvas }: PageViewProps) {
       >
         {page.background && <BackgroundView background={page.background} />}
         {page.hotspots.map((hotspot) => (
-          <div key={hotspot.id} data-hotspot={hotspot.id} style={hotspotStyle(hotspot)} />
+          <HotspotView key={hotspot.id} hotspot={hotspot} onTap={onTap} />
         ))}
       </div>
     </div>
@@ -54,20 +56,4 @@ function BackgroundView({ background }: { background: Background }) {
   }
   // Decorative: the page's meaning is in its hotspots, not in a description of the artwork.
   return <img className={className} src={src} alt="" />;
-}
-
-/** Position, shape and the user's style from project data, as inline styles (ADR 0008). */
-function hotspotStyle({ x, y, width, height, shape, style }: Hotspot): CSSProperties {
-  return {
-    position: 'absolute',
-    left: x,
-    top: y,
-    width,
-    height,
-    borderRadius: shape.type === 'ellipse' ? '50%' : shape.cornerRadius,
-    // fill and border both null leave nothing visible: the button is part of the artwork.
-    backgroundColor: style.fill ?? undefined,
-    border: style.border ? `${style.border.width}px solid ${style.border.color}` : undefined,
-    opacity: style.opacity,
-  };
 }
