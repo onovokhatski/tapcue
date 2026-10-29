@@ -1,10 +1,15 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import demoProject from '../../../examples/demo-stand/project.json?raw';
 import { routes } from './routes';
 
+function routerAt(path: string) {
+  return createMemoryRouter(routes, { initialEntries: [path] });
+}
+
 function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const router = routerAt(path);
   render(<RouterProvider router={router} />);
   return router;
 }
@@ -25,17 +30,37 @@ describe('routes', () => {
     expect(screen.getByRole('heading', { name: 'Demo receiver' })).toBeInTheDocument();
   });
 
-  it('opens the player with the station id from the URL', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"ok":true}')));
-    renderAt('/play/main');
-    expect(screen.getByRole('heading', { name: 'Player · main' })).toBeInTheDocument();
-    expect(await screen.findByText('Server: reachable')).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith('/api/health');
-  });
+  describe('player', () => {
+    const projectResponse = () =>
+      new Response(JSON.stringify({ revision: 1, project: JSON.parse(demoProject) as unknown }));
 
-  it('shows when the server cannot be reached', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
-    renderAt('/play/main');
-    expect(await screen.findByText('Server: unreachable')).toBeInTheDocument();
+    it('shows the start page of the station from the URL (spec PLY-1)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
+      const { container } = render(<RouterProvider router={routerAt('/play/main')} />);
+      expect(screen.getByText('Loading…')).toBeInTheDocument();
+      // Station "main" starts on Home: its artwork and its five hotspots.
+      await waitFor(() => expect(container.querySelector('img')).toBeInTheDocument());
+      expect(container.querySelector('img')).toHaveAttribute('src', '/assets/home.jpg');
+      expect(container.querySelectorAll('[data-hotspot]')).toHaveLength(5);
+      expect(fetch).toHaveBeenCalledWith('/api/project');
+    });
+
+    it('says so when the station does not exist', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
+      renderAt('/play/nowhere');
+      expect(await screen.findByText('Station not found: nowhere')).toBeInTheDocument();
+    });
+
+    it('says so when the server cannot be reached', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+      renderAt('/play/main');
+      expect(await screen.findByText('Cannot reach the server')).toBeInTheDocument();
+    });
+
+    it('says so when the server answers with an error', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })));
+      renderAt('/play/main');
+      expect(await screen.findByText('Cannot reach the server')).toBeInTheDocument();
+    });
   });
 });
