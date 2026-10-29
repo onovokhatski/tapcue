@@ -1,0 +1,36 @@
+/* Page layers of the player (spec PG-4, PG-5, ADR 0014). The DOM order of layers never changes —
+   moving a video element in the DOM pauses it — so their stacking is set here. */
+
+.page-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* Warm pages play underneath, fully covered by the shown page. */
+.page-layer[data-layer='warm'] {
+  z-index: 0;
+}
+
+.page-layer[data-layer='shown'] {
+  z-index: 1;
+}
+
+/* The incoming page waits invisible on top until its background is ready, then fades in.
+   The shown page stays opaque underneath, so the canvas colour never shows through mid-fade. */
+.page-layer[data-layer='incoming'] {
+  z-index: 2;
+  opacity: 0;
+}
+
+.page-layer[data-fading] {
+  animation: page-fade-in var(--duration-page-fade) var(--easing-out) both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

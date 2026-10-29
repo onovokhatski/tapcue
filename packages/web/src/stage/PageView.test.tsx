@@ -1,5 +1,5 @@
 import type { Canvas, Hotspot, Page } from '@tapcue/shared';
-import { render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PageView } from './PageView';
 
@@ -69,6 +69,52 @@ describe('PageView', () => {
       const { container } = renderPage(page());
       expect((container.firstChild as HTMLElement).style.backgroundColor).toBe('#102030');
       expect(container.querySelector('img, video')).toBeNull();
+    });
+  });
+
+  describe('ready (spec PG-5)', () => {
+    const renderReady = (p: Page) => {
+      stubViewport(1024, 768);
+      const onReady = vi.fn();
+      const { container } = render(<PageView page={p} canvas={canvas} onReady={onReady} />);
+      return { container, onReady };
+    };
+
+    it('reports an image only once it is loaded and decoded', async () => {
+      const { container, onReady } = renderReady(
+        page({ background: { type: 'image', asset: 'assets/home.jpg' } }),
+      );
+      const img = container.querySelector('img')!;
+      let decoded = () => {};
+      img.decode = () => new Promise<void>((resolve) => (decoded = resolve));
+      fireEvent.load(img);
+      expect(onReady).not.toHaveBeenCalled(); // loaded, not decoded yet
+      await act(async () => {
+        decoded();
+        await Promise.resolve();
+      });
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports a video once its first frame is there', () => {
+      const { container, onReady } = renderReady(
+        page({ background: { type: 'video', asset: 'assets/about-loop.mp4' } }),
+      );
+      expect(onReady).not.toHaveBeenCalled();
+      fireEvent.loadedData(container.querySelector('video')!);
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports a page without a background at once', () => {
+      expect(renderReady(page()).onReady).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports a background that fails to load, so the player never waits forever', () => {
+      const { container, onReady } = renderReady(
+        page({ background: { type: 'image', asset: 'assets/missing.jpg' } }),
+      );
+      fireEvent.error(container.querySelector('img')!);
+      expect(onReady).toHaveBeenCalledTimes(1);
     });
   });
 
