@@ -4,6 +4,9 @@
   "private": true,
   "description": "Editor, player and demo receiver.",
   "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
   "dependencies": {
     "@tapcue/shared": "*"
   }

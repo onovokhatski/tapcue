@@ -4,6 +4,9 @@
   "private": true,
   "description": "Stores the project, serves the web app and delivers commands to media servers.",
   "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
   "dependencies": {
     "@tapcue/shared": "*"
   }

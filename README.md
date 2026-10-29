@@ -93,6 +93,10 @@ Requirements: Node.js 22 LTS or newer (`.nvmrc` pins the version used in CI) and
 npm install
 ```
 
+| Command | What it does |
+|---|---|
+| `npm run typecheck` | Type-checks every package (TypeScript, strict mode) |
+
 The repository is an npm workspace with three packages:
 
 | Package | Responsibility |
