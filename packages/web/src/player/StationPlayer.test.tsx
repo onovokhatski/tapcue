@@ -16,7 +16,7 @@ function advance(ms: number) {
 function renderStation(station: Station = main) {
   const { container } = render(<StationPlayer project={project} station={station} />);
 
-  const layer = (role: 'shown' | 'incoming' | 'warm') =>
+  const layer = (role: 'shown' | 'incoming') =>
     container.querySelector<HTMLElement>(`[data-layer="${role}"]`);
   const backgroundOf = (el: HTMLElement | null) =>
     el?.querySelector('img, video')?.getAttribute('src');
@@ -122,40 +122,52 @@ describe('StationPlayer', () => {
     });
   });
 
-  describe('warm pages (ADR 0014)', () => {
-    it('keeps every layer in its place in the DOM as its role changes (moving a video pauses it)', async () => {
-      const { container, press, load, layer } = renderStation();
-      const order = () =>
-        [...container.querySelectorAll('[data-page]')].map((el) => el.getAttribute('data-page'));
-      // Project order: Home, then About us.
-      expect(order()).toEqual(['p_home00', 'p_about0']);
-      press('h_about0');
-      advance(160);
-      await load(layer('incoming'));
-      expect(order()).toEqual(['p_home00', 'p_about0']);
+  describe('loading on tap (ADR 0016)', () => {
+    const pages = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-page]')].map((el) => el.getAttribute('data-page'));
+
+    it('has only the shown page in the DOM: nothing is loaded ahead of a tap', () => {
+      const { container } = renderStation();
+      expect(pages(container)).toEqual(['p_home00']);
+      expect(container.querySelector('video')).toBeNull(); // About us is not loaded under Home
     });
 
-    it('keeps the About us video loaded under Home, inert', () => {
-      const { layer } = renderStation();
-      const warm = layer('warm')!;
-      expect(warm).toHaveAttribute('data-page', 'p_about0');
-      expect(warm.querySelector('video')).toHaveAttribute('src', '/assets/about-loop.mp4');
-      expect(warm.inert).toBe(true);
-    });
-
-    it('fades the warm video in at once, as the same element — its source is never swapped', async () => {
-      const { layer, press } = renderStation();
-      const video = layer('warm')!.querySelector('video')!;
-      await act(async () => {
-        fireEvent.loadedData(video); // loaded while Home was on screen
-        await Promise.resolve();
-      });
-
+    it('starts loading the next background on the tap and waits for its first frame', async () => {
+      const { layer, press, load } = renderStation();
       press('h_about0'); // highlight: 160 ms
       advance(160);
       const next = layer('incoming')!;
-      expect(next.querySelector('video')).toBe(video);
-      expect(next).toHaveAttribute('data-fading'); // no wait for a first frame
+      expect(next.querySelector('video')).toHaveAttribute('src', '/assets/about-loop.mp4');
+      expect(next).not.toHaveAttribute('data-fading');
+      await load(next);
+      expect(next).toHaveAttribute('data-fading');
+    });
+
+    it('keeps every layer in its place in the DOM as its role changes (moving a video pauses it)', async () => {
+      const { container, press, load, layer, finishFade } = renderStation();
+      press('h_about0');
+      advance(160);
+      await load(layer('incoming'));
+      // Project order: Home, then About us.
+      expect(pages(container)).toEqual(['p_home00', 'p_about0']);
+      const video = layer('incoming')!.querySelector('video');
+      finishFade();
+      expect(layer('shown')!.querySelector('video')).toBe(video); // the same element, still playing
+    });
+
+    it('fades the page underneath back in at once when the visitor taps back mid-fade', async () => {
+      const { container, layer, press, load } = renderStation();
+      await load(layer('shown')); // Home loaded at start
+      press('h_carda0');
+      advance(120);
+      await load(layer('incoming')); // Product A fades in over Home
+      const back = container.querySelector('[data-hotspot="h_aback0"]')!; // on Product A, fading in
+      fireEvent.pointerDown(back, { pointerId: 1, button: 0 });
+      fireEvent.pointerUp(back, { pointerId: 1, button: 0 });
+      advance(160);
+      const home = layer('incoming')!;
+      expect(home).toHaveAttribute('data-page', 'p_home00');
+      expect(home).toHaveAttribute('data-fading'); // loaded long ago: no wait for a first frame
     });
   });
 

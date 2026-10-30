@@ -1,6 +1,6 @@
 # 0014. Warm next-page videos and fade-in on top
 
-Status: Accepted · Date: 2026-10-27
+Status: Superseded by [0016](0016-load-next-page-on-tap.md) · Date: 2026-10-27
 
 ## Context
 Pages can have video backgrounds, and a page change must never show a blank frame

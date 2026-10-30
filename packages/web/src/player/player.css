@@ -18,17 +18,12 @@ html:has(.player) {
   overscroll-behavior: none;
 }
 
-/* Page layers of the player (spec PG-4, PG-5, ADR 0014). The DOM order of layers never changes —
-   moving a video element in the DOM pauses it — so their stacking is set here. */
+/* Page layers of the player (spec PG-4, PG-5, ADR 0014, ADR 0016). The DOM order of layers never
+   changes — moving a video element in the DOM pauses it — so their stacking is set here. */
 
 .page-layer {
   position: absolute;
   inset: 0;
-}
-
-/* Warm pages play underneath, fully covered by the shown page. */
-.page-layer[data-layer='warm'] {
-  z-index: 0;
 }
 
 .page-layer[data-layer='shown'] {
