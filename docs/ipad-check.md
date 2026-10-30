@@ -55,6 +55,8 @@ Idle return (spec ST-4)
 
 ### M1 — player
 
-Device: _model, iPadOS version_ · Date: _YYYY-MM-DD_
+Device: iPad (model and iPadOS version not recorded) · Date: 2026-10-30
 
-_Checked items, and what happened for any that failed._
+All items passed, including 10 minutes of browsing. The wait between a tap and the start of the
+fade was acceptable for image and video pages, so loading on touch-down
+([ADR 0016](adr/0016-load-next-page-on-tap.md)) is not needed.
