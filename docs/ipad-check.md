@@ -51,6 +51,31 @@ Home screen (spec flow F1, step 7)
 Idle return (spec ST-4)
 - [ ] On Product B, wait 90 seconds without touching: the player fades back to Home.
 
+Commands and network loss (spec ACT-2, PLY-2, PLY-3) — needs the built app, see below
+- [ ] With `/demo` open on the Mac, "Call our team" and "Play demo" on the iPad change the
+      screen-3 and screen-1 tiles within a moment.
+- [ ] Turn the iPad's Wi-Fi off: "Reconnecting…" appears in the bottom-right corner after
+      about 1 s, and pages still change on tap.
+- [ ] Tap "Call our team", turn Wi-Fi back on within a few seconds: the indicator goes away,
+      the page does **not** reload, and the tap arrives on `/demo`.
+- [ ] Wi-Fi off, tap "Call our team", wait 10 s, Wi-Fi on: the indicator goes away and that
+      tap does **not** arrive: taps are kept for 5 s, so a late reconnect starts nothing.
+
+For this section, serve the built app instead of the dev server. In development, Vite's own
+client reloads the page whenever its connection comes back, which would hide what the player
+does. Stop `npm run dev -w @tapcue/web`, then:
+
+```bash
+npm run build -w @tapcue/web
+```
+
+```bash
+npm run preview -w @tapcue/web -- --host --port 5173
+```
+
+The preview proxies `/api`, `/assets`, `/ws` and `/demo/` to the server just like the dev
+server, so the same address works on the iPad.
+
 ## Results
 
 ### M1 — player
@@ -60,3 +85,12 @@ Device: iPad (model and iPadOS version not recorded) · Date: 2026-10-30
 All items passed, including 10 minutes of browsing. The wait between a tap and the start of the
 fade was acceptable for image and video pages, so loading on touch-down
 ([ADR 0016](adr/0016-load-next-page-on-tap.md)) is not needed.
+
+### M2 — commands
+
+Device: iPad (model and iPadOS version not recorded) · Date: 2026-10-30 · Built app (`vite preview`)
+
+All items of "Commands and network loss" passed: taps changed the tiles on `/demo`;
+with Wi-Fi off, "Reconnecting…" appeared and pages still changed; after Wi-Fi came back
+within a few seconds, the page did not reload and the queued tap arrived; a tap made 10 s
+before Wi-Fi came back did not arrive.

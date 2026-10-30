@@ -29,3 +29,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      # End to end: the real server and web app in Chromium (e2e/). The browser is fetched with
+      # its system libraries on every run; it is not cached.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

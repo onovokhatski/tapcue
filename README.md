@@ -103,8 +103,9 @@ npm install
 | `npm run lint` | Lints the code (ESLint with type-aware rules) |
 | `npm run format` | Formats the code (Prettier); `format:check` only reports |
 | `npm test` | Runs the tests of every package once (Vitest); `test:watch` re-runs on change |
+| `npm run test:e2e` | Runs the end-to-end tests in Chromium (Playwright): a tap in the player reaches the demo receiver. First time: `npx playwright install chromium` |
 
-CI runs type check, lint, format check and tests on every pull request; `main` only changes through
+CI runs type check, lint, format check, tests and end-to-end tests on every pull request; `main` only changes through
 pull requests with a green CI.
 
 The repository is an npm workspace with three packages:
