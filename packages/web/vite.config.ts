@@ -8,6 +8,11 @@ const SERVER = 'http://localhost:4000';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // /assets/ belongs to the project's images and videos, served by the Tapcue server; the
+    // built app's own scripts and styles go elsewhere, so the two never collide.
+    assetsDir: 'static',
+  },
   server: {
     // Same origin for the browser in development as in production: the web app and the API.
     proxy: {
