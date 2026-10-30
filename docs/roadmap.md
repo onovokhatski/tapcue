@@ -80,7 +80,8 @@ Hand-written demo project with test assets.
 
 Server loads the project and serves it with its assets. Player renders a station: backgrounds
 (image and video), `fit`/`fill`, hotspot shapes and styles, press effects, navigation with
-a fade that waits for the next background, idle timeout. Check the player on a real iPad.
+a fade that waits for the next background, idle timeout. Check the player on a real iPad
+([ipad-check.md](ipad-check.md)).
 
 - **Requirements:** PRJ-1, CNV-1…3, PG-2…5, HS-3…5, ACT-3, ST-2, ST-4, PLY-1, PLY-7, PLY-8
 - **Done when:** the demo project can be browsed in a browser like a real catalogue.

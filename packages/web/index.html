@@ -15,11 +15,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Temporary for #30: ?stats loads the on-screen stats of examples/ipad-check. -->
-    <script>
-      if (new URLSearchParams(location.search).has('stats')) {
-        document.body.appendChild(document.createElement('script')).src = '/assets/stats.js';
-      }
-    </script>
   </body>
 </html>
