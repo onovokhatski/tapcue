@@ -49,3 +49,23 @@ html:has(.player) {
     opacity: 1;
   }
 }
+
+/* The connection indicator (spec PLY-2): a small dark plate with a light ring, readable on light
+   and on dark artwork, above every page layer, clear of the home indicator and rounded corners. */
+.connection-indicator {
+  position: absolute;
+  z-index: 3;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-overlay-plate);
+  color: var(--color-overlay-light);
+  font: var(--type-label-s);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 30%, transparent);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}

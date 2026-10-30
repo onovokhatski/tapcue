@@ -171,7 +171,7 @@ describe('demo receiver page (spec DEMO-1)', () => {
   it('says so when the connection to the server drops', async () => {
     await renderPage();
     act(() => FakeWebSocket.last.drop());
-    expect(status()).toHaveTextContent('Disconnected · reload the page');
+    expect(status()).toHaveTextContent('Disconnected · reconnecting');
   });
 
   it('closes its connection when the page closes', () => {

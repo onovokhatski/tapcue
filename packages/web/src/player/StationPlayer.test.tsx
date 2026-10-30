@@ -1,5 +1,5 @@
 import type { Station } from '@tapcue/shared';
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
@@ -247,12 +247,38 @@ describe('StationPlayer', () => {
       });
     });
 
-    it('drops a tap while not connected, and still navigates (reconnect comes with #53)', () => {
+    it('navigates while offline, and sends the tap once connected within 5 s (spec PLY-3)', () => {
       const { layer, press } = renderStation();
       press('h_carda0');
       advance(120);
-      expect(FakeWebSocket.last.sent).toEqual([]);
       expect(layer('incoming')).toHaveAttribute('data-page', 'p_proda0');
+      advance(4880); // the tap is now exactly 5 s old
+      const server = connected();
+      expect(server.sent).toEqual([
+        { type: 'hello', stationId: 'main' },
+        { type: 'tap', pageId: 'p_home00', hotspotId: 'h_carda0' },
+      ]);
+    });
+
+    it('drops an offline tap older than 5 s, so a late reconnect starts nothing', () => {
+      const { press } = renderStation();
+      press('h_carda0');
+      advance(5001);
+      expect(connected().sent).toEqual([{ type: 'hello', stationId: 'main' }]);
+    });
+
+    it('reconnects after a drop, says hello again and sends the taps made meanwhile', () => {
+      const { press } = renderStation();
+      const first = connected();
+      act(() => first.drop());
+      press('h_call00');
+      advance(1000); // the first new attempt
+      const second = connected();
+      expect(second).not.toBe(first);
+      expect(second.sent).toEqual([
+        { type: 'hello', stationId: 'main' },
+        { type: 'tap', pageId: 'p_home00', hotspotId: 'h_call00' },
+      ]);
     });
 
     it('closes the connection when the player closes', () => {
@@ -260,6 +286,39 @@ describe('StationPlayer', () => {
       const server = connected();
       unmount();
       expect(server.readyState).toBe(FakeWebSocket.CLOSED);
+    });
+  });
+
+  describe('connection indicator (spec PLY-2)', () => {
+    const indicator = () => screen.queryByRole('status');
+
+    it('stays hidden while the first connection opens within 1 s', () => {
+      renderStation();
+      advance(999);
+      act(() => FakeWebSocket.last.open());
+      advance(5000);
+      expect(indicator()).toBeNull();
+    });
+
+    it('shows "Reconnecting…" 1 s after the connection drops, and hides when it is back', () => {
+      renderStation();
+      act(() => FakeWebSocket.last.open());
+      act(() => FakeWebSocket.last.drop());
+      advance(999);
+      expect(indicator()).toBeNull();
+      advance(1); // also the first new attempt
+      expect(indicator()).toHaveTextContent('Reconnecting…');
+      act(() => FakeWebSocket.last.open());
+      expect(indicator()).toBeNull();
+    });
+
+    it('lets taps through to the artwork while it shows', () => {
+      const { layer, press } = renderStation();
+      advance(2000);
+      expect(indicator()).toHaveClass('connection-indicator'); // pointer-events: none in player.css
+      press('h_carda0');
+      advance(120);
+      expect(layer('incoming')).toHaveAttribute('data-page', 'p_proda0');
     });
   });
 
