@@ -179,7 +179,7 @@ Example OSC arguments:
 
 | Field | Type | Rules |
 |---|---|---|
-| `id` | slug | `a–z`, `0–9`, `-`; 1–40 characters; unique among stations. Part of the player URL `/play/<id>`, so it is human-readable. Changing it breaks the URL on already configured tablets. |
+| `id` | slug | `a–z`, `0–9`, `-`; 1–40 characters; unique among stations; not `test`, which marks test sends from the editor ([spec TGT-6](spec.md#56-targets-and-drivers)). Part of the player URL `/play/<id>`, so it is human-readable. Changing it breaks the URL on already configured tablets. |
 | `name` | string | 1–100 characters. |
 | `startPageId` | page [Id](#92-ids) | Must reference an existing page. |
 | `idleTimeoutSeconds` | integer \| `null` | 5–3600. `null` = never return automatically. |

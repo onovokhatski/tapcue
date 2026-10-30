@@ -121,8 +121,9 @@ IDs are referenced from issues and tests.
 - **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
   and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
   confirm arrival. HTTP reports *error* on a non-2xx response or after a 2-second timeout.
-- **TGT-6** Every HTTP command carries `X-Tapcue-Station` (station id, or `test`) and
-  `X-Tapcue-Hotspot` (hotspot name) headers, so the receiving side can tell where it came from.
+- **TGT-6** Every HTTP command carries `X-Tapcue-Station` (station id, or `test`; no station
+  may use that id) and `X-Tapcue-Hotspot` (hotspot name; characters outside printable ASCII and
+  `%` are percent-encoded as UTF-8) headers, so the receiving side can tell where it came from.
 
 ### 5.7 Stations
 

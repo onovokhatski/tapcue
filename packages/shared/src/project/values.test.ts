@@ -42,6 +42,11 @@ describe('StationId', () => {
   ])('rejects an id that is %s', (_, value) => {
     expect(errorOf(StationId, value)).not.toBeNull();
   });
+
+  it('rejects "test", which marks test sends in the X-Tapcue-Station header (spec TGT-6)', () => {
+    expect(errorOf(StationId, 'test')).toBe('"test" is reserved for test sends from the editor');
+    expect(errorOf(StationId, 'test-2')).toBeNull();
+  });
 });
 
 describe('Color', () => {
