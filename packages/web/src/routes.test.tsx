@@ -3,7 +3,6 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routes } from './routes';
 import { demoProjectJson } from './test/demoProject';
-import { FakeWebSocket } from './test/fakeWebSocket';
 
 function routerAt(path: string) {
   return createMemoryRouter(routes, { initialEntries: [path] });
@@ -27,7 +26,6 @@ describe('routes', () => {
   });
 
   it('opens the demo receiver at /demo', () => {
-    vi.stubGlobal('WebSocket', FakeWebSocket);
     vi.stubGlobal(
       'fetch',
       vi.fn(() => new Promise(() => undefined)),

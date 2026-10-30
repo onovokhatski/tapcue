@@ -1,12 +1,13 @@
-// One station on a tablet: navigation by taps, the idle return, page changes that fade
-// without a blank frame, and kiosk behaviour
-// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-7, ADR 0014, ADR 0016).
-import type { Canvas, Hotspot, Page, Project, Station } from '@tapcue/shared';
+// One station on a tablet: taps sent to the server, navigation, the idle return, page changes
+// that fade without a blank frame, and kiosk behaviour
+// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
+import type { Canvas, Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
 import { incoming, playerReducer, startPlayer } from './playerState';
 import { releaseDelay } from './releaseDelay';
 import { useIdleTimer } from './useIdleTimer';
+import { useStationSocket } from './useStationSocket';
 import './player.css';
 
 interface StationPlayerProps {
@@ -20,10 +21,14 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
   const [state, dispatch] = useReducer(playerReducer, { project, station }, startPlayer);
   const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
   const later = useLater();
+  const send = useStationSocket(station.id);
   useNoPinchZoom();
 
-  function tap(hotspot: Hotspot) {
-    // The page change waits for the press effect to let go; the command (M2) will not.
+  function tap(pageId: PageId, hotspot: Hotspot) {
+    // Every tap goes to the server at once: it decides what, if anything, to send (ADR 0005),
+    // and the player's copy of the project may be older than the server's.
+    send({ type: 'tap', pageId, hotspotId: hotspot.id });
+    // The page change waits for the press effect to let go; the command does not (spec ACT-2).
     later(() => dispatch({ type: 'tap', hotspot }), releaseDelay(hotspot.pressEffect));
   }
 
@@ -53,7 +58,7 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
             canvas={project.canvas}
             layer={layer}
             fading={layer === 'incoming' && state.fading}
-            onTap={tap}
+            onTap={(hotspot) => tap(page.id, hotspot)}
             onReady={() => dispatch({ type: 'ready', pageId: page.id })}
             onFaded={() => dispatch({ type: 'faded', pageId: page.id })}
           />
