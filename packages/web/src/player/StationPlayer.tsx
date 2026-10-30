@@ -4,6 +4,7 @@
 import type { Canvas, Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
+import { ConnectionIndicator } from './ConnectionIndicator';
 import { incoming, playerReducer, startPlayer } from './playerState';
 import { releaseDelay } from './releaseDelay';
 import { useIdleTimer } from './useIdleTimer';
@@ -21,13 +22,13 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
   const [state, dispatch] = useReducer(playerReducer, { project, station }, startPlayer);
   const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
   const later = useLater();
-  const send = useStationSocket(station.id);
+  const connection = useStationSocket(station.id);
   useNoPinchZoom();
 
   function tap(pageId: PageId, hotspot: Hotspot) {
     // Every tap goes to the server at once: it decides what, if anything, to send (ADR 0005),
     // and the player's copy of the project may be older than the server's.
-    send({ type: 'tap', pageId, hotspotId: hotspot.id });
+    connection.sendTap({ type: 'tap', pageId, hotspotId: hotspot.id });
     // The page change waits for the press effect to let go; the command does not (spec ACT-2).
     later(() => dispatch({ type: 'tap', hotspot }), releaseDelay(hotspot.pressEffect));
   }
@@ -64,6 +65,7 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
           />
         );
       })}
+      <ConnectionIndicator status={connection.status} />
     </main>
   );
 }

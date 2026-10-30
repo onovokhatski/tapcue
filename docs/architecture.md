@@ -251,9 +251,9 @@ These are three checks in the server and one flag in the editor — no separate 
 
 | Failure | Behaviour |
 |---|---|
-| Tablet loses Wi-Fi | WebSocket closes → indicator shown → taps queued in the player, each kept for 5 s → reconnect with backoff (1 s, 2 s, 4 s … max 10 s) → `hello` → queued taps sent → fetch project if revision changed |
+| Tablet loses Wi-Fi | WebSocket closes → indicator shown after 1 s (none for a blip) → taps queued in the player, each kept for 5 s → reconnect with backoff (1 s, 2 s, 4 s … max 10 s) → `hello` → queued taps sent → fetch project if revision changed |
 | HTTP target slow | Request aborted after 2 s → logged as an error |
-| Silent dead connection | `ping` every 10 s; no `pong` within 5 s → treat as closed |
+| Silent dead connection | Server: `ping` every 10 s; no `pong` within 5 s → closed. Browser: nothing heard for 15 s → treated as closed and replaced |
 | Media server unreachable | Driver throws → error logged and shown in editor; the server keeps running |
 | Invalid project on disk | Server refuses to start with a readable error pointing to the field |
 | Invalid project from editor | `PUT` rejected with field errors; nothing is saved |

@@ -122,7 +122,7 @@ function StatusBadge({ status, count }: { status: SocketStatus; count: number })
     return (
       <span role="status" className={`${BADGE} border-danger-border bg-danger-bg text-danger-fg`}>
         <Icon name="wifi-off" className="h-3.5 w-3.5" />
-        Disconnected · reload the page
+        Disconnected · reconnecting
       </span>
     );
   }
