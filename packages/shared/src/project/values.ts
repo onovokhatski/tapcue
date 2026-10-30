@@ -20,7 +20,9 @@ export type TargetId = z.infer<typeof TargetId>;
 /** Station ids are human-readable because they are part of the player URL /play/<id>. */
 export const StationId = z
   .string()
-  .regex(/^[a-z0-9-]{1,40}$/, 'Expected 1–40 characters: lowercase letters, digits and "-"');
+  .regex(/^[a-z0-9-]{1,40}$/, 'Expected 1–40 characters: lowercase letters, digits and "-"')
+  // A send from the editor is marked "test" in the X-Tapcue-Station header (spec TGT-6).
+  .refine((id) => id !== 'test', '"test" is reserved for test sends from the editor');
 export type StationId = z.infer<typeof StationId>;
 
 /** Opaque colour; transparency is a separate field, so there is one way to express it. */

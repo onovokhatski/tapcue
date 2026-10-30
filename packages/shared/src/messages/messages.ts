@@ -8,7 +8,7 @@ import { HotspotId, Name, PageId, StationId } from '../project/values';
 /** Where a command came from: a tap on a station, or the editor's "Send test" (spec TGT-4, ACT-4). */
 export const LogSource = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('station'), stationId: StationId }),
-  // Not a station id: a station may well be called "test".
+  // Its own variant rather than a magic station id, so code never compares ids with "test".
   z.strictObject({ type: z.literal('test') }),
 ]);
 export type LogSource = z.infer<typeof LogSource>;
