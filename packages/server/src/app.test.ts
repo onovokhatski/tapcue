@@ -1,7 +1,9 @@
 import { readFile } from 'node:fs/promises';
+import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildApp } from './app';
+import type { Drivers } from './commands/dispatcher';
 import { DEFAULT_PROJECT_DIR } from './config';
 import { loadProjectStore, type ProjectStore } from './project/store';
 
@@ -69,5 +71,31 @@ describe('buildApp', () => {
       expect(response.statusCode).not.toBe(200);
       expect(response.body).not.toContain('schemaVersion');
     });
+  });
+
+  it('sends the command of a tap that arrives over /ws, with the driver of its target', async () => {
+    const sent: string[] = [];
+    const fake = (name: string) => ({
+      send: () => {
+        sent.push(name);
+        return Promise.resolve();
+      },
+      close: () => Promise.resolve(),
+    });
+    const drivers: Drivers = { 'osc-udp': fake('osc-udp'), udp: fake('udp'), http: fake('http') };
+    const app = buildApp({ store, drivers });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    try {
+      const port = (app.server.address() as AddressInfo).port;
+      const player = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      await new Promise((resolve) => player.addEventListener('open', resolve));
+      player.send(JSON.stringify({ type: 'hello', stationId: 'main' }));
+      // "Call our team" on Home sends an HTTP command to the demo receiver.
+      player.send(JSON.stringify({ type: 'tap', pageId: 'p_home00', hotspotId: 'h_call00' }));
+      await vi.waitFor(() => expect(sent).toEqual(['http']));
+      player.close();
+    } finally {
+      await app.close();
+    }
   });
 });

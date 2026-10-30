@@ -179,15 +179,16 @@ so this is simpler and safer than syncing fine-grained patches.
 ### 5.2 WebSocket (players and editors ↔ server)
 
 One endpoint, `/ws`. Messages are JSON objects with a `type` field; their schemas are in
-`shared/src/messages/` (`ClientMessage`, `ServerMessage`, read with `parseMessage`).
+`shared/src/messages/` (`ClientMessage`, `ServerMessage`, read with `parseMessage`). A connection
+that says `hello` is a player; every other connection (editors, demo pages) is a *viewer*.
 
 | Direction | Type | Payload | Meaning |
 |---|---|---|---|
 | player → server | `hello` | `stationId` | Identify after (re)connect |
 | player → server | `tap` | `pageId`, `hotspotId` | A hotspot was tapped |
 | server → all | `project-updated` | `revision` | Fetch the new project |
-| server → editors | `log-entry` | entry: source (a station or `test`), hotspot, status `sent`, `error` or `ignored` | A command was sent, failed, or the tap named an unknown hotspot |
-| server → demo pages | `demo-received` | request summary | Demo receiver got a request |
+| server → viewers | `log-entry` | entry: source (a station or `test`), hotspot, status `sent`, `error` or `ignored` | A command was sent, failed, or the tap named an unknown hotspot |
+| server → viewers | `demo-received` | request summary | Demo receiver got a request |
 | both | `ping` / `pong` | — | Detect dead connections |
 
 **The player sends *which hotspot* was tapped, not *what command* to send.** The server looks
