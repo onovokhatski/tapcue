@@ -13,6 +13,9 @@ export default defineConfig({
     proxy: {
       '/api': SERVER,
       '/assets': SERVER,
+      // The demo receiver's endpoint, /demo/<screen>/<content>. The trailing slash keeps the
+      // web app's own page /demo out of the proxy.
+      '/demo/': SERVER,
       '/ws': { target: SERVER, ws: true },
     },
   },

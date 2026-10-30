@@ -48,6 +48,9 @@ export const DemoRequest = z.strictObject({
   screen: z.string().min(1),
   content: z.string().min(1),
   body: z.string().nullable(),
+  /** From the X-Tapcue-Station and X-Tapcue-Hotspot headers (spec TGT-6); null when absent. */
+  station: z.string().nullable(),
+  hotspot: z.string().nullable(),
 });
 export type DemoRequest = z.infer<typeof DemoRequest>;
 

@@ -28,6 +28,8 @@ const demoRequest = {
   screen: 'screen-3',
   content: 'call-staff',
   body: '{ "stand": "B12" }',
+  station: 'main',
+  hotspot: 'Call our team',
 };
 
 describe('ClientMessage', () => {
@@ -123,6 +125,10 @@ describe('DemoRequest', () => {
   it('accepts a request with a body, and one without', () => {
     expect(errorOf(DemoRequest, demoRequest)).toBeNull();
     expect(errorOf(DemoRequest, { ...demoRequest, body: null })).toBeNull();
+  });
+
+  it('accepts a request without Tapcue headers, e.g. from curl', () => {
+    expect(errorOf(DemoRequest, { ...demoRequest, station: null, hotspot: null })).toBeNull();
   });
 
   it.each([

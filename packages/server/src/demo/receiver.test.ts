@@ -19,7 +19,11 @@ describe('demo receiver endpoint (spec DEMO-1)', () => {
     const { response, received } = await receive({
       method: 'POST',
       url: '/demo/screen-3/call-staff',
-      headers: { 'content-type': 'text/plain;charset=UTF-8' },
+      headers: {
+        'content-type': 'text/plain;charset=UTF-8',
+        'x-tapcue-station': 'main',
+        'x-tapcue-hotspot': 'Call our team',
+      },
       payload: '{ "stand": "B12" }',
     });
     expect(response.statusCode).toBe(200);
@@ -31,14 +35,31 @@ describe('demo receiver endpoint (spec DEMO-1)', () => {
         screen: 'screen-3',
         content: 'call-staff',
         body: '{ "stand": "B12" }',
+        station: 'main',
+        hotspot: 'Call our team',
       },
     ]);
     expect(DemoRequest.safeParse(received[0]).success).toBe(true);
   });
 
-  it('reports a request without a body with body null', async () => {
+  it('reports a request without a body or Tapcue headers with nulls', async () => {
     const { received } = await receive({ method: 'POST', url: '/demo/screen-1/product-a' });
-    expect(received).toMatchObject([{ screen: 'screen-1', content: 'product-a', body: null }]);
+    expect(received).toMatchObject([
+      { screen: 'screen-1', content: 'product-a', body: null, station: null, hotspot: null },
+    ]);
+  });
+
+  it('decodes a percent-encoded hotspot name, and keeps one that is not', async () => {
+    const send = (hotspot: string) =>
+      receive({
+        method: 'POST',
+        url: '/demo/screen-1/product-a',
+        headers: { 'x-tapcue-hotspot': hotspot },
+      });
+    expect((await send('%D0%9A%D0%BD%D0%BE%D0%BF%D0%BA%D0%B0 100%25')).received).toMatchObject([
+      { hotspot: 'Кнопка 100%' },
+    ]);
+    expect((await send('50% off')).received).toMatchObject([{ hotspot: '50% off' }]);
   });
 
   it('reports an empty body as null too', async () => {
