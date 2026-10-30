@@ -171,7 +171,7 @@ contract at runtime and get the same TypeScript types at compile time.
 | `POST /api/project/import` | Upload a `.zip` to replace the project |
 | `GET /api/network` | Local addresses for station URLs / QR codes |
 | `POST /api/test-send` | Send a hotspot's command from the editor (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)) |
-| `POST /demo/*` | Demo receiver endpoint |
+| `* /demo/<screen>/<content>` | Demo receiver endpoint (any method; the page itself is `/demo` in the web app) |
 
 The editor saves the **whole project** in one request. A project is a few kilobytes of JSON,
 so this is simpler and safer than syncing fine-grained patches.
