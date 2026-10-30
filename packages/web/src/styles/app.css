@@ -10,3 +10,26 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
 }
+
+/* One focus treatment for every control (design-system.md). */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The busy indicator of buttons and badges. */
+.spinner {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 9999px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  animation: spinner-turn 0.8s linear infinite;
+}
+
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}

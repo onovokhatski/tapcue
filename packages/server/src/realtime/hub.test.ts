@@ -173,6 +173,8 @@ describe('WebSocket hub', () => {
           screen: 'screen-1',
           content: 'product-a',
           body: null,
+          station: 'main',
+          hotspot: 'Play demo',
         },
       };
       hub.toViewers(message);

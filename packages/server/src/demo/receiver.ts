@@ -35,6 +35,8 @@ export function registerDemoReceiver(
           screen: request.params.screen,
           content: request.params.content,
           body: request.body ? request.body : null,
+          station: header(request.headers['x-tapcue-station']),
+          hotspot: decoded(header(request.headers['x-tapcue-hotspot'])),
         });
         return { ok: true };
       },
@@ -49,4 +51,18 @@ export function registerDemoReceiver(
 
     done();
   });
+}
+
+function header(value: string | string[] | undefined): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+/** The HTTP driver percent-encodes hotspot names (spec TGT-6); other senders may not. */
+function decoded(value: string | null): string | null {
+  if (value === null) return null;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
