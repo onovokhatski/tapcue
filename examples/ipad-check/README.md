@@ -7,7 +7,8 @@ covers what could not be checked in a desktop browser. Delete this folder once #
 
 ## The test project
 
-`make.mjs` generates `project.json` and `assets/` (both git-ignored):
+`make.mjs` generates `project.json` and `assets/` (both git-ignored), and copies `stats.js`, the
+on-screen stats panel, into `assets/`:
 
 | Page | Background | Buttons |
 |---|---|---|
@@ -28,9 +29,7 @@ macOS only (uses the demo stand's Swift tools); takes about 20 seconds.
 ## Setup
 
 1. Mac and iPad on the same Wi-Fi network.
-2. On the iPad: Settings → Apps → Safari → Advanced → **Web Inspector** on. Connect the iPad to the
-   Mac with a cable once; then in Safari on the Mac: Develop → *your iPad* → the Tapcue page.
-3. Start the server with the test project and the web app open to the network, in two terminals:
+2. Start the server with the test project and the web app open to the network, in two terminals:
 
 ```bash
 TAPCUE_PROJECT=$PWD/examples/ipad-check npm run dev -w @tapcue/server
@@ -40,29 +39,30 @@ TAPCUE_PROJECT=$PWD/examples/ipad-check npm run dev -w @tapcue/server
 npm run dev -w @tapcue/web -- --host
 ```
 
-4. Find the Mac's address (`ipconfig getifaddr en0`) and open `http://<mac-ip>:5173/play/ipad`
+3. Find the Mac's address (`ipconfig getifaddr en0`) and open `http://<mac-ip>:5173/play/ipad?stats`
    on the iPad.
-5. In the Web Inspector console, paste this. Every 5 seconds it logs a table: each video, its
-   layer, whether it plays, and frames dropped so far.
 
-```js
-clearInterval(window.__tapcue);
-window.__tapcue = setInterval(() => console.table([...document.querySelectorAll('[data-page] video')].map((v) => {
-  const q = v.getVideoPlaybackQuality();
-  return { page: v.closest('[data-layer]').dataset.page, layer: v.closest('[data-layer]').dataset.layer,
-    playing: !v.paused, ready: v.readyState, dropped: q.droppedVideoFrames, frames: q.totalVideoFrames };
-})), 5000);
-```
+`?stats` shows a small panel over the page (it does not take taps), updated every second:
+
+| Line | Meaning |
+|---|---|
+| `up 1:23` | Time since the page loaded. If it drops back to `0:00` without you changing the code, iPadOS reloaded the page: it ran out of memory. |
+| `long frames (>50 ms)` | Visible hitches of the page since load. A few at start and on taps are normal; a number that keeps growing while you only watch is not. |
+| One row per video | Its page, layer (`shown`, `incoming`, `warm`), whether it plays, `readyState` (4 is fully buffered) and dropped / total frames. |
+| `worst dropped` | The worst dropped share each video has had since load. |
+
+Web Inspector is not needed. If it is at hand (it needs one cable connection first), Timelines →
+Memory adds the memory peak; nothing else depends on it.
 
 ## Part A — the warm-video limit
 
 Write down the iPad model and iPadOS version (Settings → General → About).
 
-For each limit: set `WARM_VIDEO_LIMIT` in `warmPages.ts` and save (the iPad reloads). Paste the
-console snippet again, then browse for about 2 minutes. Go to every video, both from the hub
-and from video to video, and also tap quickly between videos.
+For each limit: set `WARM_VIDEO_LIMIT` in `warmPages.ts` and save (the iPad reloads with the panel).
+Browse for about 2 minutes. Go to every video, both from the hub and from video to video, and also
+tap quickly between videos. Then fill in the row from the panel and what you saw.
 
-| Limit | Dropped / total frames (worst video) | Memory peak (Web Inspector → Timelines → Memory) | Stutter or frozen video? | Fade starts at once for warm pages? | Page reloaded or "A problem repeatedly occurred"? |
+| Limit | Worst dropped (panel) | Long frames after 2 min | Stutter or frozen video? | Fade starts at once for warm pages? | Page reloaded (`up` reset) or "A problem repeatedly occurred"? |
 |---|---|---|---|---|---|
 | 1 | | | | | |
 | 2 | | | | | |
@@ -70,20 +70,21 @@ and from video to video, and also tap quickly between videos.
 | 4 | | | | | |
 | 5 | | | | | |
 
-Stop raising the limit at the first stutter, memory warning or reload. **The limit to keep is the
-last row with none of them**, minus one if it was borderline, because real stands use larger
-videos than these test loops.
+Stop raising the limit at the first stutter or reload. **The limit to keep is the last row with
+none of them**, minus one if it was borderline, because real stands use larger videos than these
+test loops.
 
 ## Part B — the demo stand
 
 Restart the server without `TAPCUE_PROJECT` (it then serves the demo stand), keep the web app
 running with `--host`, set `WARM_VIDEO_LIMIT` to the result of Part A, and open
-`http://<mac-ip>:5173/play/main`.
+`http://<mac-ip>:5173/play/main` (the stats panel is not available here: it is served from the
+test project's assets).
 
 Playback and page changes
 - [ ] The About us video plays without a tap and loops without a visible jump.
 - [ ] Home ↔ About us and the other pages: no blank or black frame, no flash of the background colour.
-- [ ] Browse for **10 minutes**: no stutter, no reload, the console table shows no growing frame drops.
+- [ ] Browse for **10 minutes**: no stutter, no reload.
 
 Taps and press effects
 - [ ] Press-in on the Product A and B cards, highlight on Back, Next and "Call our team", ripple on

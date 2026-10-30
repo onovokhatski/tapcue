@@ -3,7 +3,7 @@
 // Swift tools of the demo stand to draw the pages and encode the loops.
 // Usage: node examples/ipad-check/make.mjs
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -87,6 +87,8 @@ const project = {
 
 mkdirSync(ASSETS, { recursive: true });
 writeFileSync(join(HERE, 'project.json'), `${JSON.stringify(project, null, 2)}\n`);
+// The server serves only assets/, so the on-screen stats script goes there too.
+copyFileSync(join(HERE, 'stats.js'), join(ASSETS, 'stats.js'));
 
 const tmp = mkdtempSync(join(tmpdir(), 'tapcue-ipad-check-'));
 try {

@@ -26,7 +26,7 @@ export default defineConfig(
   {
     // Root config files and example scripts are not part of any package tsconfig, so they get
     // untyped rules only.
-    files: ['*.js', 'examples/**/*.mjs'],
+    files: ['*.js', 'examples/**/*.{js,mjs}'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 );
