@@ -17,6 +17,7 @@ npm run typecheck    # all packages
 npm run lint         # ESLint, type-aware
 npm run format:check # Prettier (npm run format to fix)
 npm test             # Vitest, all packages
+npm run test:e2e     # Playwright: player → server → demo receiver in Chromium
 npm run build        # web production build
 ```
 

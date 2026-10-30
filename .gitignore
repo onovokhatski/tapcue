@@ -12,3 +12,7 @@ coverage/
 
 # OS files
 .DS_Store
+
+# Playwright output (npm run test:e2e)
+e2e/test-results/
+e2e/playwright-report/
