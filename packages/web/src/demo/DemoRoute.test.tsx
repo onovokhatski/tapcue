@@ -26,8 +26,6 @@ const playA: DemoRequest = {
 };
 
 beforeEach(() => {
-  FakeWebSocket.all = [];
-  vi.stubGlobal('WebSocket', FakeWebSocket);
   vi.stubGlobal(
     'fetch',
     vi.fn(() =>

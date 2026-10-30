@@ -1,15 +1,10 @@
 import type { ServerMessage } from '@tapcue/shared';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FakeWebSocket } from '../test/fakeWebSocket';
 import { openServerSocket, type SocketStatus, socketUrl } from './serverSocket';
 
-beforeEach(() => {
-  FakeWebSocket.all = [];
-  vi.stubGlobal('WebSocket', FakeWebSocket);
-});
-
+// The test setup puts FakeWebSocket in place of WebSocket.
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 

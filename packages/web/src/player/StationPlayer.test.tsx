@@ -2,6 +2,7 @@ import type { Station } from '@tapcue/shared';
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
+import { FakeWebSocket } from '../test/fakeWebSocket';
 import { StationPlayer } from './StationPlayer';
 
 const project = demoProject();
@@ -168,6 +169,97 @@ describe('StationPlayer', () => {
       const home = layer('incoming')!;
       expect(home).toHaveAttribute('data-page', 'p_home00');
       expect(home).toHaveAttribute('data-fading'); // loaded long ago: no wait for a first frame
+    });
+  });
+
+  describe('taps to the server (spec ACT-2, ADR 0005)', () => {
+    /** The station's connection, open, with what it has sent so far. */
+    function connected() {
+      const server = FakeWebSocket.last;
+      act(() => server.open());
+      return server;
+    }
+
+    it('opens /ws and names its station', () => {
+      renderStation({ ...main, id: 'kiosk-2' });
+      const server = connected();
+      expect(server.url).toBe('ws://localhost:3000/ws');
+      expect(server.sent).toEqual([{ type: 'hello', stationId: 'kiosk-2' }]);
+    });
+
+    it('sends a tap the moment the finger lifts, before the page change', () => {
+      const { layer, press } = renderStation();
+      const server = connected();
+      press('h_carda0'); // press-in: the page change waits 120 ms
+      expect(server.sent.slice(1)).toEqual([
+        { type: 'tap', pageId: 'p_home00', hotspotId: 'h_carda0' },
+      ]);
+      expect(layer('incoming')).toBeNull();
+    });
+
+    it('sends exactly one tap for a hotspot that only navigates: the server decides', () => {
+      const { press } = renderStation();
+      const server = connected();
+      press('h_about0');
+      advance(1000);
+      expect(server.sent.slice(1)).toEqual([
+        { type: 'tap', pageId: 'p_home00', hotspotId: 'h_about0' },
+      ]);
+    });
+
+    it('sends nothing when the finger slides off before lifting', () => {
+      const { container } = renderStation();
+      const server = connected();
+      const card = container.querySelector('[data-hotspot="h_carda0"]')!;
+      fireEvent.pointerDown(card, { pointerId: 1, button: 0 });
+      fireEvent.pointerLeave(card, { pointerId: 1 });
+      fireEvent.pointerUp(card, { pointerId: 1, button: 0 });
+      expect(server.sent.slice(1)).toEqual([]);
+    });
+
+    it('names the page the hotspot is on, also while that page is fading in', async () => {
+      const { container, layer, press, load } = renderStation();
+      const server = connected();
+      press('h_carda0');
+      advance(120);
+      await load(layer('incoming')); // Product A fades in over Home
+      const play = container.querySelector('[data-hotspot="h_aplay0"]')!;
+      fireEvent.pointerDown(play, { pointerId: 1, button: 0 });
+      fireEvent.pointerUp(play, { pointerId: 1, button: 0 });
+      expect(server.sent.at(-1)).toEqual({
+        type: 'tap',
+        pageId: 'p_proda0',
+        hotspotId: 'h_aplay0',
+      });
+    });
+
+    it('names the page on screen while the next one is still loading under it', () => {
+      const { layer, press } = renderStation();
+      const server = connected();
+      press('h_carda0');
+      advance(120); // Product A waits for its background, invisible; Home is still on screen
+      expect(layer('incoming')).toHaveAttribute('data-page', 'p_proda0');
+      press('h_cardb0');
+      expect(server.sent.at(-1)).toEqual({
+        type: 'tap',
+        pageId: 'p_home00',
+        hotspotId: 'h_cardb0',
+      });
+    });
+
+    it('drops a tap while not connected, and still navigates (reconnect comes with #53)', () => {
+      const { layer, press } = renderStation();
+      press('h_carda0');
+      advance(120);
+      expect(FakeWebSocket.last.sent).toEqual([]);
+      expect(layer('incoming')).toHaveAttribute('data-page', 'p_proda0');
+    });
+
+    it('closes the connection when the player closes', () => {
+      const { unmount } = render(<StationPlayer project={project} station={main} />);
+      const server = connected();
+      unmount();
+      expect(server.readyState).toBe(FakeWebSocket.CLOSED);
     });
   });
 
