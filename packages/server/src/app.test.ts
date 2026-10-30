@@ -98,4 +98,29 @@ describe('buildApp', () => {
       await app.close();
     }
   });
+
+  it('shows a request to the demo receiver to viewers on /ws (spec DEMO-1)', async () => {
+    const app = buildApp({ store });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    try {
+      const port = (app.server.address() as AddressInfo).port;
+      const viewer = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      const received: unknown[] = [];
+      viewer.addEventListener('message', (event) => received.push(JSON.parse(String(event.data))));
+      await new Promise((resolve) => viewer.addEventListener('open', resolve));
+      const response = await fetch(`http://127.0.0.1:${port}/demo/screen-1/product-a`, {
+        method: 'POST',
+      });
+      expect(response.status).toBe(200);
+      await vi.waitFor(() =>
+        expect(received).toContainEqual({
+          type: 'demo-received',
+          request: expect.objectContaining({ screen: 'screen-1', content: 'product-a' }) as unknown,
+        }),
+      );
+      viewer.close();
+    } finally {
+      await app.close();
+    }
+  });
 });

@@ -7,6 +7,7 @@ import { createHttpDriver } from './commands/drivers/http';
 import { createOscUdpDriver } from './commands/drivers/osc-udp';
 import { createUdpDriver } from './commands/drivers/udp';
 import { createCommandLog } from './commands/log';
+import { registerDemoReceiver } from './demo/receiver';
 import type { ProjectStore } from './project/store';
 import { registerHub } from './realtime/hub';
 
@@ -36,8 +37,13 @@ export function buildApp({
   // Taps from players → commands to targets, and the log of what was sent (architecture §5.3).
   const log = createCommandLog();
   const dispatch = createDispatcher({ project: () => store.project, drivers, log });
-  registerHub(app, { dispatch, log });
+  const hub = registerHub(app, { dispatch, log });
   app.addHook('onClose', () => Promise.all(Object.values(drivers).map((d) => d.close())));
+
+  // The demo project's HTTP commands land here and show up on the demo page (spec DEMO-1).
+  registerDemoReceiver(app, {
+    onRequest: (request) => hub.toViewers({ type: 'demo-received', request }),
+  });
 
   return app;
 }
