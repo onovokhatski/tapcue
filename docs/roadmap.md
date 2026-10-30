@@ -80,8 +80,7 @@ Hand-written demo project with test assets.
 
 Server loads the project and serves it with its assets. Player renders a station: backgrounds
 (image and video), `fit`/`fill`, hotspot shapes and styles, press effects, navigation with
-fade and warm pages, idle timeout. Measure on a real iPad how many videos can stay warm at
-once.
+a fade that waits for the next background, idle timeout. Check the player on a real iPad.
 
 - **Requirements:** PRJ-1, CNV-1…3, PG-2…5, HS-3…5, ACT-3, ST-2, ST-4, PLY-1, PLY-7, PLY-8
 - **Done when:** the demo project can be browsed in a browser like a real catalogue.

@@ -106,7 +106,7 @@ One Vite + React app with three routes:
 ```
 web/src/
   stage/        PageView — renders one page at canvas size, scaled to the viewport
-  player/       station runtime: navigation, idle timer, preloading, wake lock
+  player/       station runtime: navigation, idle timer, page transitions, wake lock
   editor/       editor screens, store and document operations
   demo/         demo receiver page
   lib/          API client, WebSocket client with reconnect
@@ -138,11 +138,10 @@ what the visitor sees ([spec ED-2](spec.md#59-editor)).
 
 - Holds the current page and an idle timer; any tap resets the timer
   ([spec ST-4](spec.md#57-stations)).
-- **Warm pages** ([spec PG-5](spec.md#53-pages), [ADR 0014](adr/0014-page-transitions.md)):
-  images of all pages are decoded at start (`img.decode()`); the videos of pages reachable from
-  the current one (`goTo` targets and the start page) are kept loaded and playing underneath,
-  up to a fixed limit. If a background is not ready on tap, the player waits for its first
-  frame — it never swaps into an empty frame.
+- **Load on tap** ([spec PG-5](spec.md#53-pages), [ADR 0016](adr/0016-load-next-page-on-tap.md)):
+  only the page on screen and the incoming page are in the DOM. The incoming page's background
+  starts loading on the tap, and the page stays invisible until its image is decoded or its
+  video has its first frame — the player never swaps into an empty frame.
 - **Transitions** fade the incoming page in on top of the current one, which stays opaque
   until the fade ends.
 - Requests a **Screen Wake Lock** where available and re-requests it when the page becomes
@@ -286,5 +285,6 @@ Each significant decision is recorded as an ADR in [docs/adr/](adr/):
 11. [Auto-save with whole-project `PUT`](adr/0011-autosave-whole-project.md)
 12. ["Add hotspot" button instead of a drawing mode](adr/0012-add-hotspot-button.md)
 13. [Demo mode as a server flag](adr/0013-demo-mode.md)
-14. [Warm next-page videos and fade-in on top](adr/0014-page-transitions.md)
+14. [Warm next-page videos and fade-in on top](adr/0014-page-transitions.md) (superseded by 16)
 15. [Screen wake is part of stand setup, not a player guarantee](adr/0015-screen-wake.md)
+16. [Load the next page on tap, then fade it in on top](adr/0016-load-next-page-on-tap.md)
