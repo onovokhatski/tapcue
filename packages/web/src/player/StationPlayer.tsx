@@ -1,12 +1,12 @@
 // One station on a tablet: navigation by taps, the idle return, page changes that fade
-// without a blank frame, and kiosk behaviour (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-7, ADR 0014).
+// without a blank frame, and kiosk behaviour
+// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-7, ADR 0014, ADR 0016).
 import type { Canvas, Hotspot, Page, Project, Station } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
 import { incoming, playerReducer, startPlayer } from './playerState';
 import { releaseDelay } from './releaseDelay';
 import { useIdleTimer } from './useIdleTimer';
-import { imageUrls, warmPages } from './warmPages';
 import './player.css';
 
 interface StationPlayerProps {
@@ -14,13 +14,12 @@ interface StationPlayerProps {
   station: Station;
 }
 
-type Layer = 'shown' | 'incoming' | 'warm';
+type Layer = 'shown' | 'incoming';
 
 export function StationPlayer({ project, station }: StationPlayerProps) {
   const [state, dispatch] = useReducer(playerReducer, { project, station }, startPlayer);
   const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
   const later = useLater();
-  usePreloadedImages(project);
   useNoPinchZoom();
 
   function tap(hotspot: Hotspot) {
@@ -28,16 +27,11 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
     later(() => dispatch({ type: 'tap', hotspot }), releaseDelay(hotspot.pressEffect));
   }
 
+  // Only the page on screen and the one on its way are in the DOM: the next page's background
+  // starts loading on the tap (ADR 0016).
   const next = incoming(state);
-  const warm = warmPages(project, station, state.pageId);
   const layerOf = (page: Page): Layer | null =>
-    page.id === state.shown
-      ? 'shown'
-      : page.id === next
-        ? 'incoming'
-        : warm.includes(page.id)
-          ? 'warm'
-          : null;
+    page.id === state.shown ? 'shown' : page.id === next ? 'incoming' : null;
 
   return (
     // Any touch counts as activity, on a hotspot or not; capture sees it before the hotspots do.
@@ -83,7 +77,8 @@ function PageLayer({ page, canvas, layer, fading, onTap, onReady, onFaded }: Pag
   const [loaded, setLoaded] = useState(false);
   const reportReady = useEffectEvent(onReady);
 
-  // A warm page loaded long ago reports ready again the moment it becomes the incoming page.
+  // A page loaded long ago reports ready again the moment it becomes the incoming page: the
+  // visitor tapped back to the page underneath while the next one was fading in.
   useEffect(() => {
     if (layer === 'incoming' && loaded) reportReady();
   }, [layer, loaded]);
@@ -94,9 +89,8 @@ function PageLayer({ page, canvas, layer, fading, onTap, onReady, onFaded }: Pag
       data-page={page.id}
       data-layer={layer}
       data-fading={fading || undefined}
-      // Only what the visitor can see takes taps: not the warm pages underneath, and not the
-      // incoming page while it is still invisible.
-      inert={layer === 'warm' || (layer === 'incoming' && !fading)}
+      // The incoming page takes no taps while it is still invisible.
+      inert={layer === 'incoming' && !fading}
       onAnimationEnd={(event) => {
         // Ripples inside the page end their animations too; only the layer's own fade counts.
         if (event.target === event.currentTarget) onFaded();
@@ -124,22 +118,6 @@ function useLater() {
     }, ms);
     timers.current.add(timer);
   };
-}
-
-/** Decodes every image background at start, so image pages are ready the moment they are needed. */
-function usePreloadedImages(project: Project) {
-  useEffect(() => {
-    const images = imageUrls(project).map((url) => {
-      const image = new Image();
-      image.src = url;
-      void image.decode().catch(() => undefined); // a broken file is reported when its page opens
-      return image;
-    });
-    // Holding the elements until the player closes keeps the browser from dropping the decoded images.
-    return () => {
-      images.length = 0;
-    };
-  }, [project]);
 }
 
 /**

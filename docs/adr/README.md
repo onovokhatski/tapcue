@@ -19,8 +19,9 @@ decision gets a new ADR that supersedes the old one.
 | [0011](0011-autosave-whole-project.md) | Auto-save with whole-project `PUT` | Accepted |
 | [0012](0012-add-hotspot-button.md) | "Add hotspot" button instead of a drawing mode | Accepted |
 | [0013](0013-demo-mode.md) | Demo mode as a server flag | Accepted |
-| [0014](0014-page-transitions.md) | Warm next-page videos and fade-in on top | Accepted |
+| [0014](0014-page-transitions.md) | Warm next-page videos and fade-in on top | Superseded by 0016 |
 | [0015](0015-screen-wake.md) | Screen wake is part of stand setup, not a player guarantee | Accepted |
+| [0016](0016-load-next-page-on-tap.md) | Load the next page on tap, then fade it in on top | Accepted |
 
 ## Template
 

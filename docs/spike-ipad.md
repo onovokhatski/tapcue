@@ -45,12 +45,14 @@ the result.
 
 ## Decisions
 
-- [0014. Warm next-page videos and fade-in on top](adr/0014-page-transitions.md)
+- [0014. Warm next-page videos and fade-in on top](adr/0014-page-transitions.md), later
+  superseded by [0016. Load the next page on tap](adr/0016-load-next-page-on-tap.md): the wait
+  after a tap is accepted instead of keeping videos warm.
 - [0015. Screen wake is part of stand setup, not a player guarantee](adr/0015-screen-wake.md)
 
 ## Not covered
 
-- **Memory with many warm videos.** Only two videos were tested. The limit on how many videos
-  can stay warm at once is checked on a real iPad in M1.
+- **Memory with many warm videos.** Only two videos were tested. No longer needed: warm pages
+  were dropped ([ADR 0016](adr/0016-load-next-page-on-tap.md)).
 - **Home-screen mode and Guided Access** were not tested separately; they use the same engine
   and are verified on real devices in M5.
