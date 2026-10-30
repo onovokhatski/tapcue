@@ -68,6 +68,7 @@ server/src/
     log.ts           in-memory ring buffer of the last 500 log entries
     drivers/
       driver.ts      the common Driver interface
+      datagram.ts    one UDP socket: send a datagram, report local errors
       osc-udp.ts
       udp.ts
       http.ts        adds X-Tapcue-Station / X-Tapcue-Hotspot, 2 s timeout
@@ -84,8 +85,9 @@ in isolation.
 ### The Driver interface
 
 ```ts
-interface Driver<T extends Target> {
-  send(target: T, command: CommandFor<T>): Promise<void>; // throws on delivery error
+interface Driver<P extends Protocol> {
+  // throws on a delivery error; context = source and hotspot name, for HTTP headers
+  send(target: TargetOf<P>, command: CommandOf<P>, context: SendContext): Promise<void>;
   close(): Promise<void>;
 }
 ```
