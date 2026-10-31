@@ -4,6 +4,7 @@
 import type { HotspotId, PageId, Project, ValidationError } from '@tapcue/shared';
 import { createStore } from 'zustand/vanilla';
 import { type ProjectApi, projectApi } from '../lib/projectApi';
+import { readSafeArea, type SafeAreaPreference, writeSafeArea } from './canvas/safeAreaPreference';
 
 /** Quiet time after the last change before the project is saved. */
 export const SAVE_DELAY_MS = 500;
@@ -29,6 +30,8 @@ export interface EditorState {
   revision: number | null;
   selection: Selection;
   save: SaveStatus;
+  /** Editor preference, not part of the project (spec ED-3). */
+  safeArea: SafeAreaPreference;
 }
 
 export interface EditorActions {
@@ -37,6 +40,7 @@ export interface EditorActions {
   /** Applies an operation to the project and saves it after the quiet time. */
   change: (operation: (project: Project) => Project) => void;
   select: (selection: Selection) => void;
+  setSafeArea: (change: Partial<SafeAreaPreference>) => void;
   /** Saves now, e.g. after a save error. */
   retry: () => void;
   /** The editor's connection opened, the first time or after a drop. */
@@ -105,6 +109,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       revision: null,
       selection: NOTHING_SELECTED,
       save: { state: 'saved' },
+      safeArea: readSafeArea(),
 
       start() {
         set({ load: 'loading' });
@@ -129,6 +134,12 @@ export function createEditorStore(api: ProjectApi = projectApi) {
 
       select(selection) {
         set({ selection });
+      },
+
+      setSafeArea(change) {
+        const safeArea = { ...get().safeArea, ...change };
+        writeSafeArea(safeArea);
+        set({ safeArea });
       },
 
       retry() {

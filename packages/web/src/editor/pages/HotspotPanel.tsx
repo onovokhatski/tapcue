@@ -3,6 +3,7 @@
 // come with M4.
 import type { Canvas, Hotspot, PageId } from '@tapcue/shared';
 import { type ReactNode, useState } from 'react';
+import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { NumberField } from '../../ui/NumberField';
@@ -13,6 +14,7 @@ import {
   renameHotspot,
   restackHotspot,
 } from '../operations/hotspots';
+import { croppedBy } from '../canvas/safeArea';
 import { type BoxKey, checkBoxField } from '../operations/geometry';
 import { useEditor } from '../useEditor';
 
@@ -21,10 +23,12 @@ export function HotspotPanel() {
   const selection = useEditor((state) => state.selection);
   const change = useEditor((state) => state.change);
   const select = useEditor((state) => state.select);
+  const reference = useEditor((state) => state.safeArea.reference);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const hotspot = page?.hotspots.find((h) => h.id === selection.hotspotId);
   if (!project || !page || !hotspot) return null;
   const index = page.hotspots.indexOf(hotspot);
+  const cropped = croppedBy(hotspot, project.canvas, reference);
 
   function duplicate() {
     if (!project || !page || !hotspot) return;
@@ -61,6 +65,14 @@ export function HotspotPanel() {
         </div>
         {/* Keyed, so the fields start afresh for another hotspot. */}
         <NameField key={hotspot.id} pageId={page.id} hotspot={hotspot} />
+        {cropped && (
+          // Shown whether or not the safe area is drawn on the canvas (spec ED-3).
+          <Banner tone="warning" title="Partly outside the safe area">
+            Its {cropped.edge} {cropped.pixels} px {cropped.pixels === 1 ? 'is' : 'are'} cropped on{' '}
+            {reference} screens in Fill mode. Move it {AWAY[cropped.edge]} {cropped.pixels} px, or
+            use Fit in Settings.
+          </Banner>
+        )}
       </div>
       <Section title="Position and size">
         <GeometryFields
@@ -93,6 +105,9 @@ export function HotspotPanel() {
     </aside>
   );
 }
+
+/** Which way to move a hotspot out of the band at an edge. */
+const AWAY = { top: 'down', bottom: 'up', left: 'right', right: 'left' } as const;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (

@@ -107,3 +107,42 @@
   border: 1.5px dashed color-mix(in srgb, var(--color-overlay-light) 40%, transparent);
   color: var(--color-overlay-light);
 }
+
+/* Safe area: what `fill` crops on the reference screen (spec ED-3; design: safe-area overlay). */
+.crop-zone {
+  position: absolute;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-overlay-dark) 62%, transparent) 0 6px,
+    color-mix(in srgb, var(--color-overlay-dark) 48%, transparent) 6px 12px
+  );
+}
+.safe-line {
+  position: absolute;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-overlay-light) 0 6px,
+    var(--color-overlay-dark) 6px 12px
+  );
+}
+.canvas-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-overlay-plate);
+  color: var(--color-overlay-light);
+  font: var(--type-label-s);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 30%, transparent);
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* A hotspot that reaches into a cropped band, shown even when the bands are hidden. */
+.hs-chip-warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-fg);
+  box-shadow: 0 0 0 1px var(--color-overlay-dark);
+}
