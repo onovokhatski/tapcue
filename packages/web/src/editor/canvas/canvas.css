@@ -1,0 +1,99 @@
+/* Hotspot overlay on the editor canvas, never in the player (design-system.md, Hotspot overlay).
+   Drawn as SVG so the same markup serves rectangle and ellipse. Every line is two-tone, a dark
+   under-stroke and a light stroke on top, so it holds on light, mid-tone and dark artwork. */
+.hs {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.hs .hs-fill {
+  fill: transparent;
+}
+.hs .hs-under {
+  fill: none;
+  stroke: var(--color-overlay-dark);
+  stroke-opacity: 0.72;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.hs .hs-line {
+  fill: none;
+  stroke: var(--color-overlay-light);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.hs[data-state='idle'] .hs-line {
+  stroke-dasharray: 5 4;
+}
+.hs[data-state='idle'] .hs-under {
+  stroke-width: 2.5;
+  stroke-opacity: 0.55;
+}
+.hs[data-state='hover'] .hs-fill {
+  fill: var(--color-overlay-light);
+  fill-opacity: 0.14;
+}
+.hs[data-state='hover'] .hs-line {
+  stroke-width: 2;
+}
+.hs[data-state='selected'] .hs-under {
+  stroke-width: 4;
+  stroke-opacity: 0.8;
+}
+.hs[data-state='selected'] .hs-line {
+  stroke: var(--color-overlay-selected);
+  stroke-width: 2;
+}
+
+.hs-chip {
+  position: absolute;
+  left: -1px;
+  bottom: calc(100% + 6px);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-overlay-selected);
+  color: var(--color-text-on-accent);
+  font: var(--type-label-s);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-dark) 55%, transparent);
+  pointer-events: none;
+}
+/* No room above the hotspot: the chip goes under it. */
+.hs-chip[data-below] {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+.hs-chip-idle {
+  background: var(--color-overlay-dark);
+  color: var(--color-overlay-light);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 50%, transparent);
+}
+
+.hs-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  background: var(--color-overlay-light);
+  border: 1.5px solid var(--color-overlay-dark);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-overlay-light) 60%, transparent);
+  pointer-events: none;
+}
+
+/* Keyboard focus: the standard ring, offset clear of the handles. */
+.hs-target:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 6px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-overlay-light) 70%, transparent);
+}
+
+.canvas-empty {
+  border: 1.5px dashed color-mix(in srgb, var(--color-overlay-light) 40%, transparent);
+  color: var(--color-overlay-light);
+}
