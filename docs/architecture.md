@@ -171,7 +171,7 @@ contract at runtime and get the same TypeScript types at compile time.
 |---|---|
 | `GET /api/project` | Current project and its revision |
 | `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors |
-| `POST /api/assets` | Upload a file (multipart) |
+| `POST /api/assets` | Upload one file (multipart): JPEG, PNG, WebP or MP4, up to 200 MB; answers `201 { asset, type }`, `413` over the limit, `415` for another format |
 | `GET /assets/*` | Serve project files to editor and players |
 | `GET /api/project/export` | Download the project as `.zip` |
 | `POST /api/project/import` | Upload a `.zip` to replace the project |
@@ -238,7 +238,8 @@ Editor                    Server                         Players
   their copy is stale.
 - **Concurrent editors:** last save wins. One integrator per stand is assumed
   ([spec §8](spec.md#8-assumptions-and-constraints)).
-- Uploaded files get a unique, sanitised name so uploads never overwrite each other.
+- Uploaded files get a unique, sanitised name so uploads never overwrite each other
+  (`Hero Shot.JPG` → `hero-shot-3f9a1c2b.jpg`); they are streamed to disk, never held in memory.
   Unused files are not cleaned up in MVP.
 - The command log is in memory only and is lost on restart; it is a diagnostic tool, not history.
 
