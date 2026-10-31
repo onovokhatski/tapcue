@@ -1,7 +1,13 @@
-// Loads the project folder (project.json + assets/) and keeps the current project in memory.
-import { access, readFile } from 'node:fs/promises';
+// Loads the project folder (project.json + assets/), keeps the current project in memory and
+// saves the editor's changes back to disk.
+import { access, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { type Project, type ValidationError, validateProject } from '@tapcue/shared';
+import {
+  type Project,
+  type ValidationError,
+  type ValidationResult,
+  validateProject,
+} from '@tapcue/shared';
 
 export const PROJECT_FILE = 'project.json';
 
@@ -20,11 +26,54 @@ export interface ProjectStore {
   readonly project: Project;
   /** Increases with every save, so clients can tell that their copy is stale (architecture §6). */
   readonly revision: number;
+  /** Checks a whole project and, if it is valid, writes it to disk and makes it current. */
+  save(input: unknown): Promise<ValidationResult & { revision: number }>;
 }
 
 export async function loadProjectStore(dir: string): Promise<ProjectStore> {
-  const project = await loadProject(dir);
-  return { dir, project, revision: 1 };
+  let project = await loadProject(dir);
+  let revision = 1;
+  // Saves run one after another, so the file on disk is always the project in memory.
+  let queue: Promise<unknown> = Promise.resolve();
+
+  async function save(input: unknown) {
+    const result = await checkProject(dir, input);
+    if (!result.ok) return { ...result, revision };
+    await writeAtomically(join(dir, PROJECT_FILE), `${JSON.stringify(result.project, null, 2)}\n`);
+    project = result.project;
+    revision += 1;
+    return { ...result, revision };
+  }
+
+  return {
+    dir,
+    get project() {
+      return project;
+    },
+    get revision() {
+      return revision;
+    },
+    save(input) {
+      const saved = queue.then(() => save(input));
+      queue = saved.catch(() => undefined);
+      return saved;
+    },
+  };
+}
+
+/**
+ * Writes a temporary file next to the target, then renames it over the target: a rename is atomic,
+ * so a crash mid-write leaves the old file intact, never half a project (architecture §6).
+ */
+async function writeAtomically(file: string, text: string): Promise<void> {
+  const temporary = `${file}.tmp`;
+  try {
+    await writeFile(temporary, text, 'utf8');
+    await rename(temporary, file);
+  } catch (error) {
+    await rm(temporary, { force: true });
+    throw error;
+  }
 }
 
 /** Reads and checks project.json: valid JSON, a valid project, and every referenced file present. */
@@ -46,13 +95,17 @@ export async function loadProject(dir: string): Promise<Project> {
     throw new ProjectLoadError(dir, [{ path: PROJECT_FILE, message: `not valid JSON: ${reason}` }]);
   }
 
-  const result = validateProject(json);
+  const result = await checkProject(dir, json);
   if (!result.ok) throw new ProjectLoadError(dir, result.errors);
-
-  const missing = await missingAssets(dir, result.project);
-  if (missing.length) throw new ProjectLoadError(dir, missing);
-
   return result.project;
+}
+
+/** The schema and references, then the files on disk — the same checks for loading and saving. */
+async function checkProject(dir: string, input: unknown): Promise<ValidationResult> {
+  const result = validateProject(input);
+  if (!result.ok) return result;
+  const missing = await missingAssets(dir, result.project);
+  return missing.length ? { ok: false, errors: missing } : result;
 }
 
 /** The schema cannot see the disk, so the server checks the files (project format §10). */

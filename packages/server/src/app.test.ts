@@ -1,7 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildApp } from './app';
 import type { Drivers } from './commands/dispatcher';
 import { DEFAULT_PROJECT_DIR } from './config';
@@ -31,6 +32,62 @@ describe('buildApp', () => {
     const response = await get('/api/project');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ revision: 1, project: store.project });
+  });
+
+  describe('saving the project (PUT /api/project)', () => {
+    // Saving writes to disk, so these tests work on a copy of the demo stand.
+    const dirs: string[] = [];
+    afterEach(async () => {
+      await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+    });
+    async function appOnCopy() {
+      const dir = await mkdtemp(join(tmpdir(), 'tapcue-app-'));
+      dirs.push(dir);
+      await cp(DEFAULT_PROJECT_DIR, dir, { recursive: true });
+      const copy = await loadProjectStore(dir);
+      return { app: buildApp({ store: copy }), copy, dir };
+    }
+    const put = (app: ReturnType<typeof buildApp>, payload: unknown) =>
+      app.inject({ method: 'PUT', url: '/api/project', payload: payload as object });
+
+    it('saves a valid project and answers its new revision', async () => {
+      const { app, dir } = await appOnCopy();
+      const changed = { ...store.project, name: 'Renamed stand' };
+
+      const response = await put(app, changed);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ revision: 2 });
+      expect((await app.inject({ method: 'GET', url: '/api/project' })).json()).toEqual({
+        revision: 2,
+        project: changed,
+      });
+      const onDisk = JSON.parse(await readFile(join(dir, 'project.json'), 'utf8')) as unknown;
+      expect(onDisk).toEqual(changed);
+    });
+
+    it('refuses an invalid project with 400 and the field errors, and saves nothing', async () => {
+      const { app, copy } = await appOnCopy();
+
+      const response = await put(app, { ...store.project, name: '' });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({ errors: [{ path: 'name', message: 'Expected a name' }] });
+      expect(copy.revision).toBe(1);
+      expect(copy.project.name).toBe('Demo stand');
+    });
+
+    it('refuses a body that is not JSON, and saves nothing', async () => {
+      const { app, copy } = await appOnCopy();
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/project',
+        headers: { 'content-type': 'application/json' },
+        payload: '{ "schemaVersion": 1, ',
+      });
+      expect(response.statusCode).toBe(400);
+      expect(copy.revision).toBe(1);
+    });
   });
 
   describe('assets', () => {
