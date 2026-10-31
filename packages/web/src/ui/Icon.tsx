@@ -20,6 +20,14 @@ const PATHS = {
   ),
   'arrow-right': <path d="M3 8h10M9 4l4 4-4 4" />,
   plus: <path d="M8 3v10M3 8h10" />,
+  close: <path d="M4 4l8 8M12 4l-8 8" />,
+  info: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 7.25v3.75" />
+      <circle cx="8" cy="5" r=".8" fill="currentColor" stroke="none" />
+    </>
+  ),
   trash: (
     <path d="M2.75 4.5h10.5M6.25 4.5V2.75h3.5V4.5M4.25 4.5l.6 8.75h6.3l.6-8.75M6.75 7v4M9.25 7v4" />
   ),
