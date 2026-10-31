@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProjectJson } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
-import { clock, DemoRoute } from './DemoRoute';
+import { clock } from '../lib/clock';
+import { DemoRoute } from './DemoRoute';
 
 const callStaff: DemoRequest = {
   time: '2026-10-30T14:05:09.123Z',

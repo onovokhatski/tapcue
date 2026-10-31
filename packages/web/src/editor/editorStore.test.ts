@@ -2,6 +2,7 @@ import type { Project } from '@tapcue/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Loaded, ProjectApi, Saved } from '../lib/projectApi';
 import { demoProject } from '../test/demoProject';
+import { errorEntry, sentEntry } from '../test/logEntries';
 import { createEditorStore, SAVE_DELAY_MS } from './editorStore';
 
 /** A promise the test settles by hand. */
@@ -303,6 +304,18 @@ describe('editor store', () => {
       server.loads[1]!.resolve({ revision: 1, project: demoProject() });
       await settle();
       expect(state().project).toBe(before);
+    });
+  });
+
+  describe('command log (spec ED-6)', () => {
+    it('keeps the entries the server sends, newest first, and clears them', async () => {
+      const { state } = await loaded();
+      state().logged(sentEntry);
+      state().logged(errorEntry);
+      state().logged(sentEntry); // the same entry again is not shown twice
+      expect(state().log.map((e) => e.seq)).toEqual([2, 1]);
+      state().clearLog();
+      expect(state().log).toEqual([]);
     });
   });
 });
