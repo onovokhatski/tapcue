@@ -164,7 +164,7 @@ contract at runtime and get the same TypeScript types at compile time.
 | Method & path | Purpose |
 |---|---|
 | `GET /api/project` | Current project and its revision |
-| `PUT /api/project` | Replace the project (validated); returns the new revision |
+| `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors |
 | `POST /api/assets` | Upload a file (multipart) |
 | `GET /assets/*` | Serve project files to editor and players |
 | `GET /api/project/export` | Download the project as `.zip` |
@@ -226,7 +226,8 @@ Editor                    Server                         Players
 
 - The project folder is the only storage: `project.json` + `assets/`.
 - **Atomic save:** write to a temporary file, then rename over `project.json`. A crash
-  mid-write never leaves a broken project.
+  mid-write never leaves a broken project. Saves run one at a time, so the file on disk is
+  always the project in memory.
 - A **revision** number in memory increments on every save; clients use it to know that
   their copy is stale.
 - **Concurrent editors:** last save wins. One integrator per stand is assumed

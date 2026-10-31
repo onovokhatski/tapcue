@@ -1,9 +1,9 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PROJECT_DIR } from '../config';
-import { loadProject, loadProjectStore, ProjectLoadError } from './store';
+import { loadProject, loadProjectStore, PROJECT_FILE, ProjectLoadError } from './store';
 
 // Each test works on its own copy of the demo stand in a temporary folder.
 const dirs: string[] = [];
@@ -80,5 +80,101 @@ describe('loadProject', () => {
     await rm(join(dir, 'assets', 'home.jpg'));
     await rm(join(dir, 'assets', 'about-loop.mp4'));
     await expect(loadProject(dir)).rejects.toThrow(`The project in ${dir} has 2 problems`);
+  });
+});
+
+describe('save', () => {
+  const readSaved = async (dir: string) =>
+    JSON.parse(await readFile(join(dir, PROJECT_FILE), 'utf8')) as unknown;
+
+  it('writes a valid project to disk, makes it current and moves to the next revision', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const changed = { ...store.project, name: 'Renamed stand' };
+
+    const result = await store.save(changed);
+
+    expect(result).toEqual({ ok: true, project: changed, revision: 2 });
+    expect(store.revision).toBe(2);
+    expect(store.project).toEqual(changed);
+    expect(await readSaved(dir)).toEqual(changed);
+    expect((await loadProject(dir)).name).toBe('Renamed stand');
+  });
+
+  it('writes readable JSON: two-space indent and a final newline', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    await store.save(store.project);
+    const text = await readFile(join(dir, PROJECT_FILE), 'utf8');
+    expect(text).toBe(`${JSON.stringify(store.project, null, 2)}\n`);
+  });
+
+  it('refuses an invalid project with its errors, and changes nothing', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const before = await readFile(join(dir, PROJECT_FILE), 'utf8');
+
+    const result = await store.save({ ...store.project, name: '' });
+
+    expect(result).toEqual({
+      ok: false,
+      errors: [{ path: 'name', message: 'Expected a name' }],
+      revision: 1,
+    });
+    expect(store.revision).toBe(1);
+    expect(store.project.name).toBe('Demo stand');
+    expect(await readFile(join(dir, PROJECT_FILE), 'utf8')).toBe(before);
+  });
+
+  it('refuses a project whose background file is not in the folder', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const [home, ...rest] = store.project.pages;
+    if (!home) throw new Error('the demo stand has pages');
+    const page = { ...home, background: { type: 'image', asset: 'assets/nothing.jpg' } };
+
+    const result = await store.save({ ...store.project, pages: [page, ...rest] });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual([
+      { path: 'pages[0].background.asset', message: 'file "assets/nothing.jpg" does not exist' },
+    ]);
+    expect(store.revision).toBe(1);
+  });
+
+  it('leaves no temporary file behind', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const before = await readdir(dir);
+    await store.save(store.project);
+    expect(await readdir(dir)).toEqual(before);
+  });
+
+  it('keeps the old project when the new one cannot be written', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const before = await readFile(join(dir, PROJECT_FILE), 'utf8');
+    // project.json itself stays writable, but no new file can be created next to it.
+    await chmod(dir, 0o555);
+    try {
+      await expect(store.save({ ...store.project, name: 'Renamed stand' })).rejects.toThrow();
+    } finally {
+      await chmod(dir, 0o755);
+    }
+    expect(await readFile(join(dir, PROJECT_FILE), 'utf8')).toBe(before);
+    expect(store.project.name).toBe('Demo stand');
+    expect(store.revision).toBe(1);
+  });
+
+  it('runs saves one after another: the last one sent is on disk and in memory', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const names = ['One', 'Two', 'Three'];
+
+    const results = await Promise.all(names.map((name) => store.save({ ...store.project, name })));
+
+    expect(results.map((result) => result.revision)).toEqual([2, 3, 4]);
+    expect(store.project.name).toBe('Three');
+    expect(await readSaved(dir)).toMatchObject({ name: 'Three' });
   });
 });

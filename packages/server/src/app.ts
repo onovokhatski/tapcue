@@ -30,6 +30,13 @@ export function buildApp({
 
   app.get('/api/project', () => ({ revision: store.revision, project: store.project }));
 
+  // The editor saves the whole project (ADR 0011). An invalid one is refused with its field errors.
+  app.put('/api/project', async (request, reply) => {
+    const result = await store.save(request.body);
+    if (!result.ok) return reply.code(400).send({ errors: result.errors });
+    return { revision: result.revision };
+  });
+
   // Images and videos of the project. @fastify/static answers Range requests (Safari needs them to
   // play video) and refuses paths that leave the assets folder.
   void app.register(fastifyStatic, { root: join(store.dir, 'assets'), prefix: '/assets/' });
