@@ -146,6 +146,7 @@ describe('DemoRequest', () => {
 
 describe('ServerMessage', () => {
   it.each([
+    ['project-updated', { type: 'project-updated', revision: 2 }],
     ['log-entry', { type: 'log-entry', entry: sent }],
     ['demo-received', { type: 'demo-received', request: demoRequest }],
     ['ping', { type: 'ping' }],
@@ -154,9 +155,17 @@ describe('ServerMessage', () => {
     expect(errorOf(ServerMessage, message)).toBeNull();
   });
 
+  it.each([
+    ['project-updated without a revision', { type: 'project-updated' }, 'revision: '],
+    ['revision 0: revisions start at 1', { type: 'project-updated', revision: 0 }, 'revision: '],
+    ['a fractional revision', { type: 'project-updated', revision: 1.5 }, 'revision: '],
+  ])('rejects %s', (_, message, expected) => {
+    expect(errorOf(ServerMessage, message)).toContain(expected);
+  });
+
   it('rejects a client message', () => {
     expect(errorOf(ServerMessage, tap)).toBe(
-      "type: Invalid discriminator value. Expected 'log-entry' | 'demo-received' | 'ping' | 'pong'",
+      "type: Invalid discriminator value. Expected 'project-updated' | 'log-entry' | 'demo-received' | 'ping' | 'pong'",
     );
   });
 });

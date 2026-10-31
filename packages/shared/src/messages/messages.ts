@@ -71,6 +71,8 @@ export type ClientMessage = z.infer<typeof ClientMessage>;
 
 /** From the server to browsers. */
 export const ServerMessage = z.discriminatedUnion('type', [
+  /** The project was saved; clients fetch it over HTTP if their revision is older (PLY-5). */
+  z.strictObject({ type: z.literal('project-updated'), revision: z.int().min(1) }),
   z.strictObject({ type: z.literal('log-entry'), entry: LogEntry }),
   z.strictObject({ type: z.literal('demo-received'), request: DemoRequest }),
   Ping,

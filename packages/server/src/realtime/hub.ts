@@ -1,5 +1,6 @@
 // The WebSocket endpoint /ws (architecture §5.2, ADR 0006). Players say which station they are
-// and send taps; editors and demo pages ("viewers") receive log entries and demo requests.
+// and send taps; editors and demo pages ("viewers") receive log entries and demo requests; everyone
+// hears when the project changed.
 import websocket from '@fastify/websocket';
 import { ClientMessage, parseMessage, type ServerMessage, type StationId } from '@tapcue/shared';
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
@@ -19,6 +20,8 @@ export interface HubOptions {
 }
 
 export interface Hub {
+  /** Sends a message to every connection: players, editors and demo pages. */
+  toAll(message: ServerMessage): void;
   /** Sends a message to every connection that is not a player: editors and demo pages. */
   toViewers(message: ServerMessage): void;
 }
@@ -39,6 +42,9 @@ export function registerHub(
     if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
   };
   const hub: Hub = {
+    toAll(message) {
+      for (const connection of connections) send(connection.socket, message);
+    },
     toViewers(message) {
       for (const connection of connections) {
         if (connection.stationId === null) send(connection.socket, message);
