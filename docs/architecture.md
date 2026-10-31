@@ -102,7 +102,7 @@ One Vite + React app with three routes:
 | Route | Who | What |
 |---|---|---|
 | `/play/:stationId` | Visitor | Full-screen player |
-| `/edit` | Integrator | Editor |
+| `/edit/:tab` | Integrator | Editor: `pages`, `targets`, `stations`, `settings`; `/` and `/edit` open `pages` |
 | `/demo` | Reviewer | Demo receiver log |
 
 ```
