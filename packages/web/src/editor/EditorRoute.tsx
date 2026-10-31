@@ -1,10 +1,14 @@
-// The editor at /edit/:tab: the shell around every editor screen — the top bar with the tabs and the
-// editor's own connection to the server (spec ED-1, ED-7, ED-11; design: shell(), topBar()).
-// No sign-in: anyone on the stand's network can open it (ADR 0010).
+// The editor at /edit/:tab: the shell around every editor screen — the top bar with the tabs, the
+// editor's own connection to the server and the save status (spec ED-1, ED-5, ED-7, ED-11;
+// design: shell(), topBar(), frames E2 and E3). No sign-in: anyone on the stand's network can open
+// it (ADR 0010).
 import { useEffect, useState } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { openServerSocket, type SocketStatus } from '../lib/serverSocket';
+import { ShellBanner } from '../ui/ShellBanner';
 import { type BadgeStatus, StatusBadge } from '../ui/StatusBadge';
+import { createEditorStore, type SaveStatus } from './editorStore';
+import { EditorStoreContext, useEditor } from './useEditor';
 
 export const EDITOR_TABS = [
   { path: 'pages', label: 'Pages' },
@@ -16,24 +20,40 @@ export const EDITOR_TABS = [
 export function EditorRoute() {
   const { tab: path } = useParams();
   const tab = EDITOR_TABS.find((t) => t.path === path);
-  const connection = useEditorConnection();
+  const [store] = useState(() => createEditorStore());
+  const connection = useEditorConnection(store);
+  useEffect(() => store.getState().start(), [store]);
   if (!tab) return <Navigate to="/edit/pages" replace />;
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-app text-primary">
-      <TopBar connection={connection} />
-      <main className="flex min-h-0 flex-1">
-        {tab.path === 'pages' ? (
-          <Placeholder title="Pages" text="The page list and the canvas come next in M3." />
-        ) : (
-          <Placeholder title={tab.label} text="Coming in M4." />
-        )}
-      </main>
-    </div>
+    <EditorStoreContext value={store}>
+      <div className="flex h-dvh flex-col overflow-hidden bg-app text-primary">
+        <TopBar connection={connection} />
+        <Banners connection={connection} />
+        <main className="flex min-h-0 flex-1">
+          <Body title={tab.label} isPages={tab.path === 'pages'} />
+        </main>
+      </div>
+    </EditorStoreContext>
+  );
+}
+
+function Body({ title, isPages }: { title: string; isPages: boolean }) {
+  const load = useEditor((state) => state.load);
+  if (load === 'loading') return <Placeholder title="Loading…" text="" />;
+  if (load === 'failed') {
+    return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
+  }
+  return isPages ? (
+    <Placeholder title="Pages" text="The page list and the canvas come next in M3." />
+  ) : (
+    <Placeholder title={title} text="Coming in M4." />
   );
 }
 
 function TopBar({ connection }: { connection: SocketStatus }) {
+  const name = useEditor((state) => state.project?.name);
+  const save = useEditor((state) => state.save);
   return (
     <header className="flex h-12 flex-none items-stretch gap-5 border-b border-default bg-surface pr-3 pl-4">
       <div className="flex items-center gap-2">
@@ -42,6 +62,14 @@ function TopBar({ connection }: { connection: SocketStatus }) {
           aria-hidden="true"
         />
         <span className="text-heading-m">Tapcue</span>
+        {name && (
+          <>
+            <span className="text-body-m text-muted" aria-hidden="true">
+              /
+            </span>
+            <span className="text-label-m text-secondary">{name}</span>
+          </>
+        )}
       </div>
       <nav aria-label="Editor" className="flex items-stretch">
         {EDITOR_TABS.map((tab) => (
@@ -58,9 +86,9 @@ function TopBar({ connection }: { connection: SocketStatus }) {
           </NavLink>
         ))}
       </nav>
-      {/* The save status joins the connection here with auto-save (#72). */}
       <div className="ml-auto flex items-center gap-2">
         <StatusBadge {...CONNECTION_BADGE[connection]} />
+        <StatusBadge status={SAVE_BADGE[save.state]} />
       </div>
     </header>
   );
@@ -72,13 +100,65 @@ const CONNECTION_BADGE: Record<SocketStatus, { status: BadgeStatus; label?: stri
   closed: { status: 'disconnected' },
 };
 
-/** The editor listens as a viewer; reconnecting is built into the socket (architecture §7). */
-function useEditorConnection(): SocketStatus {
+const SAVE_BADGE: Record<SaveStatus['state'], BadgeStatus> = {
+  saved: 'saved',
+  saving: 'saving',
+  unsaved: 'unsaved',
+  error: 'error',
+};
+
+/** Why changes are not reaching the server, with a way to try again (frames E2, E3). */
+export function Banners({ connection }: { connection: SocketStatus }) {
+  const save = useEditor((state) => state.save);
+  const retry = useEditor((state) => state.retry);
+  if (connection === 'closed') {
+    return (
+      <ShellBanner tone="warning" title="Connection to the server lost.">
+        Reconnecting… Your changes stay in this tab and are saved when the connection is back.
+      </ShellBanner>
+    );
+  }
+  if (save.state !== 'error') return null;
+  const [first, ...rest] = save.errors;
+  return (
+    <ShellBanner
+      tone="error"
+      title="Changes not saved."
+      action={
+        <button
+          type="button"
+          onClick={retry}
+          className="inline-flex h-7 flex-none items-center rounded border border-strong bg-surface px-2 text-label-s text-primary hover:bg-hover active:bg-pressed"
+        >
+          Retry now
+        </button>
+      }
+    >
+      {save.reason}
+      {first && ` ${first.path}: ${first.message}`}
+      {rest.length > 0 && ` (and ${rest.length} more)`}
+    </ShellBanner>
+  );
+}
+
+/**
+ * The editor listens as a viewer; reconnecting is built into the socket (architecture §7). The store
+ * hears about every (re)connect and every saved project.
+ */
+function useEditorConnection(store: ReturnType<typeof createEditorStore>): SocketStatus {
   const [status, setStatus] = useState<SocketStatus>('connecting');
   useEffect(() => {
-    const socket = openServerSocket({ onMessage: () => undefined, onStatus: setStatus });
+    const socket = openServerSocket({
+      onMessage: (message) => {
+        if (message.type === 'project-updated') store.getState().projectUpdated(message.revision);
+      },
+      onStatus: (next) => {
+        setStatus(next);
+        if (next === 'open') store.getState().connected();
+      },
+    });
     return () => socket.close();
-  }, []);
+  }, [store]);
   return status;
 }
 

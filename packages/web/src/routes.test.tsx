@@ -22,6 +22,10 @@ afterEach(() => {
 
 describe('routes', () => {
   it('sends the server root to the editor (spec ED-11)', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise(() => undefined)),
+    ); // the project never arrives
     const router = renderAt('/');
     expect(router.state.location.pathname).toBe('/edit/pages');
     expect(screen.getByRole('navigation', { name: 'Editor' })).toBeInTheDocument();

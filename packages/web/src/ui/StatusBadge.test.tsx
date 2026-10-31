@@ -9,6 +9,7 @@ describe('StatusBadge', () => {
     ['waiting', 'Waiting'],
     ['saving', 'Saving…'],
     ['saved', 'Saved'],
+    ['unsaved', 'Unsaved changes'],
     ['error', 'Save error'],
   ])('%s says "%s" by default, as a status', (status, text) => {
     render(<StatusBadge status={status} />);
@@ -25,6 +26,7 @@ describe('StatusBadge', () => {
     ['disconnected', 'svg'],
     ['saving', '.spinner'],
     ['saved', 'svg'],
+    ['unsaved', 'span.rounded-full.border-current'],
     ['error', 'svg'],
   ])('pairs %s with a shape or an icon, never colour alone', (status, mark) => {
     render(<StatusBadge status={status} />);
