@@ -1,6 +1,6 @@
 // The centre of the Pages tab: the selected page drawn by the player's own PageView, always scaled
-// to fit, with the selection layer on top, and "Add hotspot" (spec ED-2, ED-8, HS-1, HS-2;
-// design: canvasToolbar(), canvasStage()).
+// to fit, with the selection layer on top, "Add hotspot" and the safe area of `fill` mode
+// (spec ED-2, ED-3, ED-8, HS-1, HS-2; design: canvasToolbar(), canvasStage()).
 import type { Canvas, HotspotId, Page, PageId } from '@tapcue/shared';
 import { useEffect } from 'react';
 import { PageView } from '../../stage/PageView';
@@ -11,6 +11,8 @@ import { Icon } from '../../ui/Icon';
 import type { Rect } from '../operations/geometry';
 import { addHotspot, deleteHotspot, nudgeHotspot, placeHotspot } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
+import { SafeAreaOverlay } from './SafeAreaOverlay';
+import { cropBands, croppedBy, REFERENCE_SCREENS, type ReferenceScreen } from './safeArea';
 import { SelectionLayer } from './SelectionLayer';
 import './canvas.css';
 
@@ -22,6 +24,8 @@ export function EditorCanvas() {
   const selection = useEditor((state) => state.selection);
   const select = useEditor((state) => state.select);
   const change = useEditor((state) => state.change);
+  const safeArea = useEditor((state) => state.safeArea);
+  const setSafeArea = useEditor((state) => state.setSafeArea);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
   const selected = page?.hotspots.find((h) => h.id === selection.hotspotId);
@@ -32,6 +36,7 @@ export function EditorCanvas() {
   if (!project || !page) return null;
 
   const { canvas } = project;
+  const fill = canvas.scaleMode === 'fill';
   // Always fit, whatever the project's own scale mode: the whole page must be editable (ED-8).
   const { scale } = stageGeometry(
     canvas,
@@ -53,7 +58,37 @@ export function EditorCanvas() {
             select({ pageId: page.id, hotspotId: added.hotspotId });
           }}
         />
-        {/* "Show safe area" (#78) joins here. */}
+        <span className="mx-1 h-5 w-px bg-pressed" aria-hidden="true" />
+        <Button
+          icon="crop"
+          label="Show safe area"
+          pressed={fill && safeArea.show}
+          disabled={!fill}
+          title={
+            fill
+              ? undefined
+              : 'Nothing is cropped in Fit. Use Fill in Settings to see the safe area.'
+          }
+          onClick={() => setSafeArea({ show: !safeArea.show })}
+        />
+        {fill && (
+          <label className="ml-2 flex items-center gap-2 text-label-s text-secondary">
+            Reference screen
+            <select
+              className="field h-7 rounded border border-strong bg-surface px-2 text-body-m text-primary"
+              value={safeArea.reference}
+              onChange={(event) =>
+                setSafeArea({ reference: event.target.value as ReferenceScreen })
+              }
+            >
+              {Object.entries(REFERENCE_SCREENS).map(([key, screen]) => (
+                <option key={key} value={key}>
+                  {screen.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span
           className="ml-auto inline-flex h-8 flex-none items-center rounded bg-subtle px-2.5 text-body-s text-secondary tabular-nums"
           aria-label={`Canvas scale ${Math.round(scale * 100)} percent`}
@@ -73,6 +108,8 @@ export function EditorCanvas() {
             selectedId={selection.hotspotId}
             onSelect={(hotspotId) => select({ pageId: page.id, hotspotId })}
             onPlace={place}
+            reference={safeArea.reference}
+            showSafeArea={fill && safeArea.show}
           />
         )}
         <span className="absolute right-3 bottom-2 font-mono text-mono-s text-secondary">
@@ -90,9 +127,12 @@ interface StageProps {
   selectedId: HotspotId | null;
   onSelect: (hotspotId: HotspotId | null) => void;
   onPlace: (hotspotId: HotspotId, rect: Rect) => void;
+  reference: ReferenceScreen;
+  showSafeArea: boolean;
 }
 
-function Stage({ page, canvas, scale, selectedId, onSelect, onPlace }: StageProps) {
+function Stage(props: StageProps) {
+  const { page, canvas, scale, selectedId, onSelect, onPlace, reference, showSafeArea } = props;
   return (
     <div
       className="relative shadow-2"
@@ -102,6 +142,10 @@ function Stage({ page, canvas, scale, selectedId, onSelect, onPlace }: StageProp
       {/* The page box has the canvas's exact aspect ratio, so `fit` leaves no bars inside it. */}
       <PageView page={page} canvas={{ ...canvas, scaleMode: 'fit' }} />
       {!page.background && <EmptyCanvas />}
+      {showSafeArea && (
+        <SafeAreaOverlay bands={cropBands(canvas, reference)} reference={reference} scale={scale} />
+      )}
+      {/* Cropped hotspots are flagged even with the bands hidden (spec ED-3). */}
       <SelectionLayer
         hotspots={page.hotspots}
         scale={scale}
@@ -109,6 +153,7 @@ function Stage({ page, canvas, scale, selectedId, onSelect, onPlace }: StageProp
         selectedId={selectedId}
         onSelect={onSelect}
         onPlace={onPlace}
+        isCropped={(hotspot) => croppedBy(hotspot, canvas, reference) !== null}
       />
     </div>
   );

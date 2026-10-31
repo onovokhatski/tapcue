@@ -132,4 +132,23 @@ describe('HotspotPanel', () => {
       expect(screen.getByRole('button', { name: 'Bring forward' })).toBeDisabled();
     });
   });
+
+  describe('safe area warning (spec ED-3)', () => {
+    it('says how much is cropped, where, and what to do', async () => {
+      const project = demoProject();
+      project.canvas.scaleMode = 'fill';
+      project.pages[0]!.hotspots[0]!.y = 100; // 28 px into the 128 px top band on 16:10
+      await renderPanel(project);
+      const warning = screen.getByRole('status');
+      expect(warning).toHaveTextContent('Partly outside the safe area');
+      expect(warning).toHaveTextContent(
+        'Its top 28 px are cropped on 16:10 screens in Fill mode. Move it down 28 px, or use Fit in Settings.',
+      );
+    });
+
+    it('stays away while the hotspot is in the safe area, and in fit', async () => {
+      await renderPanel();
+      expect(screen.queryByText('Partly outside the safe area')).toBeNull();
+    });
+  });
 });

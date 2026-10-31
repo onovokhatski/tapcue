@@ -2,6 +2,7 @@
 // resize it (spec ED-2, HS-2; design: hotspotOverlay(), ADR 0012).
 import type { Hotspot, HotspotId } from '@tapcue/shared';
 import { type PointerEvent, useRef, useState } from 'react';
+import { Icon } from '../../ui/Icon';
 import { type Handle, moveRect, type Rect, resizeRect, type Size } from '../operations/geometry';
 
 interface SelectionLayerProps {
@@ -13,6 +14,8 @@ interface SelectionLayerProps {
   onSelect: (hotspotId: HotspotId | null) => void;
   /** A hotspot's new box while it is dragged or resized, in canvas pixels. */
   onPlace: (hotspotId: HotspotId, rect: Rect) => void;
+  /** Whether `fill` mode crops part of the hotspot on the reference screen (spec ED-3). */
+  isCropped?: (hotspot: Hotspot) => boolean;
 }
 
 /** A chip above a hotspot this close to the canvas top would be cut off; it goes below instead. */
@@ -46,6 +49,7 @@ export function SelectionLayer({
   selectedId,
   onSelect,
   onPlace,
+  isCropped = () => false,
 }: SelectionLayerProps) {
   const [hoverId, setHoverId] = useState<HotspotId | null>(null);
   const layer = useRef<HTMLDivElement>(null);
@@ -120,14 +124,12 @@ export function SelectionLayer({
             onPointerLeave={() => setHoverId((id) => (id === hotspot.id ? null : id))}
           >
             <Outline hotspot={hotspot} scale={scale} state={state} />
-            {state !== 'idle' && (
-              <span
-                className={`hs-chip ${state === 'hover' ? 'hs-chip-idle' : ''}`}
-                data-below={top < CHIP_ROOM_PX || undefined}
-              >
-                {hotspot.name}
-              </span>
-            )}
+            <Chip
+              state={state}
+              name={hotspot.name}
+              cropped={isCropped(hotspot)}
+              below={top < CHIP_ROOM_PX}
+            />
             {state === 'selected' &&
               HANDLES.map(({ handle, left, top: handleTop, cursor }) => (
                 <span
@@ -142,6 +144,32 @@ export function SelectionLayer({
         );
       })}
     </div>
+  );
+}
+
+/** Selected and hovered hotspots show their name; a cropped one always shows a warning. */
+function Chip({
+  state,
+  name,
+  cropped,
+  below,
+}: {
+  state: 'idle' | 'hover' | 'selected';
+  name: string;
+  cropped: boolean;
+  below: boolean;
+}) {
+  if (state === 'idle' && !cropped) return null;
+  const look = cropped ? 'hs-chip-warn' : state === 'hover' ? 'hs-chip-idle' : '';
+  return (
+    <span
+      className={`hs-chip ${look}`}
+      data-below={below || undefined}
+      data-cropped={cropped || undefined}
+    >
+      {cropped && <Icon name="alert" className="h-3 w-3" />}
+      {state === 'idle' ? <span className="sr-only">{name} is partly cropped</span> : name}
+    </span>
   );
 }
 

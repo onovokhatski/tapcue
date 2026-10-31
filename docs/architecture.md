@@ -128,6 +128,11 @@ what the visitor sees ([spec ED-2](spec.md#59-editor)). The editor always scales
 edited ([spec ED-8](spec.md#59-editor)); the selection layer is drawn in screen pixels, so
 outlines, name chips and handles keep their size at any scale.
 
+The safe area ([spec ED-3](spec.md#59-editor)) uses the player's own `stageGeometry` in `fill`
+mode against the reference screen, so the bands the editor marks are exactly what a tablet of that
+shape crops. The reference screen and whether the bands are shown are kept in the browser
+(`localStorage`), not in the project.
+
 ### 4.2 Editor state
 
 - A Zustand store holds the current `Project`, the selection and the save status.

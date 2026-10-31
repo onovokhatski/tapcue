@@ -10,6 +10,9 @@ const VARIANT = {
   danger: 'bg-danger-solid text-on-danger hover:bg-danger-hover active:bg-danger-pressed',
 } as const;
 
+/** A toggle that is on (design: Button, Toggle on). */
+const TOGGLE_ON = 'border border-selection-border bg-selection text-primary hover:bg-accent-subtle';
+
 const DISABLED = {
   primary: 'bg-disabled text-disabled',
   secondary: 'border border-default bg-disabled text-disabled',
@@ -23,6 +26,8 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'chi
   icon?: IconName | undefined;
   label?: string;
   ariaLabel?: string;
+  /** Makes it a toggle: announced as pressed or not, and drawn as on when pressed. */
+  pressed?: boolean;
   ref?: Ref<HTMLButtonElement>;
 }
 
@@ -33,6 +38,7 @@ export function Button({
   label,
   ariaLabel,
   disabled,
+  pressed,
   className = '',
   ...rest
 }: ButtonProps) {
@@ -45,12 +51,17 @@ export function Button({
       : iconOnly
         ? 'h-8 w-8 justify-center'
         : 'h-8 gap-2 px-3 text-label-m';
-  const look = disabled ? `${DISABLED[variant]} cursor-not-allowed` : VARIANT[variant];
+  const look = disabled
+    ? `${DISABLED[variant]} cursor-not-allowed`
+    : pressed
+      ? TOGGLE_ON
+      : VARIANT[variant];
   return (
     <button
       type="button"
       disabled={disabled}
       aria-label={iconOnly ? ariaLabel : undefined}
+      aria-pressed={pressed}
       className={`inline-flex flex-none items-center rounded ${sizing} ${look} ${className}`}
       {...rest}
     >

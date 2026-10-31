@@ -334,4 +334,70 @@ describe('EditorCanvas', () => {
       });
     });
   });
+
+  describe('safe area (spec ED-3)', () => {
+    const filled = () => {
+      const project = demoProject();
+      project.canvas.scaleMode = 'fill';
+      return project;
+    };
+    const toggle = () => screen.getByRole('button', { name: 'Show safe area' });
+
+    it('has nothing to show in fit: the toggle is off and says why', async () => {
+      await renderCanvas();
+      expect(toggle()).toBeDisabled();
+      expect(toggle()).toHaveAttribute(
+        'title',
+        expect.stringContaining('Nothing is cropped in Fit'),
+      );
+      expect(screen.queryByLabelText('Reference screen')).toBeNull();
+    });
+
+    it('draws the bands fill crops on the reference screen, at the canvas scale', async () => {
+      localStorage.clear();
+      await renderCanvas(filled());
+      expect(screen.queryByTestId('safe-area')).toBeNull();
+      fireEvent.click(toggle());
+      expect(toggle()).toHaveAttribute('aria-pressed', 'true');
+      const area = screen.getByTestId('safe-area');
+      // 128 canvas pixels at half scale.
+      expect(area.querySelector('[data-band="top"]')).toHaveStyle({ height: '64px' });
+      expect(area.querySelector('[data-band="bottom"]')).toHaveStyle({ height: '64px' });
+      expect(area).toHaveTextContent('Cropped on 16:10 in Fill · 128 px');
+      fireEvent.click(toggle());
+      expect(screen.queryByTestId('safe-area')).toBeNull();
+    });
+
+    it('switches the reference screen, and remembers it in this browser', async () => {
+      localStorage.clear();
+      const { store } = await renderCanvas(filled());
+      fireEvent.click(toggle());
+      fireEvent.change(screen.getByLabelText('Reference screen'), { target: { value: '16:9' } });
+      expect(screen.getByTestId('safe-area')).toHaveTextContent('Cropped on 16:9 in Fill · 192 px');
+      expect(JSON.parse(localStorage.getItem('tapcue.safeArea')!)).toEqual({
+        show: true,
+        reference: '16:9',
+      });
+      // Not part of the project: nothing to save.
+      expect(store.getState().save).toEqual({ state: 'saved' });
+    });
+
+    it('flags a hotspot that reaches into a band, even with the bands hidden', async () => {
+      localStorage.clear();
+      const project = filled();
+      project.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!.y = 40;
+      const { overlay } = await renderCanvas(project);
+      expect(screen.queryByTestId('safe-area')).toBeNull();
+      const chip = overlay('h_call00').querySelector('.hs-chip-warn');
+      expect(chip).toHaveTextContent('Call our team is partly cropped');
+      expect(overlay('h_carda0').querySelector('.hs-chip-warn')).toBeNull();
+    });
+
+    it('flags nothing in fit', async () => {
+      const project = demoProject();
+      project.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!.y = 0;
+      const { overlay } = await renderCanvas(project);
+      expect(overlay('h_call00').querySelector('.hs-chip-warn')).toBeNull();
+    });
+  });
 });
