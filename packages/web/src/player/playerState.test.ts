@@ -133,3 +133,54 @@ describe('player state', () => {
     });
   });
 });
+
+describe('a new project from the editor (spec PLY-5, PLY-6)', () => {
+  const without = (pageId: string) => ({
+    ...project,
+    pages: project.pages.filter((page) => page.id !== pageId),
+  });
+  const apply = (state: PlayerState, next: typeof project) =>
+    playerReducer(state, {
+      type: 'project',
+      project: next,
+      station: next.stations.find((s) => s.id === state.station.id)!,
+    });
+  const onProductA = () =>
+    faded(ready(tap(startPlayer({ project, station: main }), 'h_carda0'), 'p_proda0'), 'p_proda0');
+
+  it('keeps the visitor on their page and uses the new project', () => {
+    const renamed = { ...project, name: 'Renamed stand' };
+    const state = apply(onProductA(), renamed);
+    expect(state.project).toBe(renamed);
+    expect(state.pageId).toBe('p_proda0');
+    expect(state.shown).toBe('p_proda0');
+  });
+
+  it('uses the station as it is in the new project, e.g. a new start page for the idle return', () => {
+    const next = {
+      ...project,
+      stations: project.stations.map((s) =>
+        s.id === 'main' ? { ...s, startPageId: 'p_about0' } : s,
+      ),
+    };
+    const state = playerReducer(apply(onProductA(), next), { type: 'idle' });
+    expect(state.pageId).toBe('p_about0');
+  });
+
+  it('goes to the start page at once when the page on screen was deleted', () => {
+    const state = apply(onProductA(), without('p_proda0'));
+    expect(state).toMatchObject({ pageId: 'p_home00', shown: 'p_home00', fading: false });
+  });
+
+  it('goes to the start page when the page fading in was deleted', () => {
+    const fading = ready(tap(startPlayer({ project, station: main }), 'h_carda0'), 'p_proda0');
+    const state = apply(fading, without('p_proda0'));
+    expect(state).toMatchObject({ pageId: 'p_home00', shown: 'p_home00', fading: false });
+  });
+
+  it('puts the incoming page on screen when the page under it was deleted', () => {
+    const fading = ready(tap(onProductA(), 'h_anext0'), 'p_prodb0');
+    const state = apply(fading, without('p_proda0'));
+    expect(state).toMatchObject({ pageId: 'p_prodb0', shown: 'p_prodb0', fading: false });
+  });
+});

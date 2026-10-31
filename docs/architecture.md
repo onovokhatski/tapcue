@@ -149,6 +149,12 @@ what the visitor sees ([spec ED-2](spec.md#59-editor)).
 - Requests a **Screen Wake Lock** where available and re-requests it when the page becomes
   visible again; on iPad over `http://` staying awake is a stand-setup step
   ([ADR 0015](adr/0015-screen-wake.md)).
+- **Follows the editor** ([spec PLY-5, PLY-6](spec.md#58-player)): the route holds the project and
+  the connection, so both outlive the station. On `project-updated` with another revision, and on
+  every (re)connect, it fetches `GET /api/project` and replaces its copy only when the revision
+  differs ("differs", not "newer": a restarted server counts from 1 again). The visitor stays on
+  their page; if it was deleted, the player goes to the start page at once; if the station was
+  deleted, it shows "Station not found" and recovers when the station comes back.
 - Uses **feature detection** only — iPad Safari reports a desktop user agent.
 - A tap fires on pointer release: the `tap` message is sent at once, the page change starts after
   the release effect (≤ 160 ms). Navigation is local; commands are fire-and-forget over WebSocket
@@ -252,7 +258,7 @@ These are three checks in the server and one flag in the editor — no separate 
 
 | Failure | Behaviour |
 |---|---|
-| Tablet loses Wi-Fi | WebSocket closes → indicator shown after 1 s (none for a blip) → taps queued in the player, each kept for 5 s → reconnect with backoff (1 s, 2 s, 4 s … max 10 s) → `hello` → queued taps sent → fetch project if revision changed |
+| Tablet loses Wi-Fi | WebSocket closes → indicator shown after 1 s (none for a blip) → taps queued in the player, each kept for 5 s → reconnect with backoff (1 s, 2 s, 4 s … max 10 s) → `hello` → queued taps sent → project fetched, applied if its revision changed |
 | HTTP target slow | Request aborted after 2 s → logged as an error |
 | Silent dead connection | Server: `ping` every 10 s; no `pong` within 5 s → closed. Browser: nothing heard for 15 s → treated as closed and replaced |
 | Media server unreachable | Driver throws → error logged and shown in editor; the server keeps running |

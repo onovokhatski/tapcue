@@ -1,9 +1,10 @@
-import type { Station } from '@tapcue/shared';
+import type { Project, Station } from '@tapcue/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
 import { StationPlayer } from './StationPlayer';
+import { useStationSocket } from './useStationSocket';
 
 const project = demoProject();
 const main = project.stations.find((s) => s.id === 'main')!; // Home, idle after 90 s
@@ -14,8 +15,19 @@ function advance(ms: number) {
   });
 }
 
+/** The player with its connection, as PlayerRoute gives it one. */
+function Connected(props: { project: Project; station: Station }) {
+  const connection = useStationSocket(props.station.id);
+  return <StationPlayer {...props} connection={connection} />;
+}
+
 function renderStation(station: Station = main) {
-  const { container } = render(<StationPlayer project={project} station={station} />);
+  const { container, rerender } = render(<Connected project={project} station={station} />);
+  /** A new project from the editor, with this station as it is in that project. */
+  const update = (next: Project) => {
+    const nextStation = next.stations.find((s) => s.id === station.id)!;
+    rerender(<Connected project={next} station={nextStation} />);
+  };
 
   const layer = (role: 'shown' | 'incoming') =>
     container.querySelector<HTMLElement>(`[data-layer="${role}"]`);
@@ -53,7 +65,7 @@ function renderStation(station: Station = main) {
     finishFade();
   };
 
-  return { container, layer, shown, press, load, finishFade, navigate };
+  return { container, layer, shown, press, load, finishFade, navigate, update };
 }
 
 beforeEach(() => {
@@ -282,10 +294,55 @@ describe('StationPlayer', () => {
     });
 
     it('closes the connection when the player closes', () => {
-      const { unmount } = render(<StationPlayer project={project} station={main} />);
+      const { unmount } = render(<Connected project={project} station={main} />);
       const server = connected();
       unmount();
       expect(server.readyState).toBe(FakeWebSocket.CLOSED);
+    });
+  });
+
+  describe('a new project from the editor (spec PLY-5, PLY-6)', () => {
+    const moved = (hotspotId: string, x: number): Project => ({
+      ...project,
+      pages: project.pages.map((page) => ({
+        ...page,
+        hotspots: page.hotspots.map((h) => (h.id === hotspotId ? { ...h, x } : h)),
+      })),
+    });
+    const hotspotEl = (container: HTMLElement, id: string) =>
+      container.querySelector<HTMLElement>(`[data-layer="shown"] [data-hotspot="${id}"]`);
+
+    it('draws a moved hotspot at its new place, without reloading the page on screen', () => {
+      const { container, layer, update } = renderStation();
+      const background = layer('shown')!.querySelector('img');
+
+      update(moved('h_carda0', 40));
+
+      expect(hotspotEl(container, 'h_carda0')).toHaveStyle({ left: '40px' });
+      expect(layer('shown')).toHaveAttribute('data-page', 'p_home00');
+      // The same element: the image is not loaded again, so nothing flashes.
+      expect(layer('shown')!.querySelector('img')).toBe(background);
+    });
+
+    it('keeps the visitor on the page they are on', async () => {
+      const { layer, navigate, update } = renderStation();
+      await navigate('h_carda0');
+      update(moved('h_carda0', 40));
+      expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    });
+
+    it('returns to the start page when the page on screen was deleted', async () => {
+      const { layer, navigate, update } = renderStation();
+      await navigate('h_carda0');
+      update({ ...project, pages: project.pages.filter((page) => page.id !== 'p_proda0') });
+      expect(layer('shown')).toHaveAttribute('data-page', 'p_home00');
+      expect(layer('incoming')).toBeNull();
+    });
+
+    it('keeps the connection it has', () => {
+      const { update } = renderStation();
+      update(moved('h_carda0', 40));
+      expect(FakeWebSocket.all).toHaveLength(1);
     });
   });
 
@@ -377,7 +434,7 @@ describe('kiosk behaviour (spec PLY-7)', () => {
 
   it("blocks Safari's pinch zoom only while the player runs", () => {
     const pinch = () => document.dispatchEvent(new Event('gesturestart', { cancelable: true }));
-    const { unmount } = render(<StationPlayer project={project} station={main} />);
+    const { unmount } = render(<Connected project={project} station={main} />);
     expect(pinch()).toBe(false);
     unmount();
     expect(pinch()).toBe(true);
