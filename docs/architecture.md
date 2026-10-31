@@ -246,6 +246,9 @@ Editor                    Server                         Players
   their copy is stale.
 - **Concurrent editors:** last save wins. One integrator per stand is assumed
   ([spec §8](spec.md#8-assumptions-and-constraints)).
+- The editor checks a file's type and size before uploading it, shows the upload's progress
+  (XMLHttpRequest: `fetch` reports no upload progress) and can cancel it; the file becomes the
+  background of the page the upload was started for.
 - Uploaded files get a unique, sanitised name so uploads never overwrite each other
   (`Hero Shot.JPG` → `hero-shot-3f9a1c2b.jpg`); they are streamed to disk, never held in memory.
   Unused files are not cleaned up in MVP.

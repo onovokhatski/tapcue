@@ -11,6 +11,7 @@ import { type BadgeStatus, StatusBadge } from '../ui/StatusBadge';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { createEditorStore, type SaveStatus } from './editorStore';
 import { PageList } from './pages/PageList';
+import { PagePanel } from './pages/PagePanel';
 import { EditorStoreContext, useEditor } from './useEditor';
 
 export const EDITOR_TABS = [
@@ -48,11 +49,12 @@ function Body({ title, isPages }: { title: string; isPages: boolean }) {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
   if (!isPages) return <Placeholder title={title} text="Coming in M4." />;
-  // The properties panel (#77) joins on the right.
+  // A selected hotspot gets its own properties panel with #77.
   return (
     <>
       <PageList />
       <EditorCanvas />
+      <PagePanel />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { addPage, deletePage, movePage, pageUsage, renamePage } from './pages';
+import { addPage, deletePage, movePage, pageUsage, renamePage, setBackground } from './pages';
 
 const ids = (project: Project) => project.pages.map((p) => p.id);
 /** Every operation leaves a project the server would accept. */
@@ -138,6 +138,31 @@ describe('page operations (spec PG-1)', () => {
       const usage = pageUsage(demoProject(), 'p_home00');
       expect(usage.stations.map((s) => s.id)).toEqual(['main']);
       expect(usage.links.every((h) => h.action.goTo === 'p_home00')).toBe(true);
+    });
+  });
+
+  describe('setBackground (spec PG-2)', () => {
+    it('sets a background and keeps the hotspots where they are', () => {
+      const before = demoProject();
+      const background = { type: 'video' as const, asset: 'assets/about-loop.mp4' };
+      const project = setBackground(before, 'p_home00', background);
+      expect(project.pages[0]?.background).toEqual(background);
+      expect(project.pages[0]?.hotspots).toBe(before.pages[0]?.hotspots);
+      expectValid(project);
+    });
+
+    it('removes a background', () => {
+      const project = setBackground(demoProject(), 'p_home00', null);
+      expect(project.pages[0]?.background).toBeNull();
+      expectValid(project);
+    });
+
+    it('keeps the project when nothing changes, or the page is gone', () => {
+      const before = demoProject();
+      expect(setBackground(before, 'p_home00', { type: 'image', asset: 'assets/home.jpg' })).toBe(
+        before,
+      );
+      expect(setBackground(before, 'p_zzzzzz', null)).toBe(before);
     });
   });
 });
