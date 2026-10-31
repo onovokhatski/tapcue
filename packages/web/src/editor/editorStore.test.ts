@@ -152,6 +152,24 @@ describe('editor store', () => {
       expect(server.saves.map((s) => s.project.name)).toEqual(['One', 'Two']);
     });
 
+    it('saves nothing when an operation changes nothing', async () => {
+      const { state, server } = await loaded();
+      state().change((project) => project);
+      expect(state().save).toEqual({ state: 'saved' });
+      await wait(SAVE_DELAY_MS);
+      expect(server.saves).toHaveLength(0);
+    });
+
+    it('moves the selection off a page the change deleted', async () => {
+      const { state } = await loaded();
+      state().select({ pageId: 'p_about0', hotspotId: null });
+      state().change((project) => ({
+        ...project,
+        pages: project.pages.filter((page) => page.id !== 'p_about0'),
+      }));
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: null });
+    });
+
     it('never changes the project it was given: an operation returns a new one', async () => {
       const { state } = await loaded();
       const before = state().project;

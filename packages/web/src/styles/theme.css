@@ -57,6 +57,8 @@
   --color-danger-bg: var(--color-danger-bg);
   --color-danger-border: var(--color-danger-border);
   --color-danger-solid: var(--color-danger-solid);
+  --color-danger-hover: var(--color-danger-hover);
+  --color-danger-pressed: var(--color-danger-pressed);
   --color-info-fg: var(--color-info-fg);
   --color-info-bg: var(--color-info-bg);
   --color-info-border: var(--color-info-border);

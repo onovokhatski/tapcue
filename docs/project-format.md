@@ -220,7 +220,9 @@ An invalid project is never saved. Errors name the exact place, e.g.
 `pages[2].hotspots[0].action.goTo: page "p_zz0000" does not exist`.
 
 Deleting a page or a target never leaves broken references: the editor operation that
-deletes it also clears every `goTo`, `startPageId` or `command` that pointed to it.
+deletes it also clears every `goTo` or `command` that pointed to it. A station whose start page
+is deleted starts on the first remaining page, since `startPageId` cannot be empty; for the same
+reason the last page of a project cannot be deleted.
 
 ## 11. Complete example
 
