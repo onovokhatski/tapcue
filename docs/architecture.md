@@ -123,7 +123,10 @@ background and never drift.
 
 The **player** uses `PageView` as is. The **editor** places the same `PageView` under a
 selection layer (outlines, resize handles). What the integrator sees is, by construction,
-what the visitor sees ([spec ED-2](spec.md#59-editor)).
+what the visitor sees ([spec ED-2](spec.md#59-editor)). The editor always scales the page to
+`fit` its canvas area, whatever the project's scale mode, so every part of the page can be
+edited ([spec ED-8](spec.md#59-editor)); the selection layer is drawn in screen pixels, so
+outlines, name chips and handles keep their size at any scale.
 
 ### 4.2 Editor state
 

@@ -7,6 +7,7 @@ import { Navigate, NavLink, useParams } from 'react-router';
 import { openServerSocket, type SocketStatus } from '../lib/serverSocket';
 import { ShellBanner } from '../ui/ShellBanner';
 import { type BadgeStatus, StatusBadge } from '../ui/StatusBadge';
+import { EditorCanvas } from './canvas/EditorCanvas';
 import { createEditorStore, type SaveStatus } from './editorStore';
 import { EditorStoreContext, useEditor } from './useEditor';
 
@@ -44,11 +45,8 @@ function Body({ title, isPages }: { title: string; isPages: boolean }) {
   if (load === 'failed') {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
-  return isPages ? (
-    <Placeholder title="Pages" text="The page list and the canvas come next in M3." />
-  ) : (
-    <Placeholder title={title} text="Coming in M4." />
-  );
+  // The page list (#74) and the properties panel (#77) join the canvas here.
+  return isPages ? <EditorCanvas /> : <Placeholder title={title} text="Coming in M4." />;
 }
 
 function TopBar({ connection }: { connection: SocketStatus }) {
