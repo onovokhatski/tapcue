@@ -1,43 +1,97 @@
-// The layer over the page on the editor canvas: one outline per hotspot, to find and select it
-// (spec ED-2; design: hotspotOverlay()). Moving and resizing come with #76.
+// The layer over the page on the editor canvas: one outline per hotspot, to find, select, move and
+// resize it (spec ED-2, HS-2; design: hotspotOverlay(), ADR 0012).
 import type { Hotspot, HotspotId } from '@tapcue/shared';
-import { useState } from 'react';
+import { type PointerEvent, useRef, useState } from 'react';
+import { type Handle, moveRect, type Rect, resizeRect, type Size } from '../operations/geometry';
 
 interface SelectionLayerProps {
   hotspots: Hotspot[];
   /** Screen pixels per canvas pixel. */
   scale: number;
+  canvas: Size;
   selectedId: HotspotId | null;
   onSelect: (hotspotId: HotspotId | null) => void;
+  /** A hotspot's new box while it is dragged or resized, in canvas pixels. */
+  onPlace: (hotspotId: HotspotId, rect: Rect) => void;
 }
 
 /** A chip above a hotspot this close to the canvas top would be cut off; it goes below instead. */
 const CHIP_ROOM_PX = 28;
 
-/** The eight handles: corners and edge midpoints, in percent of the hotspot. */
-const HANDLES = [
-  [0, 0],
-  [50, 0],
-  [100, 0],
-  [100, 50],
-  [100, 100],
-  [50, 100],
-  [0, 100],
-  [0, 50],
-] as const;
+/** The eight handles: which edges each moves, and where it sits in percent of the hotspot. */
+const HANDLES: { handle: Handle; left: number; top: number; cursor: string }[] = [
+  { handle: 'nw', left: 0, top: 0, cursor: 'nwse-resize' },
+  { handle: 'n', left: 50, top: 0, cursor: 'ns-resize' },
+  { handle: 'ne', left: 100, top: 0, cursor: 'nesw-resize' },
+  { handle: 'e', left: 100, top: 50, cursor: 'ew-resize' },
+  { handle: 'se', left: 100, top: 100, cursor: 'nwse-resize' },
+  { handle: 's', left: 50, top: 100, cursor: 'ns-resize' },
+  { handle: 'sw', left: 0, top: 100, cursor: 'nesw-resize' },
+  { handle: 'w', left: 0, top: 50, cursor: 'ew-resize' },
+];
 
-export function SelectionLayer({ hotspots, scale, selectedId, onSelect }: SelectionLayerProps) {
+/** A drag in progress: what it does, where the pointer started and the box it started from. */
+interface Drag {
+  hotspotId: HotspotId;
+  mode: 'move' | Handle;
+  startX: number;
+  startY: number;
+  start: Rect;
+}
+
+export function SelectionLayer({
+  hotspots,
+  scale,
+  canvas,
+  selectedId,
+  onSelect,
+  onPlace,
+}: SelectionLayerProps) {
   const [hoverId, setHoverId] = useState<HotspotId | null>(null);
+  const layer = useRef<HTMLDivElement>(null);
+  const drag = useRef<Drag | null>(null);
   const px = (canvasPixels: number) => Math.round(canvasPixels * scale);
+
+  function startDrag(event: PointerEvent, hotspot: Hotspot, mode: Drag['mode']) {
+    event.stopPropagation();
+    onSelect(hotspot.id);
+    const { x, y, width, height } = hotspot;
+    drag.current = {
+      hotspotId: hotspot.id,
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      start: { x, y, width, height },
+    };
+    // Moves outside the hotspot, or outside the canvas, still belong to this drag.
+    layer.current?.setPointerCapture?.(event.pointerId);
+  }
+
+  function continueDrag(event: PointerEvent) {
+    const current = drag.current;
+    if (!current) return;
+    // The pointer moves in screen pixels; the hotspot lives in canvas pixels.
+    const dx = (event.clientX - current.startX) / scale;
+    const dy = (event.clientY - current.startY) / scale;
+    const rect =
+      current.mode === 'move'
+        ? moveRect(current.start, dx, dy, canvas)
+        : resizeRect(current.start, current.mode, dx, dy, canvas);
+    onPlace(current.hotspotId, rect);
+  }
 
   return (
     // A press on the artwork outside every hotspot clears the selection.
     <div
+      ref={layer}
       className="absolute inset-0"
       data-testid="selection-layer"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onSelect(null);
       }}
+      onPointerMove={continueDrag}
+      onPointerUp={() => (drag.current = null)}
+      onPointerCancel={() => (drag.current = null)}
     >
       {/* Project order is stacking order: a later hotspot lies on top, as in the player. */}
       {hotspots.map((hotspot) => {
@@ -48,7 +102,7 @@ export function SelectionLayer({ hotspots, scale, selectedId, onSelect }: Select
           <button
             key={hotspot.id}
             type="button"
-            className="hs-target absolute"
+            className={`hs-target absolute ${state === 'selected' ? 'cursor-move' : ''}`}
             style={{
               left: px(hotspot.x),
               top,
@@ -59,7 +113,7 @@ export function SelectionLayer({ hotspots, scale, selectedId, onSelect }: Select
             data-state={state}
             aria-label={hotspot.name || 'Unnamed hotspot'}
             aria-pressed={state === 'selected'}
-            onPointerDown={() => onSelect(hotspot.id)}
+            onPointerDown={(event) => startDrag(event, hotspot, 'move')}
             // Keyboard: Tab reaches each hotspot, Enter or Space selects it.
             onClick={() => onSelect(hotspot.id)}
             onPointerEnter={() => setHoverId(hotspot.id)}
@@ -75,11 +129,13 @@ export function SelectionLayer({ hotspots, scale, selectedId, onSelect }: Select
               </span>
             )}
             {state === 'selected' &&
-              HANDLES.map(([x, y]) => (
+              HANDLES.map(({ handle, left, top: handleTop, cursor }) => (
                 <span
-                  key={`${x}-${y}`}
-                  className="hs-handle"
-                  style={{ left: `${x}%`, top: `${y}%` }}
+                  key={handle}
+                  className="hs-handle hs-handle-active"
+                  data-handle={handle}
+                  style={{ left: `${left}%`, top: `${handleTop}%`, cursor }}
+                  onPointerDown={(event) => startDrag(event, hotspot, handle)}
                 />
               ))}
           </button>
