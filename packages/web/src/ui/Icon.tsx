@@ -2,6 +2,13 @@
 // round caps. Only the ones the app uses so far; the editor will add more.
 const PATHS = {
   check: <path d="M3 8.5l3.25 3.25L13 5" />,
+  alert: (
+    <>
+      <path d="M7.13 2.5a1 1 0 0 1 1.74 0l5.4 9.5a1 1 0 0 1-.87 1.5H2.6a1 1 0 0 1-.87-1.5z" />
+      <path d="M8 6.25v3" />
+      <circle cx="8" cy="11.25" r=".8" fill="currentColor" stroke="none" />
+    </>
+  ),
   copy: (
     <>
       <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />

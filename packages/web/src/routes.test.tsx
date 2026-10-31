@@ -23,8 +23,8 @@ afterEach(() => {
 describe('routes', () => {
   it('sends the server root to the editor (spec ED-11)', () => {
     const router = renderAt('/');
-    expect(router.state.location.pathname).toBe('/edit');
-    expect(screen.getByRole('heading', { name: 'Editor' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/edit/pages');
+    expect(screen.getByRole('navigation', { name: 'Editor' })).toBeInTheDocument();
   });
 
   it('opens the demo receiver at /demo', () => {

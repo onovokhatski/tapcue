@@ -4,6 +4,7 @@ import type { DemoRequest, Project } from '@tapcue/shared';
 import { useEffect, useReducer, useState } from 'react';
 import { openServerSocket, type SocketStatus } from '../lib/serverSocket';
 import { Icon } from '../ui/Icon';
+import { StatusBadge } from '../ui/StatusBadge';
 import { demoReducer, initialDemoState, type Received, type Screen } from './demoState';
 
 /** How long the newest request and its screen stay highlighted as new. */
@@ -58,7 +59,7 @@ export function DemoRoute() {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <StatusBadge status={status} count={state.requests.length} />
+          <ReceiverBadge status={status} count={state.requests.length} />
           <a href={playerUrl} target="_blank" rel="noreferrer" className={BUTTON.secondary}>
             <Icon name="external" />
             Open player
@@ -114,31 +115,16 @@ const BUTTON = {
   ghost: `${BUTTON_BASE} text-secondary hover:bg-hover hover:text-primary active:bg-pressed`,
 };
 
-const BADGE =
-  'inline-flex h-6 flex-none items-center gap-1.5 rounded-full border px-2 text-label-s';
-
-function StatusBadge({ status, count }: { status: SocketStatus; count: number }) {
-  if (status === 'closed') {
-    return (
-      <span role="status" className={`${BADGE} border-danger-border bg-danger-bg text-danger-fg`}>
-        <Icon name="wifi-off" className="h-3.5 w-3.5" />
-        Disconnected · reconnecting
-      </span>
-    );
-  }
-  if (status === 'connecting' || count === 0) {
-    return (
-      <span role="status" className={`${BADGE} border-default bg-subtle text-secondary`}>
-        <span className="spinner" aria-hidden="true" />
-        {status === 'connecting' ? 'Connecting' : 'Waiting for the first command'}
-      </span>
-    );
-  }
+function ReceiverBadge({ status, count }: { status: SocketStatus; count: number }) {
+  if (status === 'closed')
+    return <StatusBadge status="disconnected" label="Disconnected · reconnecting" />;
+  if (status === 'connecting') return <StatusBadge status="waiting" label="Connecting" />;
+  if (count === 0) return <StatusBadge status="waiting" label="Waiting for the first command" />;
   return (
-    <span role="status" className={`${BADGE} border-success-border bg-success-bg text-success-fg`}>
-      <span className="h-2 w-2 rounded-full bg-success-solid" aria-hidden="true" />
-      Receiving · {count} {count === 1 ? 'request' : 'requests'}
-    </span>
+    <StatusBadge
+      status="connected"
+      label={`Receiving · ${count} ${count === 1 ? 'request' : 'requests'}`}
+    />
   );
 }
 

@@ -5,8 +5,10 @@ import { EditorRoute } from './editor/EditorRoute';
 import { PlayerRoute } from './player/PlayerRoute';
 
 export const routes: RouteObject[] = [
-  { path: '/', element: <Navigate to="/edit" replace /> },
+  // The server root opens the editor (spec ED-11).
+  { path: '/', element: <Navigate to="/edit/pages" replace /> },
   { path: '/play/:stationId', element: <PlayerRoute /> },
-  { path: '/edit', element: <EditorRoute /> },
+  { path: '/edit', element: <Navigate to="/edit/pages" replace /> },
+  { path: '/edit/:tab', element: <EditorRoute /> },
   { path: '/demo', element: <DemoRoute /> },
 ];
