@@ -9,7 +9,7 @@ import { useElementSize } from '../../stage/useElementSize';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import type { Rect } from '../operations/geometry';
-import { addHotspot, nudgeHotspot, placeHotspot } from '../operations/hotspots';
+import { addHotspot, deleteHotspot, nudgeHotspot, placeHotspot } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
 import { SelectionLayer } from './SelectionLayer';
 import './canvas.css';
@@ -134,9 +134,9 @@ const NUDGE: Record<string, [number, number]> = {
 };
 
 /**
- * The arrow keys move the selected hotspot by 1 canvas pixel, with Shift by 10 — unless the focus
- * is in a field, where the arrows move the text cursor. Each step starts from the hotspot as the
- * store has it at that moment, so fast repeats never undo one another.
+ * Keys for the selected hotspot, unless the focus is in a field, where they edit text. The arrows
+ * move it by 1 canvas pixel, with Shift by 10; each step starts from the hotspot as the store has
+ * it at that moment, so fast repeats never undo one another. Delete and Backspace delete it.
  */
 function useArrowNudge(target: { pageId: PageId; hotspotId: HotspotId } | null) {
   const change = useEditor((state) => state.change);
@@ -145,11 +145,16 @@ function useArrowNudge(target: { pageId: PageId; hotspotId: HotspotId } | null) 
   useEffect(() => {
     if (!pageId || !hotspotId) return;
     const onKey = (event: KeyboardEvent) => {
-      const step = NUDGE[event.key];
-      if (!step || event.altKey || event.metaKey || event.ctrlKey) return;
       if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select')) {
         return;
       }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        change((project) => deleteHotspot(project, pageId, hotspotId));
+        return;
+      }
+      const step = NUDGE[event.key];
+      if (!step || event.altKey || event.metaKey || event.ctrlKey) return;
       event.preventDefault();
       const distance = event.shiftKey ? 10 : 1;
       change((project) =>

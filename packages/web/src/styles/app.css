@@ -33,3 +33,17 @@ body {
     transform: rotate(360deg);
   }
 }
+
+/* Text-like fields: focus is a 2 px ring on the field edge, error a red one (design-system.md). */
+.field:focus,
+.field:focus-within {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 1px var(--color-border-focus);
+}
+.field-error,
+.field-error:focus,
+.field-error:focus-within {
+  border-color: var(--color-danger-solid);
+  box-shadow: 0 0 0 1px var(--color-danger-solid);
+}

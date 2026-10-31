@@ -11,6 +11,7 @@ import { type BadgeStatus, StatusBadge } from '../ui/StatusBadge';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { createEditorStore, type SaveStatus } from './editorStore';
 import { PageList } from './pages/PageList';
+import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
 import { EditorStoreContext, useEditor } from './useEditor';
 
@@ -49,14 +50,19 @@ function Body({ title, isPages }: { title: string; isPages: boolean }) {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
   if (!isPages) return <Placeholder title={title} text="Coming in M4." />;
-  // A selected hotspot gets its own properties panel with #77.
   return (
     <>
       <PageList />
       <EditorCanvas />
-      <PagePanel />
+      <PropertiesPanel />
     </>
   );
+}
+
+/** The selected hotspot's properties, or the page's when no hotspot is selected (design). */
+function PropertiesPanel() {
+  const hotspotSelected = useEditor((state) => state.selection.hotspotId !== null);
+  return hotspotSelected ? <HotspotPanel /> : <PagePanel />;
 }
 
 function TopBar({ connection }: { connection: SocketStatus }) {

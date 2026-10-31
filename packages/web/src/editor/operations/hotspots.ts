@@ -86,6 +86,95 @@ export function nudgeHotspot(
   return placeHotspot(project, pageId, hotspotId, moveRect(hotspot, dx, dy, project.canvas));
 }
 
+/** Names are optional (the editor shows "Unnamed"), up to 100 characters after trimming. */
+export function renameHotspot(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  name: string,
+): Project {
+  const trimmed = name.trim();
+  const hotspot = findHotspot(project, pageId, hotspotId);
+  if (!hotspot || trimmed.length > 100 || trimmed === hotspot.name) return project;
+  return updateHotspots(project, pageId, (hotspots) =>
+    hotspots.map((h) => (h.id === hotspotId ? { ...h, name: trimmed } : h)),
+  );
+}
+
+/** How far a duplicate lands from its original, right and down, in canvas pixels. */
+export const DUPLICATE_OFFSET = 20;
+
+/**
+ * A copy with a new id and the same properties, a little to the right and down but inside the
+ * canvas, just above the original in the stacking order (spec HS-7). Returns its id too.
+ */
+export function duplicateHotspot(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  random?: () => number,
+): { project: Project; hotspotId: HotspotId | null } {
+  const original = findHotspot(project, pageId, hotspotId);
+  if (!original) return { project, hotspotId: null };
+  const id = newId(
+    'h',
+    project.pages.flatMap((p) => p.hotspots.map((h) => h.id)),
+    random,
+  );
+  const { x, y, width, height } = original;
+  const copy: Hotspot = {
+    ...structuredClone(original),
+    ...moveRect({ x, y, width, height }, DUPLICATE_OFFSET, DUPLICATE_OFFSET, project.canvas),
+    id,
+  };
+  return {
+    project: updateHotspots(project, pageId, (hotspots) => {
+      const index = hotspots.findIndex((h) => h.id === hotspotId);
+      return [...hotspots.slice(0, index + 1), copy, ...hotspots.slice(index + 1)];
+    }),
+    hotspotId: id,
+  };
+}
+
+/** Deletes a hotspot. Nothing else refers to hotspots, so nothing else changes. */
+export function deleteHotspot(project: Project, pageId: PageId, hotspotId: HotspotId): Project {
+  if (!findHotspot(project, pageId, hotspotId)) return project;
+  return updateHotspots(project, pageId, (hotspots) => hotspots.filter((h) => h.id !== hotspotId));
+}
+
+/**
+ * Moves a hotspot one step up or down the stacking order (spec HS-6). The list order is the
+ * drawing order: the last hotspot lies on top and gets the tap where hotspots overlap.
+ */
+export function restackHotspot(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  direction: 'forward' | 'backward',
+): Project {
+  const hotspots = project.pages.find((p) => p.id === pageId)?.hotspots ?? [];
+  const from = hotspots.findIndex((h) => h.id === hotspotId);
+  const to = from + (direction === 'forward' ? 1 : -1);
+  if (from === -1 || to < 0 || to >= hotspots.length) return project;
+  return updateHotspots(project, pageId, (list) => {
+    const next = [...list];
+    [next[from], next[to]] = [next[to]!, next[from]!];
+    return next;
+  });
+}
+
+function findHotspot(project: Project, pageId: PageId, hotspotId: HotspotId) {
+  return project.pages.find((p) => p.id === pageId)?.hotspots.find((h) => h.id === hotspotId);
+}
+
+function updateHotspots(
+  project: Project,
+  pageId: PageId,
+  update: (hotspots: Hotspot[]) => Hotspot[],
+): Project {
+  return updatePage(project, pageId, (page) => ({ ...page, hotspots: update(page.hotspots) }));
+}
+
 function updatePage(
   project: Project,
   pageId: PageId,

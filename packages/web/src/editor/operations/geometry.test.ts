@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Handle, MIN_SIZE, moveRect, resizeRect } from './geometry';
+import { checkBoxField, type Handle, MIN_SIZE, moveRect, resizeRect } from './geometry';
 
 const canvas = { width: 2048, height: 1536 };
 const box = { x: 100, y: 200, width: 300, height: 400 };
@@ -7,6 +7,16 @@ const box = { x: 100, y: 200, width: 300, height: 400 };
 describe('moveRect', () => {
   it('moves by whole canvas pixels', () => {
     expect(moveRect(box, 10.4, -20.6, canvas)).toEqual({ ...box, x: 110, y: 179 });
+  });
+
+  it('returns only the box, whatever else the object it is given carries', () => {
+    const hotspot = { ...box, id: 'h_carda0', name: 'Card' };
+    expect(Object.keys(moveRect(hotspot, 1, 1, canvas)).sort()).toEqual([
+      'height',
+      'width',
+      'x',
+      'y',
+    ]);
   });
 
   it('stops at every canvas edge, keeping the size', () => {
@@ -60,5 +70,30 @@ describe('resizeRect', () => {
 
   it('rounds to whole pixels', () => {
     expect(resizeRect(box, 'se', 0.6, 0.4, canvas)).toEqual({ ...box, width: 301, height: 400 });
+  });
+});
+
+describe('checkBoxField (spec ED-10)', () => {
+  it.each([
+    ['x', '0'],
+    ['x', '1748'], // 2048 - 300
+    ['y', '1136'], // 1536 - 400
+    ['width', '1'],
+    ['width', '1948'], // 2048 - 100
+    ['height', ' 1336 '],
+  ] as const)('accepts %s = %s', (key, text) => {
+    expect(checkBoxField(key, text, box, canvas)).toBeNull();
+  });
+
+  it.each([
+    ['x', '', 'expected a whole number'],
+    ['x', '12.5', 'expected a whole number'],
+    ['x', '-1', 'expected a whole number'],
+    ['x', 'abc', 'expected a whole number'],
+    ['x', '1749', '0 to 1748, to stay inside the canvas'],
+    ['width', '0', '1 to 1948, to stay inside the canvas'],
+    ['height', '1337', '1 to 1336, to stay inside the canvas'],
+  ] as const)('refuses %s = "%s"', (key, text, message) => {
+    expect(checkBoxField(key, text, box, canvas)).toBe(message);
   });
 });

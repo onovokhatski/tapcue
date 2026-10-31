@@ -176,4 +176,14 @@ describe('editor shell', () => {
       expect(save).toHaveBeenCalledTimes(2);
     });
   });
+
+  it('shows the selected hotspot properties on the right, or the page ones without a selection', async () => {
+    renderAt('/edit/pages');
+    expect(
+      await screen.findByRole('complementary', { name: 'Page properties' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Product A card' }));
+    expect(screen.getByRole('complementary', { name: 'Hotspot properties' })).toBeInTheDocument();
+    expect(screen.queryByRole('complementary', { name: 'Page properties' })).toBeNull();
+  });
 });
