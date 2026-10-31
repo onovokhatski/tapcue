@@ -1,10 +1,11 @@
 // The editor's state: the project being edited, the selection and the save status. Every change is
 // a pure operation (project) => project, and the project is saved shortly after the last one
 // (spec ED-5, ED-7, architecture §4.2, ADR 0011).
-import type { HotspotId, PageId, Project, ValidationError } from '@tapcue/shared';
+import type { HotspotId, LogEntry, PageId, Project, ValidationError } from '@tapcue/shared';
 import { createStore } from 'zustand/vanilla';
 import { type ProjectApi, projectApi } from '../lib/projectApi';
 import { readSafeArea, type SafeAreaPreference, writeSafeArea } from './canvas/safeAreaPreference';
+import { addEntry } from './log/logEntries';
 
 /** Quiet time after the last change before the project is saved. */
 export const SAVE_DELAY_MS = 500;
@@ -32,6 +33,8 @@ export interface EditorState {
   save: SaveStatus;
   /** Editor preference, not part of the project (spec ED-3). */
   safeArea: SafeAreaPreference;
+  /** Commands sent since the editor opened, newest first (spec ED-6). */
+  log: LogEntry[];
 }
 
 export interface EditorActions {
@@ -41,6 +44,9 @@ export interface EditorActions {
   change: (operation: (project: Project) => Project) => void;
   select: (selection: Selection) => void;
   setSafeArea: (change: Partial<SafeAreaPreference>) => void;
+  /** The server sent or failed to send a command. */
+  logged: (entry: LogEntry) => void;
+  clearLog: () => void;
   /** Saves now, e.g. after a save error. */
   retry: () => void;
   /** The editor's connection opened, the first time or after a drop. */
@@ -110,6 +116,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       selection: NOTHING_SELECTED,
       save: { state: 'saved' },
       safeArea: readSafeArea(),
+      log: [],
 
       start() {
         set({ load: 'loading' });
@@ -134,6 +141,14 @@ export function createEditorStore(api: ProjectApi = projectApi) {
 
       select(selection) {
         set({ selection });
+      },
+
+      logged(entry) {
+        set({ log: addEntry(get().log, entry) });
+      },
+
+      clearLog() {
+        set({ log: [] });
       },
 
       setSafeArea(change) {

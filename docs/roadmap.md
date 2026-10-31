@@ -98,17 +98,17 @@ indicator and automatic reconnect in the player.
 
 Editor layout, page list, uploads, page backgrounds, add / select / move / resize hotspots,
 numeric position fields, stacking order, safe-area overlay, auto-save, live update of
-players.
+players, command log panel.
 
-- **Requirements:** PG-1, PG-6, HS-1, HS-2, HS-6, HS-7, ED-8, ED-1, ED-2, ED-3, ED-5, ED-7, ED-9, ED-11, ED-12, PLY-5, PLY-6
+- **Requirements:** PG-1, PG-6, HS-1, HS-2, HS-6, HS-7, ED-8, ED-1, ED-2, ED-3, ED-5, ED-6, ED-7, ED-9, ED-11, ED-12, PLY-5, PLY-6
 - **Done when:** the demo project's pages can be rebuilt from scratch in the editor, and an open player follows every change within a second.
 
 ### M4 — Editor: complete
 
 Editing of hotspot style, effect and action, with "Send test"; targets; stations with URLs and QR codes;
-canvas settings; command log view; zip export and import.
+canvas settings; zip export and import. (The command log view moved to M3: it is the log panel.)
 
-- **Requirements:** HS-4, HS-5, ACT-4, ED-10, TGT-1, ST-1, ST-6, ED-4, ED-6, PRJ-3, PRJ-4, CNV-1, CNV-2
+- **Requirements:** HS-4, HS-5, ACT-4, ED-10, TGT-1, ST-1, ST-6, ED-4, PRJ-3, PRJ-4, CNV-1, CNV-2
 - **Done when:** everything in the project format can be edited in the editor; a project exported on one machine runs after import on another.
 
 ### M5 — Reliability and showcase

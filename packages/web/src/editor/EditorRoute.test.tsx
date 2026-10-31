@@ -6,6 +6,7 @@ import { routes } from '../routes';
 import { demoProjectJson } from '../test/demoProject';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
+import { sentEntry } from '../test/logEntries';
 import { createEditorStore } from './editorStore';
 import { Banners } from './EditorRoute';
 import { EditorStoreContext } from './useEditor';
@@ -185,5 +186,15 @@ describe('editor shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Product A card' }));
     expect(screen.getByRole('complementary', { name: 'Hotspot properties' })).toBeInTheDocument();
     expect(screen.queryByRole('complementary', { name: 'Page properties' })).toBeNull();
+  });
+
+  it('shows each command the server reports in the log, on every tab (spec ED-9)', async () => {
+    renderAt('/edit/targets');
+    await screen.findByText('Demo stand');
+    act(() => FakeWebSocket.last.open());
+    act(() => FakeWebSocket.last.receive({ type: 'log-entry', entry: sentEntry }));
+    const log = screen.getByRole('region', { name: 'Command log' });
+    expect(log).toHaveTextContent('Product A card');
+    expect(log).toHaveTextContent('1 command');
   });
 });

@@ -10,6 +10,7 @@ import { ShellBanner } from '../ui/ShellBanner';
 import { type BadgeStatus, StatusBadge } from '../ui/StatusBadge';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { createEditorStore, type SaveStatus } from './editorStore';
+import { CommandLog } from './log/CommandLog';
 import { PageList } from './pages/PageList';
 import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
@@ -38,6 +39,8 @@ export function EditorRoute() {
         <main className="flex min-h-0 flex-1">
           <Body title={tab.label} isPages={tab.path === 'pages'} />
         </main>
+        {/* On every tab (spec ED-9). */}
+        <CommandLog />
       </div>
     </EditorStoreContext>
   );
@@ -157,6 +160,7 @@ function useEditorConnection(store: ReturnType<typeof createEditorStore>): Socke
     const socket = openServerSocket({
       onMessage: (message) => {
         if (message.type === 'project-updated') store.getState().projectUpdated(message.revision);
+        if (message.type === 'log-entry') store.getState().logged(message.entry);
       },
       onStatus: (next) => {
         setStatus(next);
