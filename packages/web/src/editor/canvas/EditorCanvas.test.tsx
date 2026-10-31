@@ -291,6 +291,23 @@ describe('EditorCanvas', () => {
         expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 560, height: 720 });
       });
 
+      it('Delete and Backspace delete the selected hotspot, but not from a text field', async () => {
+        const { store, overlay } = await renderCanvas();
+        const ids = () => store.getState().project!.pages[0]!.hotspots.map((h) => h.id);
+        const field = document.createElement('input');
+        document.body.append(field);
+        fireEvent.pointerDown(overlay('h_carda0'));
+        fireEvent.keyDown(field, { key: 'Backspace' });
+        expect(ids()).toContain('h_carda0');
+        fireEvent.keyDown(window, { key: 'Delete' });
+        expect(ids()).not.toContain('h_carda0');
+        fireEvent.pointerDown(overlay('h_cardb0'));
+        fireEvent.keyDown(window, { key: 'Backspace' });
+        expect(ids()).not.toContain('h_cardb0');
+        expect(store.getState().selection.hotspotId).toBeNull();
+        field.remove();
+      });
+
       it('do nothing without a selected hotspot', async () => {
         const { store } = await renderCanvas();
         fireEvent.keyDown(window, { key: 'ArrowRight' });

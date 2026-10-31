@@ -1,7 +1,16 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { addHotspot, nudgeHotspot, placeHotspot } from './hotspots';
+import {
+  addHotspot,
+  deleteHotspot,
+  DUPLICATE_OFFSET,
+  duplicateHotspot,
+  nudgeHotspot,
+  placeHotspot,
+  renameHotspot,
+  restackHotspot,
+} from './hotspots';
 
 const expectValid = (project: Project) =>
   expect(validateProject(project)).toMatchObject({ ok: true });
@@ -104,6 +113,94 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
     it('keeps the project for a hotspot that is not there', () => {
       const before = demoProject();
       expect(nudgeHotspot(before, 'p_home00', 'h_zzzzzz', 1, 0)).toBe(before);
+    });
+  });
+
+  const ids = (project: Project) => home(project).hotspots.map((h) => h.id);
+
+  describe('renameHotspot', () => {
+    it('renames, trimming spaces; an empty name is allowed', () => {
+      expect(
+        home(renameHotspot(demoProject(), 'p_home00', 'h_carda0', '  Card A ')).hotspots[0]?.name,
+      ).toBe('Card A');
+      const empty = renameHotspot(demoProject(), 'p_home00', 'h_carda0', '   ');
+      expect(home(empty).hotspots[0]?.name).toBe('');
+      expectValid(empty);
+    });
+
+    it('keeps the project for a name over 100 characters, or the same name', () => {
+      const before = demoProject();
+      expect(renameHotspot(before, 'p_home00', 'h_carda0', 'x'.repeat(101))).toBe(before);
+      expect(renameHotspot(before, 'p_home00', 'h_carda0', 'Product A card')).toBe(before);
+    });
+  });
+
+  describe('duplicateHotspot (spec HS-7)', () => {
+    it('copies every property with a new id, 20 px right and down, just above the original', () => {
+      const before = demoProject();
+      const { project, hotspotId } = duplicateHotspot(before, 'p_home00', 'h_carda0');
+      const original = home(before).hotspots[0]!;
+      const copy = home(project).hotspots[1]!;
+      expect(DUPLICATE_OFFSET).toBe(20);
+      expect(copy).toEqual({ ...original, id: hotspotId, x: 164, y: 520 });
+      expect(ids(project)).toEqual(['h_carda0', hotspotId, ...ids(before).slice(1)]);
+      expectValid(project);
+    });
+
+    it('keeps the copy inside the canvas when the original is at the edge', () => {
+      const before = demoProject();
+      Object.assign(home(before).hotspots[0]!, { x: 1488, y: 816 }); // touching right and bottom
+      const { project } = duplicateHotspot(before, 'p_home00', 'h_carda0');
+      expect(home(project).hotspots[1]).toMatchObject({ x: 1488, y: 816 });
+      expectValid(project);
+    });
+
+    it('gives the copy its own objects: changing one never changes the other', () => {
+      const { project } = duplicateHotspot(demoProject(), 'p_home00', 'h_carda0');
+      expect(home(project).hotspots[1]!.action).not.toBe(home(project).hotspots[0]!.action);
+      expect(home(project).hotspots[1]!.style).not.toBe(home(project).hotspots[0]!.style);
+    });
+
+    it('copies nothing for a hotspot that is not there', () => {
+      const before = demoProject();
+      expect(duplicateHotspot(before, 'p_home00', 'h_zzzzzz')).toEqual({
+        project: before,
+        hotspotId: null,
+      });
+    });
+  });
+
+  describe('deleteHotspot', () => {
+    it('deletes only that hotspot', () => {
+      const before = demoProject();
+      const project = deleteHotspot(before, 'p_home00', 'h_carda0');
+      expect(ids(project)).toEqual(ids(before).slice(1));
+      expect(project.pages[1]).toBe(before.pages[1]);
+      expectValid(project);
+    });
+
+    it('keeps the project for a hotspot that is not there', () => {
+      const before = demoProject();
+      expect(deleteHotspot(before, 'p_home00', 'h_zzzzzz')).toBe(before);
+    });
+  });
+
+  describe('restackHotspot (spec HS-6)', () => {
+    it('moves a hotspot one step up or down the drawing order', () => {
+      const before = demoProject();
+      const [a, b, c] = ids(before);
+      expect(ids(restackHotspot(before, 'p_home00', a!, 'forward')).slice(0, 3)).toEqual([b, a, c]);
+      expect(ids(restackHotspot(before, 'p_home00', b!, 'backward')).slice(0, 3)).toEqual([
+        b,
+        a,
+        c,
+      ]);
+    });
+
+    it('keeps the project at the top and at the bottom', () => {
+      const before = demoProject();
+      expect(restackHotspot(before, 'p_home00', ids(before)[0]!, 'backward')).toBe(before);
+      expect(restackHotspot(before, 'p_home00', ids(before).at(-1)!, 'forward')).toBe(before);
     });
   });
 });
