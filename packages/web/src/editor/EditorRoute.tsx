@@ -5,10 +5,12 @@
 import { useEffect, useState } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { openServerSocket, type SocketStatus } from '../lib/serverSocket';
+import { Button } from '../ui/Button';
 import { ShellBanner } from '../ui/ShellBanner';
 import { type BadgeStatus, StatusBadge } from '../ui/StatusBadge';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { createEditorStore, type SaveStatus } from './editorStore';
+import { PageList } from './pages/PageList';
 import { EditorStoreContext, useEditor } from './useEditor';
 
 export const EDITOR_TABS = [
@@ -45,8 +47,14 @@ function Body({ title, isPages }: { title: string; isPages: boolean }) {
   if (load === 'failed') {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
-  // The page list (#74) and the properties panel (#77) join the canvas here.
-  return isPages ? <EditorCanvas /> : <Placeholder title={title} text="Coming in M4." />;
+  if (!isPages) return <Placeholder title={title} text="Coming in M4." />;
+  // The properties panel (#77) joins on the right.
+  return (
+    <>
+      <PageList />
+      <EditorCanvas />
+    </>
+  );
 }
 
 function TopBar({ connection }: { connection: SocketStatus }) {
@@ -122,15 +130,7 @@ export function Banners({ connection }: { connection: SocketStatus }) {
     <ShellBanner
       tone="error"
       title="Changes not saved."
-      action={
-        <button
-          type="button"
-          onClick={retry}
-          className="inline-flex h-7 flex-none items-center rounded border border-strong bg-surface px-2 text-label-s text-primary hover:bg-hover active:bg-pressed"
-        >
-          Retry now
-        </button>
-      }
+      action={<Button size="s" label="Retry now" onClick={retry} />}
     >
       {save.reason}
       {first && ` ${first.path}: ${first.message}`}

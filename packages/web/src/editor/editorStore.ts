@@ -114,7 +114,14 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       change(operation) {
         const { project } = get();
         if (!project) return;
-        set({ project: operation(project), save: { state: 'saving' } });
+        const next = operation(project);
+        if (next === project) return; // nothing changed: nothing to save
+        // The selection follows: a deleted page or hotspot is no longer selected.
+        set({
+          project: next,
+          selection: keepSelection(get().selection, next),
+          save: { state: 'saving' },
+        });
         pending = true;
         clearTimeout(timer);
         timer = setTimeout(() => void flush(), SAVE_DELAY_MS);

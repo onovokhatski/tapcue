@@ -1,5 +1,5 @@
 // Icons of the design system (docs/design/prototype/src/icons.svg): 16 px grid, 1.5 px stroke,
-// round caps. Only the ones the app uses so far; the editor will add more.
+// round caps. Only the ones the app uses so far.
 const PATHS = {
   check: <path d="M3 8.5l3.25 3.25L13 5" />,
   alert: (
@@ -19,6 +19,33 @@ const PATHS = {
     <path d="M9.5 2.5h4v4M13.5 2.5l-6 6M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3" />
   ),
   'arrow-right': <path d="M3 8h10M9 4l4 4-4 4" />,
+  plus: <path d="M8 3v10M3 8h10" />,
+  trash: (
+    <path d="M2.75 4.5h10.5M6.25 4.5V2.75h3.5V4.5M4.25 4.5l.6 8.75h6.3l.6-8.75M6.75 7v4M9.25 7v4" />
+  ),
+  grip: (
+    <g fill="currentColor" stroke="none">
+      <circle cx="6" cy="4" r="1.1" />
+      <circle cx="10" cy="4" r="1.1" />
+      <circle cx="6" cy="8" r="1.1" />
+      <circle cx="10" cy="8" r="1.1" />
+      <circle cx="6" cy="12" r="1.1" />
+      <circle cx="10" cy="12" r="1.1" />
+    </g>
+  ),
+  image: (
+    <>
+      <rect x="2" y="3" width="12" height="10" rx="1.5" />
+      <circle cx="5.75" cy="6.25" r="1.1" />
+      <path d="M2.5 11.5l3.25-3 2.75 2.5 2-1.75 3 2.5" />
+    </>
+  ),
+  video: (
+    <>
+      <rect x="1.75" y="4" width="9" height="8" rx="1.5" />
+      <path d="M10.75 7l3.5-2v6l-3.5-2" />
+    </>
+  ),
   upload: (
     <path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2" />
   ),
