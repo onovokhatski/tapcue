@@ -158,6 +158,19 @@ describe('WebSocket hub', () => {
       expect(player.received.filter((m) => m.type === 'log-entry')).toEqual([]);
     });
 
+    it('and players alike get what the server sends to all, such as a new revision', async () => {
+      await start();
+      const viewer = await connect();
+      const player = await connect();
+      player.send({ type: 'hello', stationId: 'main' });
+      await settle(player);
+      hub.toAll({ type: 'project-updated', revision: 2 });
+      await settle(viewer);
+      await settle(player);
+      expect(viewer.received).toContainEqual({ type: 'project-updated', revision: 2 });
+      expect(player.received).toContainEqual({ type: 'project-updated', revision: 2 });
+    });
+
     it('get whatever the server sends to viewers, such as a demo request', async () => {
       await start();
       const viewer = await connect();

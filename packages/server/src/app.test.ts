@@ -77,6 +77,45 @@ describe('buildApp', () => {
       expect(copy.project.name).toBe('Demo stand');
     });
 
+    it('tells every player and editor the new revision, and only after a save (spec PLY-5)', async () => {
+      const { app } = await appOnCopy();
+      await app.listen({ port: 0, host: '127.0.0.1' });
+      try {
+        const base = `127.0.0.1:${(app.server.address() as AddressInfo).port}`;
+        const received = { player: [] as unknown[], editor: [] as unknown[] };
+        const open = async (who: keyof typeof received) => {
+          const socket = new WebSocket(`ws://${base}/ws`);
+          socket.addEventListener('message', (event) =>
+            received[who].push(JSON.parse(String(event.data))),
+          );
+          await new Promise((resolve) => socket.addEventListener('open', resolve));
+          return socket;
+        };
+        const player = await open('player');
+        player.send(JSON.stringify({ type: 'hello', stationId: 'main' }));
+        const editor = await open('editor');
+        const save = (project: unknown) =>
+          fetch(`http://${base}/api/project`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(project),
+          });
+
+        expect((await save({ ...store.project, name: '' })).status).toBe(400);
+        expect((await save({ ...store.project, name: 'Renamed stand' })).status).toBe(200);
+
+        const updated = { type: 'project-updated', revision: 2 };
+        await vi.waitFor(() => {
+          expect(received.player).toEqual([updated]);
+          expect(received.editor).toEqual([updated]);
+        });
+        player.close();
+        editor.close();
+      } finally {
+        await app.close();
+      }
+    });
+
     it('refuses a body that is not JSON, and saves nothing', async () => {
       const { app, copy } = await appOnCopy();
       const response = await app.inject({

@@ -30,13 +30,6 @@ export function buildApp({
 
   app.get('/api/project', () => ({ revision: store.revision, project: store.project }));
 
-  // The editor saves the whole project (ADR 0011). An invalid one is refused with its field errors.
-  app.put('/api/project', async (request, reply) => {
-    const result = await store.save(request.body);
-    if (!result.ok) return reply.code(400).send({ errors: result.errors });
-    return { revision: result.revision };
-  });
-
   // Images and videos of the project. @fastify/static answers Range requests (Safari needs them to
   // play video) and refuses paths that leave the assets folder.
   void app.register(fastifyStatic, { root: join(store.dir, 'assets'), prefix: '/assets/' });
@@ -46,6 +39,15 @@ export function buildApp({
   const dispatch = createDispatcher({ project: () => store.project, drivers, log });
   const hub = registerHub(app, { dispatch, log });
   app.addHook('onClose', () => Promise.all(Object.values(drivers).map((d) => d.close())));
+
+  // The editor saves the whole project (ADR 0011). An invalid one is refused with its field errors;
+  // after a save every player and editor hears the new revision and fetches it (spec PLY-5).
+  app.put('/api/project', async (request, reply) => {
+    const result = await store.save(request.body);
+    if (!result.ok) return reply.code(400).send({ errors: result.errors });
+    hub.toAll({ type: 'project-updated', revision: result.revision });
+    return { revision: result.revision };
+  });
 
   // The demo project's HTTP commands land here and show up on the demo page (spec DEMO-1).
   registerDemoReceiver(app, {
