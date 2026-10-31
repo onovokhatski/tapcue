@@ -80,7 +80,7 @@ server, so the same address works on the iPad.
 
 ### M1 — player
 
-Device: iPad (model and iPadOS version not recorded) · Date: 2026-10-30
+Device: iPad Air, iPadOS 26.6.1 · Date: 2026-10-30
 
 All items passed, including 10 minutes of browsing. The wait between a tap and the start of the
 fade was acceptable for image and video pages, so loading on touch-down
@@ -88,7 +88,7 @@ fade was acceptable for image and video pages, so loading on touch-down
 
 ### M2 — commands
 
-Device: iPad (model and iPadOS version not recorded) · Date: 2026-10-30 · Built app (`vite preview`)
+Device: iPad Air, iPadOS 26.6.1 · Date: 2026-10-30 · Built app (`vite preview`)
 
 All items of "Commands and network loss" passed: taps changed the tiles on `/demo`;
 with Wi-Fi off, "Reconnecting…" appeared and pages still changed; after Wi-Fi came back
