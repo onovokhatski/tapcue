@@ -1,5 +1,5 @@
 // Where the visitor is and what is on screen: pure transitions for useReducer
-// (spec ACT-3, ST-4, PG-4, PG-5, ADR 0014).
+// (spec ACT-3, ST-4, PG-4, PG-5, PLY-5, PLY-6, ADR 0014).
 import type { Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
 
 export interface PlayerState {
@@ -21,7 +21,9 @@ export type PlayerAction =
   /** A page's background has its first frame: it can fade in without a blank frame. */
   | { type: 'ready'; pageId: PageId }
   /** A page finished fading in. */
-  | { type: 'faded'; pageId: PageId };
+  | { type: 'faded'; pageId: PageId }
+  /** The project was saved in the editor; the player carries on with the new one. */
+  | { type: 'project'; project: Project; station: Station };
 
 export function startPlayer({
   project,
@@ -46,6 +48,8 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     case 'faded':
       if (action.pageId !== incoming(state) || !state.fading) return state;
       return { ...state, shown: state.pageId, fading: false };
+    case 'project':
+      return applyProject(state, action.project, action.station);
   }
 }
 
@@ -57,6 +61,22 @@ export function currentPage(state: PlayerState): Page | undefined {
 /** The page on its way onto the screen, waiting for its background or fading in; null when none. */
 export function incoming(state: PlayerState): PageId | null {
   return state.pageId === state.shown ? null : state.pageId;
+}
+
+/**
+ * The visitor stays where they are when that page still exists; otherwise back to the start page,
+ * at once: the deleted page cannot stay on screen while the start page loads (spec PLY-6).
+ */
+function applyProject(state: PlayerState, project: Project, station: Station): PlayerState {
+  const exists = (pageId: PageId) => project.pages.some((page) => page.id === pageId);
+  if (!exists(state.pageId)) {
+    const start = station.startPageId;
+    return { project, station, pageId: start, shown: start, fading: false };
+  }
+  // The page under a fade was deleted: the incoming page takes its place.
+  if (!exists(state.shown))
+    return { ...state, project, station, shown: state.pageId, fading: false };
+  return { ...state, project, station };
 }
 
 // The same state object when nothing changes, so React skips the re-render.

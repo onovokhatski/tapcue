@@ -2,7 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routes } from './routes';
-import { demoProjectJson } from './test/demoProject';
+import type { Project } from '@tapcue/shared';
+import { demoProject, demoProjectJson } from './test/demoProject';
+import { FakeWebSocket } from './test/fakeWebSocket';
 
 function routerAt(path: string) {
   return createMemoryRouter(routes, { initialEntries: [path] });
@@ -101,6 +103,90 @@ describe('routes', () => {
           'data-page',
           'p_proda0',
         );
+      });
+    });
+
+    describe('following the editor (spec PLY-5, PLY-6)', () => {
+      /** A fake server: GET /api/project answers whatever was served last. */
+      let current: { revision: number; project: Project };
+      const serve = (revision: number, project: Project) => (current = { revision, project });
+      const fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify(current))));
+      const layer = (role: string) => document.querySelector(`[data-layer="${role}"]`);
+      const left = (hotspotId: string) =>
+        document.querySelector<HTMLElement>(`[data-hotspot="${hotspotId}"]`)?.style.left;
+      const movedCardA = (): Project => {
+        const project = demoProject();
+        project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.x = 40;
+        return project;
+      };
+
+      /** The player on /play/main, loaded, with its connection open. */
+      async function startMain() {
+        fetchMock.mockClear();
+        serve(1, demoProject());
+        vi.stubGlobal('fetch', fetchMock);
+        renderAt('/play/main');
+        await waitFor(() => expect(layer('shown')).toBeInTheDocument());
+        act(() => FakeWebSocket.last.open());
+        // Every open asks for the project once more; the same revision changes nothing.
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+        return FakeWebSocket.last;
+      }
+
+      it('fetches the project when the editor saves, and shows the change', async () => {
+        const server = await startMain();
+        expect(left('h_carda0')).not.toBe('40px');
+        serve(2, movedCardA());
+        act(() => server.receive({ type: 'project-updated', revision: 2 }));
+        await waitFor(() => expect(left('h_carda0')).toBe('40px'));
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+      });
+
+      it('fetches nothing for the revision it already has', async () => {
+        const server = await startMain();
+        act(() => server.receive({ type: 'project-updated', revision: 1 }));
+        await act(() => Promise.resolve());
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+      });
+
+      it('picks up a change made while it was offline, once it reconnects', async () => {
+        const server = await startMain();
+        serve(2, movedCardA());
+        vi.useFakeTimers();
+        act(() => server.drop());
+        act(() => {
+          vi.advanceTimersByTime(1000); // the first reconnect attempt
+        });
+        vi.useRealTimers();
+        act(() => FakeWebSocket.last.open());
+        await waitFor(() => expect(left('h_carda0')).toBe('40px'));
+      });
+
+      it('shows "Station not found" when its station is deleted, and runs it once it is back', async () => {
+        const server = await startMain();
+        const project = demoProject();
+        serve(2, { ...project, stations: project.stations.filter((s) => s.id !== 'main') });
+        act(() => server.receive({ type: 'project-updated', revision: 2 }));
+        expect(
+          await screen.findByRole('heading', { name: 'Station not found' }),
+        ).toBeInTheDocument();
+
+        serve(3, project);
+        act(() => server.receive({ type: 'project-updated', revision: 3 }));
+        await waitFor(() => expect(layer('shown')).toHaveAttribute('data-page', 'p_home00'));
+      });
+
+      it('loads the project once the server is back after a failed first load', async () => {
+        serve(1, demoProject());
+        const failOnce = vi
+          .fn()
+          .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+          .mockImplementation(() => Promise.resolve(new Response(JSON.stringify(current))));
+        vi.stubGlobal('fetch', failOnce);
+        renderAt('/play/main');
+        expect(await screen.findByText('Cannot reach the server')).toBeInTheDocument();
+        act(() => FakeWebSocket.last.open());
+        await waitFor(() => expect(layer('shown')).toHaveAttribute('data-page', 'p_home00'));
       });
     });
 

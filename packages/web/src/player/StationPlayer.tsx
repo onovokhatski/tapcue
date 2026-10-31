@@ -1,6 +1,6 @@
 // One station on a tablet: taps sent to the server, navigation, the idle return, page changes
 // that fade without a blank frame, and kiosk behaviour
-// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
+// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
 import type { Canvas, Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
@@ -8,21 +8,27 @@ import { ConnectionIndicator } from './ConnectionIndicator';
 import { incoming, playerReducer, startPlayer } from './playerState';
 import { releaseDelay } from './releaseDelay';
 import { useIdleTimer } from './useIdleTimer';
-import { useStationSocket } from './useStationSocket';
+import type { StationSocket } from './useStationSocket';
 import './player.css';
 
 interface StationPlayerProps {
   project: Project;
   station: Station;
+  /** Owned by the route, so it outlives the station (PlayerRoute). */
+  connection: StationSocket;
 }
 
 type Layer = 'shown' | 'incoming';
 
-export function StationPlayer({ project, station }: StationPlayerProps) {
+export function StationPlayer({ project, station, connection }: StationPlayerProps) {
   const [state, dispatch] = useReducer(playerReducer, { project, station }, startPlayer);
+  // A new project from the editor is applied during this render, before anything is drawn, so a
+  // deleted page is never on screen for a frame (React: "adjusting state when a prop changes").
+  if (project !== state.project || station !== state.station) {
+    dispatch({ type: 'project', project, station });
+  }
   const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
   const later = useLater();
-  const connection = useStationSocket(station.id);
   useNoPinchZoom();
 
   function tap(pageId: PageId, hotspot: Hotspot) {
@@ -49,14 +55,14 @@ export function StationPlayer({ project, station }: StationPlayerProps) {
       onContextMenu={(event) => event.preventDefault()}
     >
       {/* Project order, not stacking order: a layer keeps its place in the DOM as its role changes. */}
-      {project.pages.map((page) => {
+      {state.project.pages.map((page) => {
         const layer = layerOf(page);
         if (!layer) return null;
         return (
           <PageLayer
             key={page.id}
             page={page}
-            canvas={project.canvas}
+            canvas={state.project.canvas}
             layer={layer}
             fading={layer === 'incoming' && state.fading}
             onTap={(hotspot) => tap(page.id, hotspot)}
