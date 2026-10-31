@@ -132,9 +132,14 @@ what the visitor sees ([spec ED-2](spec.md#59-editor)).
   (e.g. `moveHotspot`, `addPage`), living in `editor/operations/` and unit-tested without React.
 - The store never mutates the project; it replaces it. Undo/redo (post-MVP) then becomes a
   stack of previous projects — no redesign needed.
-- Changes are **auto-saved** shortly after the last edit (debounced), and the editor shows
-  "Saving… / Saved / Error". This supports live adjustment on the stand
+- Changes are **auto-saved** 500 ms after the last edit (debounced), one save at a time; a
+  change made during a save is sent right after it. The editor shows "Saving… / Saved", "Unsaved
+  changes" when the server cannot be reached (saved again on reconnect), or "Save error" with the
+  server's reason and a "Retry now". This supports live adjustment on the stand
   ([spec F4](spec.md#62-flows)) without a "Save" button that people forget.
+- **Saves by others:** on `project-updated` with another revision, and after a reconnect, the
+  editor loads the project — unless it has changes of its own on the way, which then win
+  (last save wins, §6). The message about its own save is recognised the same way.
 
 ### 4.3 Player runtime
 
