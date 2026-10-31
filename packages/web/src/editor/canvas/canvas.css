@@ -85,6 +85,16 @@
   pointer-events: none;
 }
 
+/* A handle that can be dragged: a larger, invisible hit area around the 8 px square. */
+.hs-handle-active {
+  pointer-events: auto;
+}
+.hs-handle-active::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
 /* Keyboard focus: the standard ring, offset clear of the handles. */
 .hs-target:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

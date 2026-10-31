@@ -133,6 +133,10 @@ outlines, name chips and handles keep their size at any scale.
 - A Zustand store holds the current `Project`, the selection and the save status.
 - Every change to the project is a **pure function** `(project, args) => newProject`
   (e.g. `moveHotspot`, `addPage`), living in `editor/operations/` and unit-tested without React.
+- Moving and resizing on the canvas: a drag computes each new box from the box it started with
+  plus the pointer's total movement, so no rounding builds up; an arrow-key nudge starts from the
+  hotspot as the store has it at that moment, so fast repeats never undo one another. Boxes stay
+  whole canvas pixels, at least 16 px, inside the canvas.
 - The store never mutates the project; it replaces it. Undo/redo (post-MVP) then becomes a
   stack of previous projects — no redesign needed.
 - Changes are **auto-saved** 500 ms after the last edit (debounced), one save at a time; a

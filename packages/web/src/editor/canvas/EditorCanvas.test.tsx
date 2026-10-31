@@ -173,4 +173,148 @@ describe('EditorCanvas', () => {
       '/assets/product-a.jpg',
     );
   });
+
+  describe('add, move and resize (spec HS-1, HS-2)', () => {
+    /** The demo Home hotspot as the store has it now. */
+    const cardA = (store: Awaited<ReturnType<typeof renderCanvas>>['store']) =>
+      store.getState().project!.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+    const box = ({
+      x,
+      y,
+      width,
+      height,
+    }: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }) => ({
+      x,
+      y,
+      width,
+      height,
+    });
+
+    it('adds a hotspot in the centre and selects it', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.click(screen.getByRole('button', { name: 'Add hotspot' }));
+      const added = store.getState().project!.pages[0]!.hotspots.at(-1)!;
+      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotId: added.id });
+      // 819, 615, 410 × 307 canvas pixels at half scale.
+      expect(overlay(added.id)).toHaveStyle({ left: '410px', top: '308px', width: '205px' });
+      expect(store.getState().save).toEqual({ state: 'saving' });
+    });
+
+    it('moves a hotspot by dragging, converting screen pixels to canvas pixels', async () => {
+      const { store, overlay } = await renderCanvas();
+      const layer = screen.getByTestId('selection-layer');
+      fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100, pointerId: 1 });
+      fireEvent.pointerMove(layer, { clientX: 150, clientY: 80, pointerId: 1 });
+      // 50 px right and 20 px up on screen, at half scale, is 100 and 40 canvas pixels.
+      expect(box(cardA(store))).toEqual({ x: 244, y: 460, width: 560, height: 720 });
+      fireEvent.pointerUp(layer, { pointerId: 1 });
+      fireEvent.pointerMove(layer, { clientX: 400, clientY: 400, pointerId: 1 });
+      expect(box(cardA(store))).toEqual({ x: 244, y: 460, width: 560, height: 720 });
+    });
+
+    it('measures every move of a drag from where it started, not from the last move', async () => {
+      const { store, overlay } = await renderCanvas();
+      const layer = screen.getByTestId('selection-layer');
+      fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(layer, { clientX: 110, clientY: 100 });
+      fireEvent.pointerMove(layer, { clientX: 120, clientY: 100 });
+      expect(cardA(store).x).toBe(184); // 144 + 20 / 0.5
+    });
+
+    it('keeps a dragged hotspot inside the canvas', async () => {
+      const { store, overlay } = await renderCanvas();
+      const layer = screen.getByTestId('selection-layer');
+      fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(layer, { clientX: -900, clientY: -900 });
+      expect(box(cardA(store))).toEqual({ x: 0, y: 0, width: 560, height: 720 });
+    });
+
+    it('resizes with a handle; the opposite corner stays put', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      const handle = overlay('h_carda0').querySelector('[data-handle="se"]')!;
+      const layer = screen.getByTestId('selection-layer');
+      fireEvent.pointerDown(handle, { clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(layer, { clientX: 130, clientY: 90 });
+      expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 620, height: 700 });
+    });
+
+    it('resizes from the top-left handle, moving that corner', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      const handle = overlay('h_carda0').querySelector('[data-handle="nw"]')!;
+      fireEvent.pointerDown(handle, { clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(screen.getByTestId('selection-layer'), { clientX: 110, clientY: 120 });
+      expect(box(cardA(store))).toEqual({ x: 164, y: 540, width: 540, height: 680 });
+    });
+
+    it('saves nothing for a press without a move', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+      fireEvent.pointerUp(screen.getByTestId('selection-layer'));
+      expect(store.getState().save).toEqual({ state: 'saved' });
+    });
+
+    describe('arrow keys', () => {
+      it('move the selected hotspot by 1 canvas pixel, with Shift by 10', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        fireEvent.keyDown(window, { key: 'ArrowDown', shiftKey: true });
+        fireEvent.keyDown(window, { key: 'ArrowLeft' });
+        fireEvent.keyDown(window, { key: 'ArrowUp' });
+        expect(box(cardA(store))).toEqual({ x: 144, y: 509, width: 560, height: 720 });
+      });
+
+      it('never undo one another, however fast they come', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        // Both keys before React draws again, as when a key repeats quickly.
+        act(() => {
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }));
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+        });
+        expect(box(cardA(store))).toEqual({ x: 154, y: 501, width: 560, height: 720 });
+      });
+
+      it('leave Alt, Cmd and Ctrl combinations alone: Alt + ↑ / ↓ reorders pages', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        fireEvent.keyDown(window, { key: 'ArrowUp', altKey: true });
+        fireEvent.keyDown(window, { key: 'ArrowLeft', metaKey: true });
+        fireEvent.keyDown(window, { key: 'ArrowRight', ctrlKey: true });
+        expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 560, height: 720 });
+      });
+
+      it('do nothing without a selected hotspot', async () => {
+        const { store } = await renderCanvas();
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        expect(store.getState().save).toEqual({ state: 'saved' });
+      });
+
+      it('leave a text field alone: there they move the text cursor', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        const field = document.createElement('input');
+        document.body.append(field);
+        fireEvent.keyDown(field, { key: 'ArrowRight' });
+        expect(cardA(store).x).toBe(144);
+        field.remove();
+      });
+
+      it('stop at the canvas edge', async () => {
+        const project = demoProject();
+        project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.x = 3;
+        const { store, overlay } = await renderCanvas(project);
+        fireEvent.pointerDown(overlay('h_carda0'));
+        fireEvent.keyDown(window, { key: 'ArrowLeft', shiftKey: true });
+        expect(cardA(store).x).toBe(0);
+      });
+    });
+  });
 });

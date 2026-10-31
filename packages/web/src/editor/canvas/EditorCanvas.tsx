@@ -1,10 +1,15 @@
 // The centre of the Pages tab: the selected page drawn by the player's own PageView, always scaled
-// to fit, with the selection layer on top (spec ED-2, ED-8; design: canvasToolbar(), canvasStage()).
-import type { Canvas, HotspotId, Page } from '@tapcue/shared';
+// to fit, with the selection layer on top, and "Add hotspot" (spec ED-2, ED-8, HS-1, HS-2;
+// design: canvasToolbar(), canvasStage()).
+import type { Canvas, HotspotId, Page, PageId } from '@tapcue/shared';
+import { useEffect } from 'react';
 import { PageView } from '../../stage/PageView';
 import { stageGeometry } from '../../stage/geometry';
 import { useElementSize } from '../../stage/useElementSize';
+import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import type { Rect } from '../operations/geometry';
+import { addHotspot, nudgeHotspot, placeHotspot } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
 import { SelectionLayer } from './SelectionLayer';
 import './canvas.css';
@@ -16,8 +21,14 @@ export function EditorCanvas() {
   const project = useEditor((state) => state.project);
   const selection = useEditor((state) => state.selection);
   const select = useEditor((state) => state.select);
+  const change = useEditor((state) => state.change);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
+  const selected = page?.hotspots.find((h) => h.id === selection.hotspotId);
+  const place = (hotspotId: HotspotId, rect: Rect) => {
+    if (page) change((p) => placeHotspot(p, page.id, hotspotId, rect));
+  };
+  useArrowNudge(page && selected ? { pageId: page.id, hotspotId: selected.id } : null);
   if (!project || !page) return null;
 
   const { canvas } = project;
@@ -31,7 +42,18 @@ export function EditorCanvas() {
   return (
     <section aria-label="Canvas" className="flex min-w-0 flex-1 flex-col">
       <div className="flex h-11 flex-none items-center gap-2 border-b border-default bg-surface px-3">
-        {/* "Add hotspot" (#76) and "Show safe area" (#78) join here. */}
+        <Button
+          variant="primary"
+          icon="plus"
+          label="Add hotspot"
+          onClick={() => {
+            const added = addHotspot(project, page.id);
+            if (!added.hotspotId) return;
+            change(() => added.project);
+            select({ pageId: page.id, hotspotId: added.hotspotId });
+          }}
+        />
+        {/* "Show safe area" (#78) joins here. */}
         <span
           className="ml-auto inline-flex h-8 flex-none items-center rounded bg-subtle px-2.5 text-body-s text-secondary tabular-nums"
           aria-label={`Canvas scale ${Math.round(scale * 100)} percent`}
@@ -50,6 +72,7 @@ export function EditorCanvas() {
             scale={scale}
             selectedId={selection.hotspotId}
             onSelect={(hotspotId) => select({ pageId: page.id, hotspotId })}
+            onPlace={place}
           />
         )}
         <span className="absolute right-3 bottom-2 font-mono text-mono-s text-secondary">
@@ -66,9 +89,10 @@ interface StageProps {
   scale: number;
   selectedId: HotspotId | null;
   onSelect: (hotspotId: HotspotId | null) => void;
+  onPlace: (hotspotId: HotspotId, rect: Rect) => void;
 }
 
-function Stage({ page, canvas, scale, selectedId, onSelect }: StageProps) {
+function Stage({ page, canvas, scale, selectedId, onSelect, onPlace }: StageProps) {
   return (
     <div
       className="relative shadow-2"
@@ -81,8 +105,10 @@ function Stage({ page, canvas, scale, selectedId, onSelect }: StageProps) {
       <SelectionLayer
         hotspots={page.hotspots}
         scale={scale}
+        canvas={canvas}
         selectedId={selectedId}
         onSelect={onSelect}
+        onPlace={onPlace}
       />
     </div>
   );
@@ -98,4 +124,39 @@ function EmptyCanvas() {
       </p>
     </div>
   );
+}
+
+const NUDGE: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
+
+/**
+ * The arrow keys move the selected hotspot by 1 canvas pixel, with Shift by 10 — unless the focus
+ * is in a field, where the arrows move the text cursor. Each step starts from the hotspot as the
+ * store has it at that moment, so fast repeats never undo one another.
+ */
+function useArrowNudge(target: { pageId: PageId; hotspotId: HotspotId } | null) {
+  const change = useEditor((state) => state.change);
+  const pageId = target?.pageId;
+  const hotspotId = target?.hotspotId;
+  useEffect(() => {
+    if (!pageId || !hotspotId) return;
+    const onKey = (event: KeyboardEvent) => {
+      const step = NUDGE[event.key];
+      if (!step || event.altKey || event.metaKey || event.ctrlKey) return;
+      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select')) {
+        return;
+      }
+      event.preventDefault();
+      const distance = event.shiftKey ? 10 : 1;
+      change((project) =>
+        nudgeHotspot(project, pageId, hotspotId, step[0] * distance, step[1] * distance),
+      );
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [change, pageId, hotspotId]);
 }
