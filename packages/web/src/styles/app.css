@@ -47,3 +47,16 @@ body {
   border-color: var(--color-danger-solid);
   box-shadow: 0 0 0 1px var(--color-danger-solid);
 }
+
+/* "No colour" swatch: a red diagonal on the surface (design: colour field, None). */
+.swatch-none {
+  background:
+    linear-gradient(
+      to top right,
+      transparent calc(50% - 1px),
+      var(--color-danger-solid) calc(50% - 1px),
+      var(--color-danger-solid) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ),
+    var(--color-bg-surface);
+}

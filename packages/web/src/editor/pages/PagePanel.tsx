@@ -7,6 +7,7 @@ import { assetUrl } from '../../stage/assetUrl';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { TextField } from '../../ui/TextField';
 import { renamePage, setBackground } from '../operations/pages';
 import { useEditor } from '../useEditor';
 
@@ -54,19 +55,15 @@ function NameSection({ page }: { page: Page }) {
   return (
     <div className="space-y-3 border-b border-default px-4 py-4">
       <h2 className="text-overline text-muted uppercase">Page</h2>
-      <label className="block space-y-1">
-        <span className="block text-label-s text-secondary">Name</span>
-        <input
-          className="field h-7 w-full rounded border border-strong bg-surface px-2 text-body-m"
-          value={value}
-          maxLength={100}
-          onChange={(event) => setValue(event.target.value)}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') commit();
-          }}
-        />
-      </label>
+      <TextField
+        label="Name"
+        size="s"
+        value={value}
+        maxLength={100}
+        onChange={setValue}
+        onBlur={commit}
+        onEnter={commit}
+      />
     </div>
   );
 }
