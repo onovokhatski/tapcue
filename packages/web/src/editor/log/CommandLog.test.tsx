@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { clock } from '../../lib/clock';
 import { demoProject } from '../../test/demoProject';
 import { errorEntry, ignoredEntry, sentEntry } from '../../test/logEntries';
+import { setWindowSize } from '../../test/windowSize';
 import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { CommandLog } from './CommandLog';
@@ -16,7 +17,7 @@ async function renderLog(entries: LogEntry[] = []) {
   store.getState().start();
   await act(() => Promise.resolve());
   for (const entry of entries) store.getState().logged(entry);
-  render(
+  const { unmount } = render(
     <EditorStoreContext value={store}>
       <CommandLog />
     </EditorStoreContext>,
@@ -24,7 +25,7 @@ async function renderLog(entries: LogEntry[] = []) {
   const panel = () => screen.getByRole('region', { name: 'Command log' });
   const row = (status: string) =>
     panel().querySelector<HTMLElement>(`tr[data-status="${status}"]`)!;
-  return { store, panel, row };
+  return { store, panel, row, unmount };
 }
 
 describe('CommandLog (spec ED-6, ED-9)', () => {
@@ -103,5 +104,38 @@ describe('CommandLog (spec ED-6, ED-9)', () => {
     fireEvent.click(within(panel()).getByRole('button', { name: 'Clear' }));
     expect(panel()).toHaveTextContent('No commands yet');
     expect(within(panel()).getByRole('button', { name: 'Clear' })).toBeDisabled();
+  });
+
+  describe('starting state (spec ED-12)', () => {
+    const isExpanded = () =>
+      screen.getByRole('region', { name: 'Command log' }).querySelector('table') !== null;
+
+    it('starts expanded in a window 900 px tall or more, collapsed below', async () => {
+      setWindowSize(1440, 900);
+      const first = await renderLog();
+      expect(isExpanded()).toBe(true);
+      first.unmount();
+      setWindowSize(1440, 899);
+      await renderLog();
+      expect(isExpanded()).toBe(false);
+    });
+
+    it('keeps the integrator choice in this browser, over the window height', async () => {
+      setWindowSize(1440, 800);
+      const first = await renderLog();
+      fireEvent.click(screen.getByRole('button', { name: 'Expand command log' }));
+      first.unmount();
+      await renderLog();
+      expect(isExpanded()).toBe(true);
+      expect(localStorage.getItem('tapcue.commandLog')).toBe('expanded');
+    });
+
+    it('remembers a collapse in a tall window too', async () => {
+      const first = await renderLog();
+      fireEvent.click(screen.getByRole('button', { name: 'Collapse command log' }));
+      first.unmount();
+      await renderLog();
+      expect(isExpanded()).toBe(false);
+    });
   });
 });

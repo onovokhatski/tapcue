@@ -55,6 +55,12 @@ const PATHS = {
     </>
   ),
   'chevron-down': <path d="M4 6l4 4 4-4" />,
+  'panel-left': (
+    <>
+      <rect x="2" y="2.75" width="12" height="10.5" rx="1.5" />
+      <path d="M6.25 2.75v10.5" />
+    </>
+  ),
   crop: <path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75" />,
   upload: (
     <path d="M8 10.5V2.75M5 5.5l3-3 3 3M2.75 10v2a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5v-2" />

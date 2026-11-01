@@ -1,6 +1,6 @@
 // The command log at the bottom of every editor tab: what the stations' taps and the editor's test
 // sends delivered, failed or ignored, newest first. Collapsed, it still shows the latest entry
-// (spec TGT-4, ED-6, ED-9; design: logPanel(), logRow()).
+// (spec TGT-4, ED-6, ED-9, ED-12; design: logPanel(), logRow()).
 import type { LogEntry, Project } from '@tapcue/shared';
 import { useState } from 'react';
 import { clock } from '../../lib/clock';
@@ -9,11 +9,35 @@ import { Icon } from '../../ui/Icon';
 import { useEditor } from '../useEditor';
 import { describeCommand } from './logEntries';
 
+const LOG_KEY = 'tapcue.commandLog';
+
+/** Below this window height the log starts collapsed, to leave room for the canvas (spec ED-12). */
+export const SHORT_WINDOW_PX = 900;
+
+/** The integrator's own choice if they made one in this browser; otherwise by window height. */
+function initiallyExpanded(): boolean {
+  try {
+    const stored = localStorage.getItem(LOG_KEY);
+    if (stored === 'expanded' || stored === 'collapsed') return stored === 'expanded';
+  } catch {
+    // Storage off: fall back to the window height.
+  }
+  return window.innerHeight >= SHORT_WINDOW_PX;
+}
+
 export function CommandLog() {
   const log = useEditor((state) => state.log);
   const clearLog = useEditor((state) => state.clearLog);
   const project = useEditor((state) => state.project);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpandedState] = useState(initiallyExpanded);
+  const setExpanded = (next: boolean) => {
+    setExpandedState(next);
+    try {
+      localStorage.setItem(LOG_KEY, next ? 'expanded' : 'collapsed');
+    } catch {
+      // Not remembered (storage off); the choice holds until the page reloads.
+    }
+  };
   const count = `${log.length} ${log.length === 1 ? 'command' : 'commands'}`;
   const latest = log[0];
 

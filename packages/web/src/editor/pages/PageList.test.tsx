@@ -6,7 +6,7 @@ import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { PageList } from './PageList';
 
-async function renderList(project: Project = demoProject()) {
+async function renderList(project: Project = demoProject(), compact = false) {
   const store = createEditorStore({
     load: () => Promise.resolve({ revision: 1, project }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
@@ -15,7 +15,7 @@ async function renderList(project: Project = demoProject()) {
   await act(() => Promise.resolve());
   render(
     <EditorStoreContext value={store}>
-      <PageList />
+      <PageList compact={compact} />
     </EditorStoreContext>,
   );
   const state = () => store.getState();
@@ -172,6 +172,53 @@ describe('PageList (spec PG-1)', () => {
       project.stations = project.stations.map((s) => ({ ...s, startPageId: 'p_home00' }));
       await renderList(project);
       expect(screen.queryByRole('button', { name: /Delete page/ })).toBeNull();
+    });
+  });
+
+  describe('as a rail in a 1280–1439 px window (spec ED-12)', () => {
+    // The first "Pages" region is the rail; an open drawer holds the full list, also named "Pages".
+    const rail = () => screen.getAllByRole('complementary', { name: 'Pages' })[0]!;
+
+    it('shows each page as a thumbnail with its name; the selected one is marked', async () => {
+      await renderList(demoProject(), true);
+      const buttons = within(rail()).getAllByRole('button', { name: /hotspot/ });
+      expect(buttons.map((b) => b.textContent)).toEqual([
+        'Home',
+        'Product A',
+        'Product B',
+        'About us',
+      ]);
+      expect(
+        within(rail()).getByRole('button', { name: 'Home, 5 hotspots · Image · Start' }),
+      ).toHaveAttribute('aria-current', 'true');
+    });
+
+    it('selects a page and adds one', async () => {
+      const { state, names } = await renderList(demoProject(), true);
+      fireEvent.click(within(rail()).getByRole('button', { name: /^Product B,/ }));
+      expect(state().selection.pageId).toBe('p_prodb0');
+      fireEvent.click(within(rail()).getByRole('button', { name: 'Add page' }));
+      expect(names().at(-1)).toBe('Page 5');
+      expect(state().selection.pageId).toBe(state().project!.pages.at(-1)!.id);
+    });
+
+    it('opens the full list as a drawer, which a pick or Escape closes', async () => {
+      const { state } = await renderList(demoProject(), true);
+      const toggle = () => within(rail()).getByRole('button', { name: /page list/ });
+      expect(screen.queryByTestId('page-drawer')).toBeNull();
+      fireEvent.click(toggle());
+      expect(toggle()).toHaveAccessibleName('Hide page list');
+      expect(toggle()).toHaveAttribute('aria-pressed', 'true');
+      const drawer = screen.getByTestId('page-drawer');
+      // The full list, with everything it can do.
+      expect(within(drawer).getByRole('button', { name: 'Reorder Home' })).toBeInTheDocument();
+      fireEvent.click(within(drawer).getByText('About us', { selector: '.text-label-m' }));
+      expect(state().selection.pageId).toBe('p_about0');
+      expect(screen.queryByTestId('page-drawer')).toBeNull();
+
+      fireEvent.click(toggle());
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByTestId('page-drawer')).toBeNull();
     });
   });
 });

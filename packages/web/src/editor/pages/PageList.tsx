@@ -1,7 +1,8 @@
-// The page list on the left of the Pages tab: select, add, rename, reorder and delete pages
-// (spec PG-1; design: pagesPanel(), pageListItem(), design-system.md List item).
+// The page list on the left of the Pages tab: select, add, rename, reorder and delete pages. In a
+// 1280–1439 px window it folds into a rail of thumbnails that opens the full list as a drawer
+// (spec PG-1, ED-12; design: pagesPanel(), pagesRail(), pageListItem()).
 import type { Page, PageId, Project } from '@tapcue/shared';
-import { type DragEvent, useState } from 'react';
+import { type DragEvent, useEffect, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { Icon } from '../../ui/Icon';
@@ -9,7 +10,12 @@ import { assetUrl } from '../../stage/assetUrl';
 import { addPage, deletePage, movePage, pageUsage, renamePage } from '../operations/pages';
 import { useEditor } from '../useEditor';
 
-export function PageList() {
+export function PageList({ compact = false }: { compact?: boolean }) {
+  return compact ? <PageRail /> : <PageListPanel />;
+}
+
+/** The full list, 264 px wide; in the drawer, picking a page closes it (`onPicked`). */
+function PageListPanel({ onPicked }: { onPicked?: () => void }) {
   const project = useEditor((state) => state.project);
   const selectedId = useEditor((state) => state.selection.pageId);
   const change = useEditor((state) => state.change);
@@ -23,6 +29,10 @@ export function PageList() {
   const { pages } = project;
 
   const selectPage = (pageId: PageId) => select({ pageId, hotspotId: null });
+  const pickPage = (pageId: PageId) => {
+    selectPage(pageId);
+    onPicked?.();
+  };
 
   function add() {
     if (!project) return;
@@ -77,7 +87,7 @@ export function PageList() {
             dropBefore={dropIndex === index}
             dropAfter={dropIndex === pages.length && index === pages.length - 1}
             canDelete={pages.length > 1}
-            onSelect={() => selectPage(page.id)}
+            onSelect={() => pickPage(page.id)}
             onStartRename={() => setRenamingId(page.id)}
             onRename={(name) => {
               change((p) => renamePage(p, page.id, name));
@@ -112,6 +122,95 @@ export function PageList() {
         />
       )}
     </aside>
+  );
+}
+
+/** 72 px of thumbnails; the toggle opens the full list over the canvas, without resizing it. */
+function PageRail() {
+  const project = useEditor((state) => state.project);
+  const selectedId = useEditor((state) => state.selection.pageId);
+  const select = useEditor((state) => state.select);
+  const change = useEditor((state) => state.change);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [open]);
+
+  if (!project) return null;
+  return (
+    <div className="relative flex flex-none">
+      <aside
+        aria-label="Pages"
+        className="flex w-[72px] flex-none flex-col items-center border-r border-default bg-surface"
+      >
+        <div className="flex h-11 w-full flex-none items-center justify-center border-b border-default">
+          <Button
+            variant="ghost"
+            size="s"
+            icon="panel-left"
+            ariaLabel={open ? 'Hide page list' : 'Show page list'}
+            pressed={open}
+            onClick={() => setOpen(!open)}
+          />
+        </div>
+        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto py-2">
+          {project.pages.map((page) => {
+            const selected = page.id === selectedId;
+            return (
+              <li key={page.id}>
+                <button
+                  type="button"
+                  aria-label={`${page.name}, ${pageMeta(page, project)}`}
+                  aria-current={selected || undefined}
+                  className={`flex w-[60px] flex-col items-center gap-1 rounded border p-1 ${
+                    selected
+                      ? 'border-selection-border bg-selection'
+                      : 'border-transparent hover:bg-hover'
+                  }`}
+                  onClick={() => select({ pageId: page.id, hotspotId: null })}
+                >
+                  <Thumbnail page={page} />
+                  <span
+                    className={`line-clamp-2 w-full text-center text-body-s leading-[14px] break-words ${
+                      selected ? 'text-primary' : 'text-secondary'
+                    }`}
+                  >
+                    {page.name}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex h-11 w-full flex-none items-center justify-center border-t border-default">
+          <Button
+            variant="ghost"
+            size="s"
+            icon="plus"
+            ariaLabel="Add page"
+            onClick={() => {
+              const added = addPage(project);
+              change(() => added.project);
+              select({ pageId: added.pageId, hotspotId: null });
+            }}
+          />
+        </div>
+      </aside>
+      {open && (
+        <div
+          className="absolute top-0 bottom-0 left-full z-10 flex shadow-2"
+          data-testid="page-drawer"
+        >
+          <PageListPanel onPicked={() => setOpen(false)} />
+        </div>
+      )}
+    </div>
   );
 }
 
