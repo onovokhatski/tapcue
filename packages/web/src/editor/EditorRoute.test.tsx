@@ -64,8 +64,8 @@ describe('editor shell', () => {
     fireEvent.click(tabs().getByRole('link', { name: 'Targets' }));
     expect(router.state.location.pathname).toBe('/edit/targets');
     expect(currentTab()).toHaveTextContent('Targets');
-    expect(screen.getByRole('heading', { name: 'Targets' })).toBeInTheDocument();
-    expect(screen.getByText('Coming in M4.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Targets/ })).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Targets' })).toBeInTheDocument();
   });
 
   it('opens a tab straight from its URL, e.g. after a reload', () => {
