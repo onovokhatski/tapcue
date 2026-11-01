@@ -37,6 +37,7 @@ async function renderCanvas(
   const store = createEditorStore({
     load: () => Promise.resolve({ revision: 1, project }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
+    testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
   });
   store.getState().start();
   await act(() => Promise.resolve());

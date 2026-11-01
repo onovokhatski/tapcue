@@ -31,6 +31,7 @@ function fakeServer() {
       saves.push({ project, answer });
       return answer.promise;
     },
+    testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
   };
   return { api, loads, saves };
 }
@@ -54,7 +55,7 @@ async function loaded() {
   store.getState().start();
   server.loads[0]!.resolve({ revision: 1, project: demoProject() });
   await settle();
-  return { store, server, state: () => store.getState() };
+  return { store, server, api: server.api, state: () => store.getState() };
 }
 
 describe('editor store', () => {
@@ -316,6 +317,76 @@ describe('editor store', () => {
       expect(state().log.map((e) => e.seq)).toEqual([2, 1]);
       state().clearLog();
       expect(state().log).toEqual([]);
+    });
+  });
+
+  describe('connection and test sends (spec ED-7, ACT-4)', () => {
+    it('keeps the connection status', async () => {
+      const { state } = await loaded();
+      expect(state().connection).toBe('connecting');
+      state().setConnection('open');
+      expect(state().connection).toBe('open');
+    });
+
+    it('has nothing to save now when nothing is waiting', async () => {
+      const { state, server } = await loaded();
+      await expect(state().saveNow()).resolves.toBe(true);
+      expect(server.saves).toHaveLength(0);
+    });
+
+    it('saves a waiting change at once, without the quiet time, and says whether it worked', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('One'));
+      const saved = state().saveNow();
+      await settle();
+      expect(server.saves).toHaveLength(1); // no 500 ms wait
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await wait(40);
+      await expect(saved).resolves.toBe(true);
+
+      state().change(rename('Two'));
+      const failed = state().saveNow();
+      await settle();
+      server.saves[1]!.answer.resolve({ ok: false, reason: 'Disk full', errors: [] });
+      await wait(40);
+      await expect(failed).resolves.toBe(false);
+    });
+
+    it('saves first, then sends the test from the server', async () => {
+      const { state, server, api } = await loaded();
+      const testSend = vi.spyOn(api, 'testSend').mockResolvedValue({ ok: true, entry: sentEntry });
+      state().change(rename('One'));
+      const answer = state().testSend('p_home00', 'h_carda0');
+      await settle();
+      expect(testSend).not.toHaveBeenCalled(); // not before the save is done
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await wait(40);
+      await expect(answer).resolves.toEqual({ ok: true, entry: sentEntry });
+      expect(testSend).toHaveBeenCalledWith('p_home00', 'h_carda0');
+    });
+
+    it('sends nothing when the save fails, and says why', async () => {
+      const { state, server, api } = await loaded();
+      const testSend = vi.spyOn(api, 'testSend');
+      state().change(rename('One'));
+      const answer = state().testSend('p_home00', 'h_carda0');
+      await settle();
+      server.saves[0]!.answer.reject(new TypeError('Failed to fetch'));
+      await wait(40);
+      await expect(answer).resolves.toEqual({
+        ok: false,
+        reason: 'Not sent: the latest changes are not saved yet.',
+      });
+      expect(testSend).not.toHaveBeenCalled();
+    });
+
+    it('says so when the server cannot be reached for the test', async () => {
+      const { state, api } = await loaded();
+      vi.spyOn(api, 'testSend').mockRejectedValue(new TypeError('Failed to fetch'));
+      await expect(state().testSend('p_home00', 'h_carda0')).resolves.toEqual({
+        ok: false,
+        reason: 'Cannot reach the server.',
+      });
     });
   });
 });

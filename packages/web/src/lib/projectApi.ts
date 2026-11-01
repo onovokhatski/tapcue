@@ -1,6 +1,6 @@
 // The editor's HTTP calls for the project (architecture §5.1). A network failure rejects; an answer
 // from the server, even a refusal, resolves.
-import type { Project, ValidationError } from '@tapcue/shared';
+import type { HotspotId, LogEntry, PageId, Project, ValidationError } from '@tapcue/shared';
 
 export interface Loaded {
   revision: number;
@@ -11,9 +11,13 @@ export interface Loaded {
 export type Saved =
   { ok: true; revision: number } | { ok: false; reason: string; errors: ValidationError[] };
 
+/** What the server did with a test send: its log entry, or why it could not send. */
+export type TestSent = { ok: true; entry: LogEntry } | { ok: false; reason: string };
+
 export interface ProjectApi {
   load(): Promise<Loaded>;
   save(project: Project): Promise<Saved>;
+  testSend(pageId: PageId, hotspotId: HotspotId): Promise<TestSent>;
 }
 
 export const projectApi: ProjectApi = {
@@ -43,5 +47,16 @@ export const projectApi: ProjectApi = {
     }
     const body = (await response.json()) as { revision: number };
     return { ok: true, revision: body.revision };
+  },
+
+  async testSend(pageId, hotspotId) {
+    const response = await fetch('/api/test-send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ pageId, hotspotId }),
+    });
+    const body = (await response.json().catch(() => ({}))) as { entry?: LogEntry; error?: string };
+    if (response.ok && body.entry) return { ok: true, entry: body.entry };
+    return { ok: false, reason: body.error ?? `The server answered ${response.status}.` };
   },
 };

@@ -3,7 +3,8 @@
 // (spec ED-5, ED-7, architecture §4.2, ADR 0011).
 import type { HotspotId, LogEntry, PageId, Project, ValidationError } from '@tapcue/shared';
 import { createStore } from 'zustand/vanilla';
-import { type ProjectApi, projectApi } from '../lib/projectApi';
+import { type ProjectApi, projectApi, type TestSent } from '../lib/projectApi';
+import type { SocketStatus } from '../lib/serverSocket';
 import { readSafeArea, type SafeAreaPreference, writeSafeArea } from './canvas/safeAreaPreference';
 import { addEntry } from './log/logEntries';
 
@@ -35,6 +36,8 @@ export interface EditorState {
   safeArea: SafeAreaPreference;
   /** Commands sent since the editor opened, newest first (spec ED-6). */
   log: LogEntry[];
+  /** The editor's own connection to the server (spec ED-7). */
+  connection: SocketStatus;
 }
 
 export interface EditorActions {
@@ -51,6 +54,15 @@ export interface EditorActions {
   retry: () => void;
   /** The editor's connection opened, the first time or after a drop. */
   connected: () => void;
+  setConnection: (status: SocketStatus) => void;
+  /**
+   * Saves now if a change is waiting, and resolves once nothing is left to save: true when the
+   * server has the project as it is on screen. "Send test" uses it, so the command sent is the one
+   * shown (spec ACT-4).
+   */
+  saveNow: () => Promise<boolean>;
+  /** Saves what is waiting, then sends the hotspot's command from the source "test" (ACT-4). */
+  testSend: (pageId: PageId, hotspotId: HotspotId) => Promise<TestSent>;
   /** The server says the project was saved, by this editor or another one. */
   projectUpdated: (revision: number) => void;
 }
@@ -117,6 +129,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       save: { state: 'saved' },
       safeArea: readSafeArea(),
       log: [],
+      connection: 'connecting',
 
       start() {
         set({ load: 'loading' });
@@ -169,6 +182,32 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         const { state } = get().save;
         if (state === 'unsaved' || state === 'error') return void flush();
         if (!pending && !inFlight) void load(true);
+      },
+
+      setConnection(connection) {
+        set({ connection });
+      },
+
+      async saveNow() {
+        if (pending && !inFlight) {
+          clearTimeout(timer);
+          void flush();
+        }
+        // Wait out the save in flight, and the one a change during it starts.
+        while (pending || inFlight) await new Promise((resolve) => setTimeout(resolve, 20));
+        return get().save.state === 'saved';
+      },
+
+      async testSend(pageId, hotspotId) {
+        // The server sends the command it has, so a change still waiting is saved first.
+        if (!(await get().saveNow())) {
+          return { ok: false, reason: 'Not sent: the latest changes are not saved yet.' };
+        }
+        try {
+          return await api.testSend(pageId, hotspotId);
+        } catch {
+          return { ok: false, reason: 'Cannot reach the server.' };
+        }
       },
 
       projectUpdated(revision) {

@@ -175,6 +175,7 @@ function useEditorConnection(store: ReturnType<typeof createEditorStore>): Socke
       },
       onStatus: (next) => {
         setStatus(next);
+        store.getState().setConnection(next);
         if (next === 'open') store.getState().connected();
       },
     });

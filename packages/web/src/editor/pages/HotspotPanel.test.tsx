@@ -11,6 +11,7 @@ async function renderPanel(project: Project = demoProject()) {
   const store = createEditorStore({
     load: () => Promise.resolve({ revision: 1, project }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
+    testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
   });
   store.getState().start();
   await act(() => Promise.resolve());
@@ -345,6 +346,15 @@ describe('HotspotPanel', () => {
         'true',
       );
       expect(command(state)).toMatchObject({ path: '/demo/screen-1/a' });
+    });
+
+    it('offers Send test under a command, and not without one', async () => {
+      await renderPanel();
+      expect(onTap().getByRole('button', { name: 'Send test' })).toBeInTheDocument();
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
+        target: { value: '' },
+      });
+      expect(onTap().queryByRole('button', { name: 'Send test' })).toBeNull();
     });
 
     it('sends nothing after "No command", and says so', async () => {
