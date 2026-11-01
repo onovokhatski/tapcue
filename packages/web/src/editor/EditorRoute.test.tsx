@@ -148,6 +148,7 @@ describe('editor shell', () => {
       const store = createEditorStore({
         load: () => Promise.resolve({ revision: 1, project: demoProject() }),
         save,
+        testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
       });
       store.getState().start();
       render(
@@ -235,5 +236,18 @@ describe('editor shell', () => {
       expect(await screen.findByRole('heading', { name: 'Pages 4' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Show page list' })).toBeNull();
     });
+  });
+
+  it('enables Send test only while the editor is connected (spec ACT-4, ED-7)', async () => {
+    renderAt('/edit/pages');
+    await screen.findByText('Demo stand');
+    const pageProperties = screen.getByRole('complementary', { name: 'Page properties' });
+    fireEvent.click(within(pageProperties).getByRole('button', { name: 'Product A card' }));
+    const sendTest = () => screen.getByRole('button', { name: 'Send test' });
+    expect(sendTest()).toBeDisabled();
+    act(() => FakeWebSocket.last.open());
+    expect(sendTest()).toBeEnabled();
+    act(() => FakeWebSocket.last.drop());
+    expect(sendTest()).toBeDisabled();
   });
 });

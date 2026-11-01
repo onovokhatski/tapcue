@@ -27,6 +27,7 @@ import {
   showControls,
 } from '../operations/commandText';
 import { useEditor } from '../useEditor';
+import { SendTest } from './SendTest';
 
 interface Props {
   project: Project;
@@ -70,12 +71,15 @@ export function OnTapFields({ project, pageId, hotspot }: Props) {
         </p>
       ) : (
         // Keyed by the command's type, so a new protocol starts with fresh fields.
-        <CommandFields
-          key={`${hotspot.id}-${command.type}`}
-          command={command}
-          target={target}
-          onChange={save}
-        />
+        <>
+          <CommandFields
+            key={`${hotspot.id}-${command.type}`}
+            command={command}
+            target={target}
+            onChange={save}
+          />
+          <SendTest key={`test-${hotspot.id}`} pageId={pageId} hotspotId={hotspot.id} />
+        </>
       )}
     </>
   );

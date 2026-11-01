@@ -54,4 +54,33 @@ describe('projectApi', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     await expect(projectApi.save(demoProject())).rejects.toThrow('Failed to fetch');
   });
+
+  describe('testSend (spec ACT-4)', () => {
+    it('posts the page and hotspot and returns the log entry', async () => {
+      const entry = { seq: 4, status: 'sent' };
+      respond(200, { entry });
+      expect(await projectApi.testSend('p_home00', 'h_carda0')).toEqual({ ok: true, entry });
+      expect(fetch).toHaveBeenCalledWith('/api/test-send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pageId: 'p_home00', hotspotId: 'h_carda0' }),
+      });
+    });
+
+    it("returns the server's reason for a refusal", async () => {
+      respond(409, { error: 'The hotspot sends no command' });
+      expect(await projectApi.testSend('p_home00', 'h_about0')).toEqual({
+        ok: false,
+        reason: 'The hotspot sends no command',
+      });
+    });
+
+    it('names the status when the answer says nothing readable', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('oops', { status: 502 })));
+      expect(await projectApi.testSend('p_home00', 'h_carda0')).toEqual({
+        ok: false,
+        reason: 'The server answered 502.',
+      });
+    });
+  });
 });
