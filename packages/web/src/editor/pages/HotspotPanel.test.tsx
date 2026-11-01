@@ -151,4 +151,94 @@ describe('HotspotPanel', () => {
       expect(screen.queryByText('Partly outside the safe area')).toBeNull();
     });
   });
+
+  describe('shape (spec HS-3)', () => {
+    it('switches to an ellipse, which has no corner radius', async () => {
+      const { cardA } = await renderPanel();
+      expect(screen.getByRole('textbox', { name: 'Corner radius' })).toHaveValue('40');
+      fireEvent.click(screen.getByRole('radio', { name: 'Ellipse' }));
+      expect(cardA().shape).toEqual({ type: 'ellipse' });
+      expect(screen.getByRole('textbox', { name: 'Corner radius' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('radio', { name: 'Rectangle' }));
+      expect(cardA().shape).toEqual({ type: 'rect', cornerRadius: 0 });
+    });
+
+    it('sets the corner radius, and refuses one that is not a whole number', async () => {
+      const { cardA } = await renderPanel();
+      const radius = screen.getByRole('textbox', { name: 'Corner radius' });
+      fireEvent.change(radius, { target: { value: '12' } });
+      expect(cardA().shape).toEqual({ type: 'rect', cornerRadius: 12 });
+      fireEvent.change(radius, { target: { value: '-3' } });
+      expect(screen.getByText('Corner radius: expected a whole number')).toBeInTheDocument();
+      expect(cardA().shape).toEqual({ type: 'rect', cornerRadius: 12 });
+    });
+  });
+
+  describe('style (spec HS-4)', () => {
+    it('says the hotspot is invisible while it has no fill and no border', async () => {
+      await renderPanel();
+      expect(
+        screen.getByText('No fill and no border: visitors see only the artwork.'),
+      ).toBeInTheDocument();
+    });
+
+    it('sets and clears the fill', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.change(screen.getByLabelText('Pick fill'), { target: { value: '#ff0000' } });
+      expect(cardA().style.fill).toBe('#FF0000');
+      expect(screen.queryByText(/visitors see only the artwork/)).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Set fill to None' }));
+      expect(cardA().style.fill).toBeNull();
+    });
+
+    it('sets the opacity in percent, stored from 0 to 1', async () => {
+      const { cardA } = await renderPanel();
+      const opacity = screen.getByRole('textbox', { name: 'Opacity' });
+      expect(opacity).toHaveValue('100');
+      fireEvent.change(opacity, { target: { value: '40' } });
+      expect(cardA().style.opacity).toBe(0.4);
+      fireEvent.change(opacity, { target: { value: '140' } });
+      expect(screen.getByText('Opacity: 0 to 100')).toBeInTheDocument();
+      expect(cardA().style.opacity).toBe(0.4);
+    });
+
+    it('adds a border at 2 px, changes its width, and removes it', async () => {
+      const { cardA } = await renderPanel();
+      const width = () => screen.getByRole('textbox', { name: 'Border width' });
+      expect(width()).toBeDisabled();
+      fireEvent.change(screen.getByLabelText('Pick border'), { target: { value: '#000000' } });
+      expect(cardA().style.border).toEqual({ color: '#000000', width: 2 });
+      fireEvent.change(width(), { target: { value: '6' } });
+      expect(cardA().style.border).toEqual({ color: '#000000', width: 6 });
+      fireEvent.change(width(), { target: { value: '0' } });
+      expect(screen.getByText('Border width: 1 to 100')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Set border to None' }));
+      expect(cardA().style.border).toBeNull();
+      expect(width()).toBeDisabled();
+    });
+
+    it('keeps the border width when the border colour changes', async () => {
+      const project = demoProject();
+      project.pages[0]!.hotspots[0]!.style.border = { color: '#000000', width: 7 };
+      const { cardA } = await renderPanel(project);
+      fireEvent.change(screen.getByRole('textbox', { name: 'border hex' }), {
+        target: { value: '#FFFFFF' },
+      });
+      expect(cardA().style.border).toEqual({ color: '#FFFFFF', width: 7 });
+    });
+  });
+
+  it('sets the press effect (spec HS-5)', async () => {
+    const { cardA } = await renderPanel();
+    const effect = screen.getByRole('combobox', { name: 'Press effect' });
+    expect(effect).toHaveValue('press');
+    expect([...effect.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+      'None',
+      'Highlight',
+      'Press-in',
+      'Ripple',
+    ]);
+    fireEvent.change(effect, { target: { value: 'ripple' } });
+    expect(cardA().pressEffect).toBe('ripple');
+  });
 });

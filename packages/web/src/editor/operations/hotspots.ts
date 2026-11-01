@@ -1,6 +1,14 @@
 // Hotspot operations: pure functions (project, args) => project, never changing their input
 // (spec HS-1, HS-2, architecture §4.2). An operation that cannot apply returns the same project.
-import type { Hotspot, HotspotId, PageId, Project } from '@tapcue/shared';
+import type {
+  Hotspot,
+  HotspotId,
+  PageId,
+  PressEffect,
+  Project,
+  Shape,
+  Style,
+} from '@tapcue/shared';
 import { moveRect, type Rect } from './geometry';
 import { newId } from './ids';
 
@@ -161,6 +169,59 @@ export function restackHotspot(
     [next[from], next[to]] = [next[to]!, next[from]!];
     return next;
   });
+}
+
+/** Sets the shape: rectangle with its corner radius, or ellipse (spec HS-3). The box stays. */
+export function setShape(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  shape: Shape,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) =>
+    JSON.stringify(h.shape) === JSON.stringify(shape) ? h : { ...h, shape },
+  );
+}
+
+/** Changes part of the style: fill, border, opacity (spec HS-4). */
+export function setStyle(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  change: Partial<Style>,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) => {
+    const style = { ...h.style, ...change };
+    return JSON.stringify(style) === JSON.stringify(h.style) ? h : { ...h, style };
+  });
+}
+
+/** Sets what a press looks like: none, highlight, press-in or ripple (spec HS-5). */
+export function setPressEffect(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  pressEffect: PressEffect,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) =>
+    h.pressEffect === pressEffect ? h : { ...h, pressEffect },
+  );
+}
+
+/** Applies a change to one hotspot; the same project when the hotspot is missing or unchanged. */
+function updateHotspot(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  update: (hotspot: Hotspot) => Hotspot,
+): Project {
+  const hotspot = findHotspot(project, pageId, hotspotId);
+  if (!hotspot) return project;
+  const next = update(hotspot);
+  if (next === hotspot) return project;
+  return updateHotspots(project, pageId, (hotspots) =>
+    hotspots.map((h) => (h.id === hotspotId ? next : h)),
+  );
 }
 
 function findHotspot(project: Project, pageId: PageId, hotspotId: HotspotId) {
