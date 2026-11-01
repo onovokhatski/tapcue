@@ -7,6 +7,7 @@ import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { NumberField } from '../../ui/NumberField';
+import { TextField } from '../../ui/TextField';
 import {
   deleteHotspot,
   duplicateHotspot,
@@ -123,20 +124,16 @@ function NameField({ pageId, hotspot }: { pageId: PageId; hotspot: Hotspot }) {
   const [value, setValue] = useState(hotspot.name);
   const commit = () => change((p) => renameHotspot(p, pageId, hotspot.id, value));
   return (
-    <label className="block space-y-1">
-      <span className="block text-label-s text-secondary">Name</span>
-      <input
-        className="field h-7 w-full rounded border border-strong bg-surface px-2 text-body-m"
-        value={value}
-        maxLength={100}
-        placeholder="Unnamed"
-        onChange={(event) => setValue(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') commit();
-        }}
-      />
-    </label>
+    <TextField
+      label="Name"
+      size="s"
+      value={value}
+      maxLength={100}
+      placeholder="Unnamed"
+      onChange={setValue}
+      onBlur={commit}
+      onEnter={commit}
+    />
   );
 }
 
