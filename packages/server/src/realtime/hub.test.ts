@@ -20,7 +20,7 @@ async function start(timing: { pingIntervalMs?: number; pongTimeoutMs?: number }
   log = createCommandLog();
   const dispatch = (tap: Tap) => {
     taps.push(tap);
-    return Promise.resolve();
+    return Promise.resolve(null);
   };
   hub = registerHub(server, { dispatch, log, ...timing });
   await server.listen({ port: 0, host: '127.0.0.1' });

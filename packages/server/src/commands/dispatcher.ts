@@ -1,6 +1,6 @@
 // A tap → the hotspot's command in the server's project → the target's driver → the log
 // (spec ACT-1, TGT-4, ST-5, ADR 0005, architecture §5.3).
-import type { HotspotId, LogSource, PageId, Project, Protocol } from '@tapcue/shared';
+import type { HotspotId, LogEntry, LogSource, PageId, Project, Protocol } from '@tapcue/shared';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
 
@@ -21,7 +21,8 @@ export interface DispatcherOptions {
   now?: () => Date;
 }
 
-export type Dispatch = (tap: Tap) => Promise<void>;
+/** Resolves with the log entry of the tap, or null for a hotspot that only navigates. */
+export type Dispatch = (tap: Tap) => Promise<LogEntry | null>;
 
 export function createDispatcher({
   project,
@@ -40,16 +41,16 @@ export function createDispatcher({
 
     const current = project();
     const page = current.pages.find((p) => p.id === pageId);
-    if (!page) return void ignore(`Page "${pageId}" does not exist`);
+    if (!page) return ignore(`Page "${pageId}" does not exist`);
     const hotspot = page.hotspots.find((h) => h.id === hotspotId);
-    if (!hotspot) return void ignore(`Hotspot "${hotspotId}" does not exist on page "${pageId}"`);
+    if (!hotspot) return ignore(`Hotspot "${hotspotId}" does not exist on page "${pageId}"`);
 
     const { command } = hotspot.action;
-    if (!command) return; // a hotspot that only navigates: nothing to send, nothing to log
+    if (!command) return null; // a hotspot that only navigates: nothing to send, nothing to log
     // A validated project has the target, with the command's protocol (docs/project-format.md §10).
     const target = current.targets.find((t) => t.id === command.targetId);
     if (!target || target.protocol !== command.type) {
-      return void ignore(`Target "${command.targetId}" does not exist or uses another protocol`);
+      return ignore(`Target "${command.targetId}" does not exist or uses another protocol`);
     }
 
     const delivery = { hotspotName: hotspot.name, targetName: target.name, command };
@@ -58,10 +59,10 @@ export function createDispatcher({
       // the union, so the driver is called as a driver of any protocol.
       const driver = drivers[target.protocol] as Driver<Protocol>;
       await driver.send(target, command, { source, hotspotName: hotspot.name });
-      log.add({ ...base, ...delivery, status: 'sent' });
+      return log.add({ ...base, ...delivery, status: 'sent' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      log.add({ ...base, ...delivery, status: 'error', message });
+      return log.add({ ...base, ...delivery, status: 'error', message });
     }
   };
 }
