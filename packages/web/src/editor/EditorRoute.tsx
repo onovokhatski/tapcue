@@ -14,6 +14,7 @@ import { CommandLog } from './log/CommandLog';
 import { PageList } from './pages/PageList';
 import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
+import { TargetsTab } from './targets/TargetsTab';
 import { TooSmall } from './TooSmall';
 import { EditorStoreContext, useEditor } from './useEditor';
 import { editorLayout, useWindowSize } from './useWindowSize';
@@ -63,6 +64,7 @@ function Body({ title, isPages, compact }: { title: string; isPages: boolean; co
   if (load === 'failed') {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
+  if (title === 'Targets') return <TargetsTab />;
   if (!isPages) return <Placeholder title={title} text="Coming in M4." />;
   return (
     <>
