@@ -7,6 +7,7 @@ import { demoProjectJson } from '../test/demoProject';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
 import { sentEntry } from '../test/logEntries';
+import { setWindowSize } from '../test/windowSize';
 import { createEditorStore } from './editorStore';
 import { Banners } from './EditorRoute';
 import { EditorStoreContext } from './useEditor';
@@ -196,5 +197,43 @@ describe('editor shell', () => {
     const log = screen.getByRole('region', { name: 'Command log' });
     expect(log).toHaveTextContent('Product A card');
     expect(log).toHaveTextContent('1 command');
+  });
+
+  describe('window sizes (spec ED-12)', () => {
+    it('shows a notice instead of the editor below 1280 × 720, with links to the stations', async () => {
+      setWindowSize(1200, 800);
+      renderAt('/edit/pages');
+      expect(
+        screen.getByRole('heading', { name: 'The editor needs a wider window' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('1200 × 800')).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: /Main catalog/ })).toHaveAttribute(
+        'href',
+        '/play/main',
+      );
+      expect(screen.queryByRole('navigation', { name: 'Editor' })).toBeNull();
+    });
+
+    it('brings the editor back when the window grows', async () => {
+      setWindowSize(1200, 800);
+      renderAt('/edit/pages');
+      act(() => setWindowSize(1440, 900));
+      expect(screen.getByRole('navigation', { name: 'Editor' })).toBeInTheDocument();
+      expect(screen.queryByText('The editor needs a wider window')).toBeNull();
+      await screen.findByText('Demo stand');
+    });
+
+    it('folds the page list into a rail between 1280 and 1439 px', async () => {
+      setWindowSize(1300, 800);
+      renderAt('/edit/pages');
+      expect(await screen.findByRole('button', { name: 'Show page list' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /^Pages/ })).toBeNull();
+    });
+
+    it('keeps the full page list from 1440 px', async () => {
+      renderAt('/edit/pages');
+      expect(await screen.findByRole('heading', { name: 'Pages 4' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Show page list' })).toBeNull();
+    });
   });
 });

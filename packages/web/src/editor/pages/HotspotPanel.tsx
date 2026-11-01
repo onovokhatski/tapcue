@@ -41,7 +41,7 @@ export function HotspotPanel() {
   return (
     <aside
       aria-label="Hotspot properties"
-      className="flex w-[320px] flex-none flex-col overflow-y-auto border-l border-default bg-surface"
+      className="flex w-[304px] flex-none min-[1440px]:w-[320px] flex-col overflow-y-auto border-l border-default bg-surface"
     >
       <div className="space-y-3 border-b border-default px-4 py-4">
         <div className="flex items-center justify-between">

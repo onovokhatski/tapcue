@@ -18,7 +18,7 @@ export function PagePanel() {
   return (
     <aside
       aria-label="Page properties"
-      className="flex w-[320px] flex-none flex-col overflow-y-auto border-l border-default bg-surface"
+      className="flex w-[304px] flex-none min-[1440px]:w-[320px] flex-col overflow-y-auto border-l border-default bg-surface"
     >
       {/* The key resets the name field when another page is selected. */}
       <NameSection key={page.id} page={page} />

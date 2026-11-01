@@ -14,7 +14,9 @@ import { CommandLog } from './log/CommandLog';
 import { PageList } from './pages/PageList';
 import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
+import { TooSmall } from './TooSmall';
 import { EditorStoreContext, useEditor } from './useEditor';
+import { editorLayout, useWindowSize } from './useWindowSize';
 
 export const EDITOR_TABS = [
   { path: 'pages', label: 'Pages' },
@@ -28,8 +30,17 @@ export function EditorRoute() {
   const tab = EDITOR_TABS.find((t) => t.path === path);
   const [store] = useState(() => createEditorStore());
   const connection = useEditorConnection(store);
+  const size = useWindowSize();
   useEffect(() => store.getState().start(), [store]);
   if (!tab) return <Navigate to="/edit/pages" replace />;
+  const layout = editorLayout(size);
+  if (layout === 'too-small') {
+    return (
+      <EditorStoreContext value={store}>
+        <TooSmall size={size} />
+      </EditorStoreContext>
+    );
+  }
 
   return (
     <EditorStoreContext value={store}>
@@ -37,7 +48,7 @@ export function EditorRoute() {
         <TopBar connection={connection} />
         <Banners connection={connection} />
         <main className="flex min-h-0 flex-1">
-          <Body title={tab.label} isPages={tab.path === 'pages'} />
+          <Body title={tab.label} isPages={tab.path === 'pages'} compact={layout === 'compact'} />
         </main>
         {/* On every tab (spec ED-9). */}
         <CommandLog />
@@ -46,7 +57,7 @@ export function EditorRoute() {
   );
 }
 
-function Body({ title, isPages }: { title: string; isPages: boolean }) {
+function Body({ title, isPages, compact }: { title: string; isPages: boolean; compact: boolean }) {
   const load = useEditor((state) => state.load);
   if (load === 'loading') return <Placeholder title="Loading…" text="" />;
   if (load === 'failed') {
@@ -55,7 +66,7 @@ function Body({ title, isPages }: { title: string; isPages: boolean }) {
   if (!isPages) return <Placeholder title={title} text="Coming in M4." />;
   return (
     <>
-      <PageList />
+      <PageList compact={compact} />
       <EditorCanvas />
       <PropertiesPanel />
     </>
