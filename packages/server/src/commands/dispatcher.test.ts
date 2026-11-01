@@ -129,7 +129,9 @@ describe('dispatcher', () => {
 
   it('logs a delivery error with its message and resolves anyway (architecture §7)', async () => {
     fake.fail.http = new Error('http://localhost:4000/demo/screen-3/call-staff answered 500');
-    await expect(dispatch(tap('p_home00', 'h_call00'))).resolves.toBeUndefined();
+    // Resolves, with the entry it logged.
+    const entry = await dispatch(tap('p_home00', 'h_call00'));
+    expect(entry).toEqual(entries[0]);
     expect(entries).toMatchObject([
       {
         status: 'error',
@@ -217,5 +219,14 @@ describe('dispatcher', () => {
       [main, 'Product A card'],
       [kiosk, 'Product B card'],
     ]);
+  });
+
+  it('resolves with the entry it logged, or null when there is nothing to send', async () => {
+    const sent = await dispatch(tap('p_home00', 'h_carda0'));
+    expect(sent).toEqual(entries.at(-1));
+    expect(sent).toMatchObject({ status: 'sent' });
+    const ignored = await dispatch(tap('p_home00', 'h_zzzzzz'));
+    expect(ignored).toMatchObject({ status: 'ignored' });
+    expect(await dispatch(tap('p_home00', 'h_about0'))).toBeNull(); // navigation only
   });
 });

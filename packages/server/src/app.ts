@@ -7,6 +7,7 @@ import { createHttpDriver } from './commands/drivers/http';
 import { createOscUdpDriver } from './commands/drivers/osc-udp';
 import { createUdpDriver } from './commands/drivers/udp';
 import { createCommandLog } from './commands/log';
+import { registerTestSend } from './commands/testSend';
 import { registerDemoReceiver } from './demo/receiver';
 import type { ProjectStore } from './project/store';
 import { registerUpload, type UploadOptions } from './project/upload';
@@ -43,6 +44,7 @@ export function buildApp({
   const log = createCommandLog();
   const dispatch = createDispatcher({ project: () => store.project, drivers, log });
   const hub = registerHub(app, { dispatch, log });
+  registerTestSend(app, { project: () => store.project, dispatch });
   app.addHook('onClose', () => Promise.all(Object.values(drivers).map((d) => d.close())));
 
   // The editor saves the whole project (ADR 0011). An invalid one is refused with its field errors;
