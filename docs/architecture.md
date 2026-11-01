@@ -192,7 +192,7 @@ contract at runtime and get the same TypeScript types at compile time.
 | `GET /assets/*` | Serve project files to editor and players |
 | `GET /api/project/export` | Download the project as `.zip` |
 | `POST /api/project/import` | Upload a `.zip` to replace the project |
-| `GET /api/network` | Local addresses for station URLs / QR codes |
+| `GET /api/network` | Local IPv4 addresses for station URLs and QR codes, private ranges first; no port, the editor adds the one it is served on |
 | `POST /api/test-send` | Send a hotspot's command from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)); answers the log entry (sent or error), `404` for an unknown hotspot, `409` for one without a command |
 | `* /demo/<screen>/<content>` | Demo receiver endpoint (any method; the page itself is `/demo` in the web app) |
 

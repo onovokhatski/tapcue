@@ -11,6 +11,7 @@ import { registerTestSend } from './commands/testSend';
 import { registerDemoReceiver } from './demo/receiver';
 import type { ProjectStore } from './project/store';
 import { registerUpload, type UploadOptions } from './project/upload';
+import { type LocalAddress, registerNetwork } from './network';
 import { registerHub } from './realtime/hub';
 
 export interface AppOptions {
@@ -19,6 +20,8 @@ export interface AppOptions {
   logger?: boolean;
   /** The real drivers by default; tests pass fakes so nothing leaves the computer. */
   drivers?: Drivers;
+  /** This computer's addresses; tests pass fixed ones. */
+  addresses?: () => LocalAddress[];
   /** Upload settings for tests: a small size limit, a fixed file name suffix. */
   upload?: Omit<UploadOptions, 'dir'>;
 }
@@ -28,6 +31,7 @@ export function buildApp({
   logger = false,
   drivers = realDrivers(),
   upload = {},
+  addresses,
 }: AppOptions): FastifyInstance {
   const app = Fastify({ logger });
 
@@ -39,6 +43,7 @@ export function buildApp({
   // play video) and refuses paths that leave the assets folder.
   void app.register(fastifyStatic, { root: join(store.dir, 'assets'), prefix: '/assets/' });
   registerUpload(app, { dir: store.dir, ...upload });
+  registerNetwork(app, addresses);
 
   // Taps from players → commands to targets, and the log of what was sent (architecture §5.3).
   const log = createCommandLog();
