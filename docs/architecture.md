@@ -300,6 +300,11 @@ No error in one tap, one driver or one connection may crash the server.
 | Editor operations | Vitest | Pure functions, no React |
 | Full flow | Playwright | Tap in player → entry in demo receiver; edit → player updates |
 
+The Playwright tests run on a copy of the demo project in a temporary folder, with their own server
+(port 4400) and web dev server (port 5400, `TAPCUE_SERVER` points its proxy there), so they never
+change `examples/demo-stand` or a server already running on 4000 (`e2e/stand.ts`). Each editing test
+starts by putting the demo project back through the API.
+
 ## 9. Decisions
 
 Each significant decision is recorded as an ADR in [docs/adr/](adr/):

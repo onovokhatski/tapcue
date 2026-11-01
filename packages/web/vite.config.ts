@@ -3,8 +3,11 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-/** The Tapcue server in development (packages/server, default port 4000). */
-const SERVER = 'http://localhost:4000';
+/**
+ * The Tapcue server in development: packages/server on its default port 4000, or another one in
+ * TAPCUE_SERVER, as the end-to-end tests use (e2e/stand.ts).
+ */
+const SERVER = process.env['TAPCUE_SERVER'] ?? 'http://localhost:4000';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
