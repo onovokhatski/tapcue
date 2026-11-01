@@ -10,6 +10,9 @@ import {
   placeHotspot,
   renameHotspot,
   restackHotspot,
+  setPressEffect,
+  setShape,
+  setStyle,
 } from './hotspots';
 
 const expectValid = (project: Project) =>
@@ -201,6 +204,54 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       const before = demoProject();
       expect(restackHotspot(before, 'p_home00', ids(before)[0]!, 'backward')).toBe(before);
       expect(restackHotspot(before, 'p_home00', ids(before).at(-1)!, 'forward')).toBe(before);
+    });
+  });
+
+  describe('shape, style and press effect (spec HS-3, HS-4, HS-5)', () => {
+    const cardA = (project: Project) => home(project).hotspots.find((h) => h.id === 'h_carda0')!;
+
+    it('sets the shape and keeps the box', () => {
+      const before = demoProject();
+      const project = setShape(before, 'p_home00', 'h_carda0', { type: 'ellipse' });
+      expect(cardA(project).shape).toEqual({ type: 'ellipse' });
+      expect(cardA(project)).toMatchObject({ x: 144, y: 500, width: 560, height: 720 });
+      expectValid(project);
+      expect(
+        cardA(setShape(project, 'p_home00', 'h_carda0', { type: 'rect', cornerRadius: 12 })).shape,
+      ).toEqual({
+        type: 'rect',
+        cornerRadius: 12,
+      });
+    });
+
+    it('changes only the given part of the style', () => {
+      const project = setStyle(demoProject(), 'p_home00', 'h_carda0', { fill: '#FF0000' });
+      expect(cardA(project).style).toEqual({ fill: '#FF0000', border: null, opacity: 1 });
+      const bordered = setStyle(project, 'p_home00', 'h_carda0', {
+        border: { color: '#000000', width: 4 },
+      });
+      expect(cardA(bordered).style).toEqual({
+        fill: '#FF0000',
+        border: { color: '#000000', width: 4 },
+        opacity: 1,
+      });
+      expectValid(bordered);
+    });
+
+    it('sets the press effect', () => {
+      expect(
+        cardA(setPressEffect(demoProject(), 'p_home00', 'h_carda0', 'ripple')).pressEffect,
+      ).toBe('ripple');
+    });
+
+    it('keeps the project when nothing changes, or the hotspot is not there', () => {
+      const before = demoProject();
+      expect(setShape(before, 'p_home00', 'h_carda0', { type: 'rect', cornerRadius: 40 })).toBe(
+        before,
+      );
+      expect(setStyle(before, 'p_home00', 'h_carda0', { fill: null })).toBe(before);
+      expect(setPressEffect(before, 'p_home00', 'h_carda0', 'press')).toBe(before);
+      expect(setPressEffect(before, 'p_home00', 'h_zzzzzz', 'ripple')).toBe(before);
     });
   });
 });

@@ -1,6 +1,6 @@
-// The properties panel of the selected hotspot: name, exact position and size, duplicate, delete
-// and stacking order (spec HS-2, HS-6, HS-7, ED-10; design: hotspotProps()). Its action and style
-// come with M4.
+// The properties panel of the selected hotspot: name, exact position and size, shape, style and
+// press effect, duplicate, delete and stacking order (spec HS-2–HS-7, ED-10; design: hotspotProps()).
+// Its action comes with #99.
 import type { Canvas, Hotspot, PageId } from '@tapcue/shared';
 import { type ReactNode, useState } from 'react';
 import { Banner } from '../../ui/Banner';
@@ -18,6 +18,7 @@ import {
 import { croppedBy } from '../canvas/safeArea';
 import { type BoxKey, checkBoxField } from '../operations/geometry';
 import { useEditor } from '../useEditor';
+import { ShapeRow, StyleFields } from './HotspotStyle';
 
 export function HotspotPanel() {
   const project = useEditor((state) => state.project);
@@ -82,6 +83,10 @@ export function HotspotPanel() {
           hotspot={hotspot}
           canvas={project.canvas}
         />
+        <ShapeRow key={`shape-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
+      </Section>
+      <Section title="Style">
+        <StyleFields key={`style-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
       </Section>
       <Section title="Stacking">
         <div className="flex gap-2">
