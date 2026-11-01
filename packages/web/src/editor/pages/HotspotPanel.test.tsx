@@ -241,4 +241,121 @@ describe('HotspotPanel', () => {
     fireEvent.change(effect, { target: { value: 'ripple' } });
     expect(cardA().pressEffect).toBe('ripple');
   });
+
+  describe('on tap (spec ACT-1)', () => {
+    const onTap = () => within(screen.getByRole('region', { name: 'On tap' }));
+    const command = (state: () => { project: Project | null }) =>
+      state().project!.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.action.command;
+
+    it('links to another page, or stays; its own page is not offered', async () => {
+      const { cardA } = await renderPanel();
+      const goTo = onTap().getByRole('combobox', { name: 'Go to page' });
+      expect(goTo).toHaveValue('p_proda0');
+      expect([...goTo.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+        'Stay on this page',
+        'Product A',
+        'Product B',
+        'About us',
+      ]);
+      fireEvent.change(goTo, { target: { value: '' } });
+      expect(cardA().action.goTo).toBeNull();
+    });
+
+    it('shows the OSC command with its target address, and edits the address', async () => {
+      const { state } = await renderPanel();
+      expect(onTap().getByText('192.168.1.20:7000')).toBeInTheDocument();
+      const address = onTap().getByRole('textbox', { name: 'OSC address' });
+      expect(address).toHaveValue('/composition/columns/2/connect');
+      fireEvent.change(address, { target: { value: '/composition/columns/5/connect' } });
+      expect(command(state)).toMatchObject({ address: '/composition/columns/5/connect' });
+      fireEvent.change(address, { target: { value: 'columns/5' } });
+      expect(address).toHaveAttribute('aria-invalid', 'true');
+      expect(command(state)).toMatchObject({ address: '/composition/columns/5/connect' });
+    });
+
+    it('adds, edits, retypes and removes OSC arguments', async () => {
+      const { state } = await renderPanel();
+      const args = () => (command(state) as { args: unknown[] }).args;
+      expect(args()).toEqual([{ type: 'i', value: 1 }]);
+      fireEvent.click(onTap().getByRole('button', { name: 'Add argument' }));
+      expect(args()).toEqual([
+        { type: 'i', value: 1 },
+        { type: 'i', value: 1 },
+      ]);
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Argument 2 type' }), {
+        target: { value: 's' },
+      });
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Argument 2 value' }), {
+        target: { value: 'intro' },
+      });
+      expect(args()[1]).toEqual({ type: 's', value: 'intro' });
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Argument 1 value' }), {
+        target: { value: '1.5' },
+      });
+      expect(onTap().getByText('Expected a whole number')).toBeInTheDocument();
+      expect(args()[0]).toEqual({ type: 'i', value: 1 });
+      fireEvent.click(onTap().getByRole('button', { name: 'Remove argument 1' }));
+      expect(args()).toEqual([{ type: 's', value: 'intro' }]);
+    });
+
+    it('switches to a UDP target with fresh fields; line endings are typed as \\r', async () => {
+      const { state } = await renderPanel();
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
+        target: { value: 't_projec' },
+      });
+      const text = onTap().getByRole('textbox', { name: 'Text' });
+      expect(text).toHaveValue('GO');
+      fireEvent.change(text, { target: { value: '%1INPT 31\\r' } });
+      expect(command(state)).toEqual({ type: 'udp', targetId: 't_projec', text: '%1INPT 31\r' });
+      fireEvent.change(text, { target: { value: '' } });
+      expect(text).toHaveAttribute('aria-invalid', 'true');
+      expect(command(state)).toMatchObject({ text: '%1INPT 31\r' });
+    });
+
+    it('switches to an HTTP target: method, path after the base URL, and a body only for POST and PUT', async () => {
+      const { state } = await renderPanel();
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
+        target: { value: 't_demo00' },
+      });
+      expect(onTap().getByText('Appended to http://localhost:4000')).toBeInTheDocument();
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Path' }), {
+        target: { value: '/demo/screen-1/a' },
+      });
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Body' }), {
+        target: { value: '{"x":1}' },
+      });
+      expect(command(state)).toMatchObject({
+        method: 'POST',
+        path: '/demo/screen-1/a',
+        body: '{"x":1}',
+      });
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Body' }), { target: { value: '' } });
+      expect(command(state)).toMatchObject({ body: null }); // an empty body is no body
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Body' }), {
+        target: { value: '{"x":1}' },
+      });
+      fireEvent.click(onTap().getByRole('radio', { name: 'GET' }));
+      expect(command(state)).toMatchObject({ method: 'GET', body: null });
+      expect(onTap().getByRole('textbox', { name: 'Body' })).toBeDisabled();
+      fireEvent.change(onTap().getByRole('textbox', { name: 'Path' }), {
+        target: { value: 'demo' },
+      });
+      expect(onTap().getByRole('textbox', { name: 'Path' })).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+      expect(command(state)).toMatchObject({ path: '/demo/screen-1/a' });
+    });
+
+    it('sends nothing after "No command", and says so', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
+        target: { value: '' },
+      });
+      expect(cardA().action.command).toBeNull();
+      expect(
+        onTap().getByText('This hotspot sends no command. Choose a target to send one.'),
+      ).toBeInTheDocument();
+    });
+  });
 });

@@ -1,6 +1,7 @@
 // Hotspot operations: pure functions (project, args) => project, never changing their input
 // (spec HS-1, HS-2, architecture §4.2). An operation that cannot apply returns the same project.
 import type {
+  Action,
   Hotspot,
   HotspotId,
   PageId,
@@ -206,6 +207,19 @@ export function setPressEffect(
   return updateHotspot(project, pageId, hotspotId, (h) =>
     h.pressEffect === pressEffect ? h : { ...h, pressEffect },
   );
+}
+
+/** Changes a hotspot's action (go to page, command); see operations/actions.ts. */
+export function setAction(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  update: (action: Action) => Action,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) => {
+    const action = update(h.action);
+    return JSON.stringify(action) === JSON.stringify(h.action) ? h : { ...h, action };
+  });
 }
 
 /** Applies a change to one hotspot; the same project when the hotspot is missing or unchanged. */

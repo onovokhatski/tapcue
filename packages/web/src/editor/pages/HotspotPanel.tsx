@@ -1,6 +1,6 @@
 // The properties panel of the selected hotspot: name, exact position and size, shape, style and
-// press effect, duplicate, delete and stacking order (spec HS-2–HS-7, ED-10; design: hotspotProps()).
-// Its action comes with #99.
+// press effect, what a tap does, duplicate, delete and stacking order (spec HS-2–HS-7, ACT-1,
+// ED-10; design: hotspotProps()).
 import type { Canvas, Hotspot, PageId } from '@tapcue/shared';
 import { type ReactNode, useState } from 'react';
 import { Banner } from '../../ui/Banner';
@@ -18,6 +18,7 @@ import {
 import { croppedBy } from '../canvas/safeArea';
 import { type BoxKey, checkBoxField } from '../operations/geometry';
 import { useEditor } from '../useEditor';
+import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
 
 export function HotspotPanel() {
@@ -76,6 +77,15 @@ export function HotspotPanel() {
           </Banner>
         )}
       </div>
+      {/* What a button does matters more than where it is exactly (design: "On tap" first). */}
+      <Section title="On tap">
+        <OnTapFields
+          key={`tap-${hotspot.id}`}
+          project={project}
+          pageId={page.id}
+          hotspot={hotspot}
+        />
+      </Section>
       <Section title="Position and size">
         <GeometryFields
           key={hotspot.id}
