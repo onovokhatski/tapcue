@@ -33,8 +33,9 @@ npm run build        # web production build
 
 ## How work is done
 
-- Phases are done in order; current phase: implementation, milestone M1 (player). Issues and
-  milestones on GitHub (`onovokhatski/tapcue`) are the plan.
+- Phases are done in order: implementation, milestones M0–M5 (`docs/roadmap.md`). Issues and
+  milestones on GitHub (`onovokhatski/tapcue`) are the plan; the current milestone is the earliest
+  one with open issues, and its open issues are the next steps, in number order.
 - One issue → one branch `<type>/<issue>-<name>` → one PR with What / Why / Decisions /
   How it was checked / Definition of Done, `Closes #N`, labels and milestone. Squash merge.
 - `main` is protected: PR + green `check` required, also for admins.
@@ -43,5 +44,6 @@ npm run build        # web production build
 - Small steps, each decision explained; the user reviews every PR.
 - Do not poll CI in a loop: read its state once when asked.
 - Tests prove behaviour: check exact paths/messages, mutation-check important rules.
+- Stage files by name, never a whole folder: local, untracked helpers must not reach a commit.
 - Everything in git (code, docs, commits, PRs) is in English; chat with the user is in Russian.
 - No emoji anywhere in the app UI.
