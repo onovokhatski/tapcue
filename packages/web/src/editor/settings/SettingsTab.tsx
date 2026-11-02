@@ -1,6 +1,6 @@
 // The Settings tab: the canvas every page is drawn on — its size, background colour and scale mode,
-// with diagrams of each mode on the reference screens (spec CNV-1, CNV-2, ED-4, ED-10;
-// design: settingsScreen(), frame G1).
+// with diagrams of each mode on the reference screens — and the project's export and import
+// (spec CNV-1, CNV-2, ED-4, ED-10, PRJ-3, PRJ-4; design: settingsScreen(), frames G1–G3).
 import type { Canvas, Project, ScaleMode } from '@tapcue/shared';
 import { ColorField } from '../../ui/ColorField';
 import { Icon } from '../../ui/Icon';
@@ -10,6 +10,7 @@ import { useDraft } from '../../ui/useDraft';
 import type { ReferenceScreen } from '../canvas/safeArea';
 import { checkCanvasSize, updateCanvas } from '../operations/canvas';
 import { useEditor } from '../useEditor';
+import { ProjectCard } from './ProjectCard';
 import { ScaleDiagram } from './ScaleDiagram';
 
 const MODES: { value: ScaleMode; label: string }[] = [
@@ -23,10 +24,9 @@ export function SettingsTab() {
   if (!project) return null;
   return (
     <main className="min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1200px] p-6">
-        <div className="max-w-[820px]">
-          <CanvasCard project={project} />
-        </div>
+      <div className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,1fr)_340px] items-start gap-6 p-6">
+        <CanvasCard project={project} />
+        <ProjectCard />
       </div>
     </main>
   );

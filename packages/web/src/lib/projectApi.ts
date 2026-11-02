@@ -1,6 +1,7 @@
 // The editor's HTTP calls for the project (architecture §5.1). A network failure rejects; an answer
 // from the server, even a refusal, resolves.
 import type { HotspotId, LogEntry, PageId, Project, ValidationError } from '@tapcue/shared';
+import { type Imported, importArchive } from './projectArchive';
 
 export interface Loaded {
   revision: number;
@@ -18,6 +19,8 @@ export interface ProjectApi {
   load(): Promise<Loaded>;
   save(project: Project): Promise<Saved>;
   testSend(pageId: PageId, hotspotId: HotspotId): Promise<TestSent>;
+  /** Replaces the whole project with a .zip (spec PRJ-4). */
+  importArchive(file: Blob): Promise<Imported>;
 }
 
 export const projectApi: ProjectApi = {
@@ -59,4 +62,6 @@ export const projectApi: ProjectApi = {
     if (response.ok && body.entry) return { ok: true, entry: body.entry };
     return { ok: false, reason: body.error ?? `The server answered ${response.status}.` };
   },
+
+  importArchive,
 };
