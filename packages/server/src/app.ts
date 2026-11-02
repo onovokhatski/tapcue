@@ -14,6 +14,7 @@ import type { ProjectStore } from './project/store';
 import { registerUpload, type UploadOptions } from './project/upload';
 import { type LocalAddress, registerNetwork } from './network';
 import { registerHub } from './realtime/hub';
+import { registerWebApp } from './webApp';
 
 export interface AppOptions {
   store: ProjectStore;
@@ -27,6 +28,8 @@ export interface AppOptions {
   upload?: Omit<UploadOptions, 'dir'>;
   /** Import settings for tests: a small size limit. */
   archive?: Pick<ArchiveOptions, 'maxBytes'>;
+  /** The web app's production build (packages/web/dist); left out, only the API is served. */
+  webDir?: string;
 }
 
 export function buildApp({
@@ -36,6 +39,7 @@ export function buildApp({
   upload = {},
   addresses,
   archive = {},
+  webDir,
 }: AppOptions): FastifyInstance {
   const app = Fastify({ logger });
 
@@ -76,6 +80,10 @@ export function buildApp({
   registerDemoReceiver(app, {
     onRequest: (request) => hub.toViewers({ type: 'demo-received', request }),
   });
+
+  if (webDir !== undefined && !registerWebApp(app, webDir)) {
+    app.log.warn(`No web app build in ${webDir}: run "npm run build", or use "npm run dev"`);
+  }
 
   return app;
 }

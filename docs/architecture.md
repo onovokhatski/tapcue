@@ -74,6 +74,7 @@ server/src/
       http.ts        adds X-Tapcue-Station / X-Tapcue-Hotspot, 2 s timeout
       osc-encode.ts  OSC message encoder (pure function)
   network.ts         local IP addresses for station URLs / QR codes
+  webApp.ts          the web app's production build on the same port; index.html for its pages
   demo/
     receiver.ts      endpoint that records incoming HTTP commands
 ```
