@@ -2,6 +2,7 @@
 // with diagrams of each mode on the reference screens — and the project's export and import
 // (spec CNV-1, CNV-2, ED-4, ED-10, PRJ-3, PRJ-4; design: settingsScreen(), frames G1–G3).
 import type { Canvas, Project, ScaleMode } from '@tapcue/shared';
+import { Banner } from '../../ui/Banner';
 import { ColorField } from '../../ui/ColorField';
 import { Icon } from '../../ui/Icon';
 import { NumberField } from '../../ui/NumberField';
@@ -21,12 +22,21 @@ const REFERENCES: ReferenceScreen[] = ['16:10', '16:9'];
 
 export function SettingsTab() {
   const project = useEditor((state) => state.project);
+  const demo = useEditor((state) => state.demo);
   if (!project) return null;
   return (
     <main className="min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,1fr)_340px] items-start gap-6 p-6">
-        <CanvasCard project={project} />
-        <ProjectCard />
+      <div className="mx-auto max-w-[1200px] space-y-6 p-6">
+        {demo && (
+          <Banner tone="info" title="Demo mode">
+            Changes stay in this browser tab and are lost when you close it. Saving, uploads and
+            import are turned off; Export still works.
+          </Banner>
+        )}
+        <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
+          <CanvasCard project={project} />
+          <ProjectCard />
+        </div>
       </div>
     </main>
   );

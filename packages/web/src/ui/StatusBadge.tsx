@@ -3,12 +3,13 @@
 import { Icon } from './Icon';
 
 export type BadgeStatus =
-  'connected' | 'disconnected' | 'waiting' | 'saving' | 'saved' | 'unsaved' | 'error';
+  'connected' | 'disconnected' | 'waiting' | 'saving' | 'saved' | 'unsaved' | 'error' | 'demo';
 
 const BASE = 'inline-flex h-6 flex-none items-center gap-1.5 rounded-full border px-2 text-label-s';
 const NEUTRAL = `${BASE} border-default bg-subtle text-secondary`;
 const SUCCESS = `${BASE} border-success-border bg-success-bg text-success-fg`;
 const DANGER = `${BASE} border-danger-border bg-danger-bg text-danger-fg`;
+const INFO = `${BASE} border-info-border bg-info-bg text-info-fg`;
 
 const DEFAULT_LABEL: Record<BadgeStatus, string> = {
   connected: 'Connected',
@@ -18,6 +19,7 @@ const DEFAULT_LABEL: Record<BadgeStatus, string> = {
   saved: 'Saved',
   unsaved: 'Unsaved changes',
   error: 'Save error',
+  demo: 'Demo mode · not saved',
 };
 
 export function StatusBadge({ status, label }: { status: BadgeStatus; label?: string }) {
@@ -63,6 +65,13 @@ export function StatusBadge({ status, label }: { status: BadgeStatus; label?: st
       return (
         <span role="status" className={DANGER}>
           <Icon name="alert" className="h-3.5 w-3.5" />
+          {text}
+        </span>
+      );
+    case 'demo':
+      return (
+        <span role="status" className={INFO}>
+          <Icon name="info" className="h-3.5 w-3.5" />
           {text}
         </span>
       );

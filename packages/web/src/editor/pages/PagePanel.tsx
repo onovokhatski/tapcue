@@ -86,6 +86,8 @@ type UploadState =
  */
 function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canvas'] }) {
   const change = useEditor((state) => state.change);
+  // The server refuses uploads in demo mode (spec DEMO-3), so they are off here too.
+  const demo = useEditor((state) => state.demo);
   const [upload, setUpload] = useState<UploadState>({ state: 'idle' });
   const picker = useRef<HTMLInputElement>(null);
 
@@ -166,7 +168,11 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
       <>
         {input}
         {failed}
-        <Dropzone canvas={canvas} disabled={busy} onChoose={choose} onFile={start} />
+        {demo ? (
+          <DemoDropzone />
+        ) : (
+          <Dropzone canvas={canvas} disabled={busy} onChoose={choose} onFile={start} />
+        )}
       </>
     );
   }
@@ -200,7 +206,14 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
         meta={background.type === 'video' ? 'Video · loops, muted' : 'Image'}
         action={
           <div className="flex gap-1">
-            <Button variant="ghost" size="s" label="Replace" disabled={busy} onClick={choose} />
+            <Button
+              variant="ghost"
+              size="s"
+              label="Replace"
+              disabled={demo || busy}
+              title={demo ? 'Uploads are off in demo mode' : undefined}
+              onClick={choose}
+            />
             <Button
               variant="ghost"
               size="s"
@@ -257,6 +270,18 @@ function Dropzone({
         JPEG, PNG, WebP or MP4, up to 200 MB. {canvas.width} × {canvas.height} fits the canvas
         exactly.
       </p>
+    </div>
+  );
+}
+
+/** Uploads are off in demo mode, and the visitor learns where they work (design: dropzone(), disabled). */
+function DemoDropzone() {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-default bg-disabled px-4 py-5 text-center">
+      <Icon name="upload" className="h-4 w-4 text-disabled" />
+      <p className="text-label-m text-disabled">Uploads are off in demo mode</p>
+      <Button size="s" label="Choose file" disabled />
+      <p className="text-body-s text-muted">Run Tapcue on your own server to upload backgrounds.</p>
     </div>
   );
 }

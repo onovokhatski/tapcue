@@ -38,9 +38,9 @@ beforeEach(() => {
   uploads.length = 0;
 });
 
-async function renderPanel(project: Project = demoProject()) {
+async function renderPanel(project: Project = demoProject(), demo = false) {
   const store = createEditorStore({
-    load: () => Promise.resolve({ revision: 1, project }),
+    load: () => Promise.resolve({ revision: 1, project, demo }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
@@ -222,5 +222,26 @@ describe('PagePanel', () => {
       unmount();
       expect(uploads[0]!.cancel).toHaveBeenCalled();
     });
+  });
+});
+
+describe('PagePanel in demo mode (spec DEMO-3)', () => {
+  it('turns uploads off and says where they work', async () => {
+    const project = demoProject();
+    project.pages[0]!.background = null;
+    const { background } = await renderPanel(project, true);
+    expect(within(background()).getByText('Uploads are off in demo mode')).toBeInTheDocument();
+    expect(within(background()).getByRole('button', { name: 'Choose file' })).toBeDisabled();
+    expect(
+      within(background()).getByText('Run Tapcue on your own server to upload backgrounds.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('dropzone')).not.toBeInTheDocument();
+  });
+
+  it('cannot replace a background, but can remove it from this tab', async () => {
+    const { background, state } = await renderPanel(demoProject(), true);
+    expect(within(background()).getByRole('button', { name: 'Replace' })).toBeDisabled();
+    fireEvent.click(within(background()).getByRole('button', { name: 'Remove' }));
+    expect(state().project!.pages[0]!.background).toBeNull();
   });
 });

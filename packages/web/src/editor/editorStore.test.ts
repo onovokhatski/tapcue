@@ -391,6 +391,43 @@ describe('editor store', () => {
     });
   });
 
+  describe('demo mode (spec DEMO-3)', () => {
+    async function loadedInDemo() {
+      const server = fakeServer();
+      const store = createEditorStore(server.api);
+      store.getState().start();
+      server.loads[0]!.resolve({ revision: 1, project: demoProject(), demo: true });
+      await settle();
+      return { server, state: () => store.getState() };
+    }
+
+    it('learns the mode from the server', async () => {
+      const { state } = await loadedInDemo();
+      expect(state().demo).toBe(true);
+      const { state: normal } = await loaded();
+      expect(normal().demo).toBe(false);
+    });
+
+    it('keeps changes in this tab and never saves them', async () => {
+      const { server, state } = await loadedInDemo();
+      state().change(rename('Visitor stand'));
+      await wait(SAVE_DELAY_MS * 4);
+      expect(server.saves).toHaveLength(0);
+      expect(state().project?.name).toBe('Visitor stand');
+      expect(state().save).toEqual({ state: 'saved' });
+    });
+
+    it('keeps the visitor’s changes when the connection comes back', async () => {
+      const { server, state } = await loadedInDemo();
+      state().change(rename('Visitor stand'));
+      state().connected();
+      server.loads[1]!.resolve({ revision: 1, project: demoProject(), demo: true });
+      await settle();
+      expect(state().project?.name).toBe('Visitor stand');
+      expect(server.saves).toHaveLength(0);
+    });
+  });
+
   describe('import (spec PRJ-4)', () => {
     const file = new Blob(['zip']);
 

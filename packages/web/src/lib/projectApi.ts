@@ -6,6 +6,8 @@ import { type Imported, importArchive } from './projectArchive';
 export interface Loaded {
   revision: number;
   project: Project;
+  /** The public online demo: the server saves nothing (spec DEMO-3). */
+  demo?: boolean;
 }
 
 /** A refusal says why; `errors` lists the fields when the project itself was invalid. */
