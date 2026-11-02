@@ -8,6 +8,7 @@ describe('parseConfig', () => {
     expect(parseConfig([], {}, cwd)).toEqual({
       port: DEFAULT_PORT,
       projectDir: DEFAULT_PROJECT_DIR,
+      demo: false,
     });
   });
 
@@ -19,12 +20,17 @@ describe('parseConfig', () => {
     expect(parseConfig(['--port', '8080', '--project', 'my-stand'], {}, cwd)).toEqual({
       port: 8080,
       projectDir: '/home/stand/my-stand',
+      demo: false,
     });
   });
 
   it('reads environment variables', () => {
     const env = { TAPCUE_PORT: '5000', TAPCUE_PROJECT: '/srv/stand' };
-    expect(parseConfig([], env, cwd)).toEqual({ port: 5000, projectDir: '/srv/stand' });
+    expect(parseConfig([], env, cwd)).toEqual({
+      port: 5000,
+      projectDir: '/srv/stand',
+      demo: false,
+    });
   });
 
   it('prefers command-line arguments over environment variables', () => {
@@ -39,6 +45,14 @@ describe('parseConfig', () => {
       );
     },
   );
+
+  it('turns demo mode on with --demo or TAPCUE_DEMO=1 / true (spec DEMO-3)', () => {
+    expect(parseConfig(['--demo'], {}, cwd).demo).toBe(true);
+    expect(parseConfig([], { TAPCUE_DEMO: '1' }, cwd).demo).toBe(true);
+    expect(parseConfig([], { TAPCUE_DEMO: 'true' }, cwd).demo).toBe(true);
+    expect(parseConfig([], { TAPCUE_DEMO: '0' }, cwd).demo).toBe(false);
+    expect(parseConfig([], { TAPCUE_DEMO: '' }, cwd).demo).toBe(false);
+  });
 
   it('rejects an unknown option as a config error', () => {
     expect(() => parseConfig(['--prot', '8080'], {}, cwd)).toThrow(ConfigError);

@@ -77,6 +77,7 @@ server/src/
   webApp.ts          the web app's production build on the same port; index.html for its pages
   demo/
     receiver.ts      endpoint that records incoming HTTP commands
+    demoDrivers.ts   demo mode: every command shown on the demo page, nothing sent
 ```
 
 Each module has one job, described in one line above. Modules receive their dependencies
@@ -270,11 +271,16 @@ Demo mode ([spec DEMO-3](spec.md#510-demo-receiver)) needs almost no special cod
 the editor already changes its own copy of the project first and saves it second
 (§4.2). In demo mode:
 
-- the server answers `PUT /api/project`, `POST /api/assets` and the import endpoint with
-  `403`, and the editor stops trying to save after learning the mode from `GET /api/project`;
-- the dispatcher replaces every target with the demo receiver before choosing a driver.
+- the server starts with `--demo` (or `TAPCUE_DEMO=1`);
+- it answers `PUT /api/project`, `POST /api/assets` and the import endpoint with `403` before
+  reading the body, and the editor stops trying to save after learning the mode from
+  `GET /api/project` (`demo: true`);
+- the dispatcher gets demo drivers instead of the real ones (`demo/demoDrivers.ts`): nothing
+  leaves the server, and each command appears on the demo page. An HTTP command written for the
+  demo receiver keeps its `/demo/<screen>/<content>`; any other command shows on a screen named
+  after its target, e.g. `resolume` showing `/composition/columns/2/connect 1`.
 
-These are three checks in the server and one flag in the editor — no separate demo build.
+These are a few checks in the server and one flag in the editor — no separate demo build.
 
 ## 7. Reliability
 

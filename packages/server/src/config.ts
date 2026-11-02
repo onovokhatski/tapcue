@@ -6,6 +6,8 @@ export interface Config {
   port: number;
   /** Absolute path of the project folder (project.json + assets/). */
   projectDir: string;
+  /** The public online demo: nothing is saved, commands go to the demo receiver (spec DEMO-3). */
+  demo: boolean;
 }
 
 export const DEFAULT_PORT = 4000;
@@ -16,7 +18,7 @@ export const WEB_DIR = resolve(import.meta.dirname, '../../web/dist');
 export class ConfigError extends Error {}
 
 /**
- * `tapcue --port 4000 --project ./my-stand`, or TAPCUE_PORT / TAPCUE_PROJECT.
+ * `tapcue --port 4000 --project ./my-stand --demo`, or TAPCUE_PORT / TAPCUE_PROJECT / TAPCUE_DEMO=1.
  * Relative project paths are resolved against `cwd`, where the command was run.
  */
 export function parseConfig(
@@ -24,11 +26,15 @@ export function parseConfig(
   env: Record<string, string | undefined>,
   cwd: string,
 ): Config {
-  let values: { port?: string | undefined; project?: string | undefined };
+  let values: {
+    port?: string | undefined;
+    project?: string | undefined;
+    demo?: boolean | undefined;
+  };
   try {
     ({ values } = parseArgs({
       args: argv,
-      options: { port: { type: 'string' }, project: { type: 'string' } },
+      options: { port: { type: 'string' }, project: { type: 'string' }, demo: { type: 'boolean' } },
       strict: true,
     }));
   } catch (error) {
@@ -45,5 +51,7 @@ export function parseConfig(
   const projectPath = values.project ?? env['TAPCUE_PROJECT'];
   const projectDir = projectPath === undefined ? DEFAULT_PROJECT_DIR : resolve(cwd, projectPath);
 
-  return { port, projectDir };
+  const demo = values.demo ?? ['1', 'true'].includes(env['TAPCUE_DEMO'] ?? '');
+
+  return { port, projectDir, demo };
 }
