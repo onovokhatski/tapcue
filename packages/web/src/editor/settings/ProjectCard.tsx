@@ -19,6 +19,7 @@ type ImportState =
 export function ProjectCard() {
   const projectName = useEditor((state) => state.project?.name);
   const importArchive = useEditor((state) => state.importArchive);
+  const demo = useEditor((state) => state.demo);
   const [current, setCurrent] = useState<ImportState>({ state: 'idle' });
   const picker = useRef<HTMLInputElement>(null);
 
@@ -75,10 +76,11 @@ export function ProjectCard() {
         </div>
         <div className="space-y-3 border-t border-default pt-5">
           <div>
-            <h3 className="text-label-m">Import .zip</h3>
+            <h3 className={`text-label-m ${demo ? 'text-disabled' : ''}`}>Import .zip</h3>
             <p className="text-body-m text-secondary">
               Replaces the whole project with the one in the file. You will be asked to confirm.
             </p>
+            {demo && <p className="mt-1 text-body-s text-muted">Not available in demo mode.</p>}
           </div>
           <input
             ref={picker}
@@ -95,7 +97,7 @@ export function ProjectCard() {
           <Button
             icon="upload"
             label={current.state === 'importing' ? 'Importing…' : 'Import .zip'}
-            disabled={current.state === 'importing'}
+            disabled={demo || current.state === 'importing'}
             onClick={() => picker.current?.click()}
           />
           {current.state === 'imported' && (

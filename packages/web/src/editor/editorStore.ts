@@ -39,6 +39,8 @@ export interface EditorState {
   log: LogEntry[];
   /** The editor's own connection to the server (spec ED-7). */
   connection: SocketStatus;
+  /** Demo mode: changes stay in this tab and are never saved (spec DEMO-3). */
+  demo: boolean;
 }
 
 export interface EditorActions {
@@ -87,7 +89,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
     /** Loads the project; with `onlyIfNew`, keeps the current one when the revision is the same. */
     async function load(onlyIfNew: boolean) {
       try {
-        const { revision, project } = await api.load();
+        const { revision, project, demo = false } = await api.load();
         // A change made while loading wins: the editor never drops the integrator's work.
         if (pending || inFlight || (onlyIfNew && revision === get().revision)) return;
         set({
@@ -95,6 +97,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
           project,
           revision,
           selection: keepSelection(get().selection, project),
+          demo,
         });
       } catch {
         if (get().load !== 'ready') set({ load: 'failed' });
@@ -136,6 +139,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       safeArea: readSafeArea(),
       log: [],
       connection: 'connecting',
+      demo: false,
 
       start() {
         set({ load: 'loading' });
@@ -148,11 +152,10 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         const next = operation(project);
         if (next === project) return; // nothing changed: nothing to save
         // The selection follows: a deleted page or hotspot is no longer selected.
-        set({
-          project: next,
-          selection: keepSelection(get().selection, next),
-          save: { state: 'saving' },
-        });
+        const selection = keepSelection(get().selection, next);
+        // In demo mode the change stays in this tab; the server would refuse it anyway.
+        if (get().demo) return void set({ project: next, selection });
+        set({ project: next, selection, save: { state: 'saving' } });
         pending = true;
         clearTimeout(timer);
         timer = setTimeout(() => void flush(), SAVE_DELAY_MS);

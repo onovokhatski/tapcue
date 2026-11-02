@@ -117,6 +117,21 @@ describe('editor shell', () => {
       expect(bar.getAllByRole('status')[1]).toHaveTextContent('Saved');
     });
 
+    it('shows "Demo mode · not saved" instead of the save status in demo mode (DEMO-3)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            new Response(`{ "revision": 1, "project": ${demoProjectJson}, "demo": true }`),
+          ),
+        ),
+      );
+      renderAt('/edit/pages');
+      const bar = within(screen.getByRole('banner'));
+      expect(await bar.findByText('Demo mode · not saved')).toBeInTheDocument();
+      expect(bar.queryByText('Saved')).not.toBeInTheDocument();
+    });
+
     it('says Loading… until the project arrives, and when it cannot', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
       renderAt('/edit/pages');

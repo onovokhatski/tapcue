@@ -23,7 +23,9 @@
   --color-primary: var(--color-text-primary);
   --color-secondary: var(--color-text-secondary);
   --color-muted: var(--color-text-muted);
-  --color-text-disabled: var(--color-text-disabled);
+  /* text-disabled must not use --color-disabled, the background above: Tailwind looks colours for
+     text-* up in --text-color-* first. */
+  --text-color-disabled: var(--color-text-disabled);
   --color-text-inverse: var(--color-text-inverse);
   --color-on-accent: var(--color-text-on-accent);
   --color-on-danger: var(--color-text-on-danger);

@@ -5,9 +5,9 @@ import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { aspectNote, SettingsTab } from './SettingsTab';
 
-async function renderTab() {
+async function renderTab(demo = false) {
   const store = createEditorStore({
-    load: () => Promise.resolve({ revision: 1, project: demoProject() }),
+    load: () => Promise.resolve({ revision: 1, project: demoProject(), demo }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
@@ -105,6 +105,21 @@ describe('SettingsTab (spec CNV-1, CNV-2, ED-10)', () => {
       '80 px cropped top and bottom',
     );
     expect(screen.getByText('The 2560 × 1600 page is 8:5.')).toBeInTheDocument();
+  });
+});
+
+describe('SettingsTab in demo mode (spec DEMO-3, frame G4)', () => {
+  it('explains that changes stay in this tab', async () => {
+    await renderTab(true);
+    const banner = screen.getByText('Demo mode').closest('[role="status"]');
+    expect(banner).toHaveTextContent(
+      'Demo modeChanges stay in this browser tab and are lost when you close it. Saving, uploads and import are turned off; Export still works.',
+    );
+  });
+
+  it('shows no demo notice otherwise', async () => {
+    await renderTab();
+    expect(screen.queryByText('Demo mode')).not.toBeInTheDocument();
   });
 });
 

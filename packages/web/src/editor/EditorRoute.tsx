@@ -87,6 +87,7 @@ function PropertiesPanel() {
 function TopBar({ connection }: { connection: SocketStatus }) {
   const name = useEditor((state) => state.project?.name);
   const save = useEditor((state) => state.save);
+  const demo = useEditor((state) => state.demo);
   return (
     <header className="flex h-12 flex-none items-stretch gap-5 border-b border-default bg-surface pr-3 pl-4">
       <div className="flex items-center gap-2">
@@ -121,7 +122,8 @@ function TopBar({ connection }: { connection: SocketStatus }) {
       </nav>
       <div className="ml-auto flex items-center gap-2">
         <StatusBadge {...CONNECTION_BADGE[connection]} />
-        <StatusBadge status={SAVE_BADGE[save.state]} />
+        {/* In demo mode nothing is saved, so the save status gives way to that (frame G4). */}
+        <StatusBadge status={demo ? 'demo' : SAVE_BADGE[save.state]} />
       </div>
     </header>
   );

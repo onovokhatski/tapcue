@@ -1,5 +1,5 @@
 import type { Project } from '@tapcue/shared';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Imported } from '../../lib/projectArchive';
 import { demoProject } from '../../test/demoProject';
@@ -9,8 +9,12 @@ import { EditorStoreContext } from '../useEditor';
 import { holds, ProjectCard } from './ProjectCard';
 
 /** The editor shows "Demo stand"; after an import the server has "Imported stand". */
-async function renderCard(answer: Imported = { ok: true, revision: 2 }) {
-  let onServer: { revision: number; project: Project } = { revision: 1, project: demoProject() };
+async function renderCard(answer: Imported = { ok: true, revision: 2 }, demo = false) {
+  let onServer: { revision: number; project: Project; demo?: boolean } = {
+    revision: 1,
+    project: demoProject(),
+    demo,
+  };
   const importArchive = vi.fn(() => {
     if (answer.ok) {
       onServer = {
@@ -36,11 +40,16 @@ async function renderCard(answer: Imported = { ok: true, revision: 2 }) {
   return { importArchive, project: () => store.getState().project! };
 }
 
-/** Chooses a file in the hidden picker and waits until it is read. */
+/**
+ * Chooses a file in the hidden picker and waits until it is read: the dialog or the error banner.
+ * Reading loads zip.js first, which can take a while on a busy machine.
+ */
 async function choose(file: File) {
   fireEvent.change(screen.getByTestId('import-file'), { target: { files: [file] } });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 20));
+  await waitFor(() => {
+    if (!screen.queryByRole('dialog') && !screen.queryByRole('alert')) {
+      throw new Error('The archive has not been read yet');
+    }
   });
 }
 
@@ -115,6 +124,18 @@ describe('ProjectCard (spec PRJ-3, PRJ-4)', () => {
       'stand-backup.zip is not a Tapcue project: it has no project.json at its root. Choose a file made with Export .zip. The current project is unchanged.',
     );
     expect(importArchive).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectCard in demo mode (spec DEMO-3)', () => {
+  it('turns import off with the reason, and keeps export', async () => {
+    await renderCard({ ok: true, revision: 2 }, true);
+    expect(screen.getByRole('button', { name: 'Import .zip' })).toBeDisabled();
+    expect(screen.getByText('Not available in demo mode.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Export .zip' })).toHaveAttribute(
+      'href',
+      '/api/project/export',
+    );
   });
 });
 
