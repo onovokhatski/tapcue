@@ -58,7 +58,7 @@ server/src/
   project/
     store.ts         load, validate and atomically save project.json; keep revision
     assets.ts        save uploaded files into assets/, enforce the 200 MB limit
-    archive.ts       zip export / import
+    archive.ts       zip export / import (yazl writes, yauzl reads)
   http/
     routes.ts        REST endpoints (see §5.1)
   realtime/
@@ -190,8 +190,8 @@ contract at runtime and get the same TypeScript types at compile time.
 | `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors |
 | `POST /api/assets` | Upload one file (multipart): JPEG, PNG, WebP or MP4, up to 200 MB; answers `201 { asset, type }`, `413` over the limit, `415` for another format |
 | `GET /assets/*` | Serve project files to editor and players |
-| `GET /api/project/export` | Download the project as `.zip` |
-| `POST /api/project/import` | Upload a `.zip` to replace the project |
+| `GET /api/project/export` | Download the project as `.zip`, named after it: `project.json` and every file in `assets/` |
+| `POST /api/project/import` | Upload a `.zip` (body `application/zip`, up to 2 GB) to replace the project; checked like a load, then swapped in and announced as a new revision. Answers `{ revision }`, `400` with the errors (only `project.json` and `assets/<file>` allowed), `413` over the limit, `415` for another body |
 | `GET /api/network` | Local IPv4 addresses for station URLs and QR codes, private ranges first; no port, the editor adds the one it is served on |
 | `POST /api/test-send` | Send a hotspot's command from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)); answers the log entry (sent or error), `404` for an unknown hotspot, `409` for one without a command |
 | `* /demo/<screen>/<content>` | Demo receiver endpoint (any method; the page itself is `/demo` in the web app) |

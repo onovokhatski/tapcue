@@ -9,6 +9,7 @@ import { createUdpDriver } from './commands/drivers/udp';
 import { createCommandLog } from './commands/log';
 import { registerTestSend } from './commands/testSend';
 import { registerDemoReceiver } from './demo/receiver';
+import { type ArchiveOptions, registerArchive } from './project/archive';
 import type { ProjectStore } from './project/store';
 import { registerUpload, type UploadOptions } from './project/upload';
 import { type LocalAddress, registerNetwork } from './network';
@@ -24,6 +25,8 @@ export interface AppOptions {
   addresses?: () => LocalAddress[];
   /** Upload settings for tests: a small size limit, a fixed file name suffix. */
   upload?: Omit<UploadOptions, 'dir'>;
+  /** Import settings for tests: a small size limit. */
+  archive?: Pick<ArchiveOptions, 'maxBytes'>;
 }
 
 export function buildApp({
@@ -32,6 +35,7 @@ export function buildApp({
   drivers = realDrivers(),
   upload = {},
   addresses,
+  archive = {},
 }: AppOptions): FastifyInstance {
   const app = Fastify({ logger });
 
@@ -59,6 +63,13 @@ export function buildApp({
     if (!result.ok) return reply.code(400).send({ errors: result.errors });
     hub.toAll({ type: 'project-updated', revision: result.revision });
     return { revision: result.revision };
+  });
+
+  // The whole project as one .zip, and an import that replaces it (spec PRJ-3, PRJ-4).
+  registerArchive(app, {
+    store,
+    ...archive,
+    onImported: (revision) => hub.toAll({ type: 'project-updated', revision }),
   });
 
   // The demo project's HTTP commands land here and show up on the demo page (spec DEMO-1).
