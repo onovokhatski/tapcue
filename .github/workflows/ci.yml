@@ -33,3 +33,41 @@ jobs:
       # its system libraries on every run; it is not cached.
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+
+  # `npm start` on the platforms a stand computer runs (spec NFR-6): it builds the web app, starts
+  # the server, prints the editor URL, and serves the editor on the same port.
+  start:
+    name: start (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: npm start serves the editor
+        run: |
+          npm start -- --port 4500 > start.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:4500/api/health > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:4500/edit/pages | grep -q '<div id="root">'
+          # The URLs are printed just after the server starts listening.
+          for i in $(seq 1 10); do
+            grep -q 'Editor:  http://' start.log && break
+            sleep 1
+          done
+          grep -q 'Editor:  http://' start.log
+      - name: Show the start output
+        if: always()
+        run: cat start.log

@@ -13,6 +13,7 @@
   },
   "scripts": {
     "dev": "concurrently --names server,web --prefix-colors blue,magenta --kill-others \"npm run dev -w @tapcue/server\" \"npm run dev -w @tapcue/web\"",
+    "start": "npm run build && npm run start -w @tapcue/server --",
     "build": "npm run build -w @tapcue/web",
     "typecheck": "npm run typecheck --workspaces && tsc -p e2e",
     "lint": "eslint .",
