@@ -14,6 +14,7 @@ import { CommandLog } from './log/CommandLog';
 import { PageList } from './pages/PageList';
 import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
+import { SettingsTab } from './settings/SettingsTab';
 import { StationsTab } from './stations/StationsTab';
 import { TargetsTab } from './targets/TargetsTab';
 import { TooSmall } from './TooSmall';
@@ -50,7 +51,7 @@ export function EditorRoute() {
         <TopBar connection={connection} />
         <Banners connection={connection} />
         <main className="flex min-h-0 flex-1">
-          <Body title={tab.label} isPages={tab.path === 'pages'} compact={layout === 'compact'} />
+          <Body title={tab.label} compact={layout === 'compact'} />
         </main>
         {/* On every tab (spec ED-9). */}
         <CommandLog />
@@ -59,7 +60,7 @@ export function EditorRoute() {
   );
 }
 
-function Body({ title, isPages, compact }: { title: string; isPages: boolean; compact: boolean }) {
+function Body({ title, compact }: { title: string; compact: boolean }) {
   const load = useEditor((state) => state.load);
   if (load === 'loading') return <Placeholder title="Loading…" text="" />;
   if (load === 'failed') {
@@ -67,7 +68,7 @@ function Body({ title, isPages, compact }: { title: string; isPages: boolean; co
   }
   if (title === 'Targets') return <TargetsTab />;
   if (title === 'Stations') return <StationsTab />;
-  if (!isPages) return <Placeholder title={title} text="Coming in M4." />;
+  if (title === 'Settings') return <SettingsTab />;
   return (
     <>
       <PageList compact={compact} />
