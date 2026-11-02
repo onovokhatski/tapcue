@@ -13,9 +13,10 @@ try {
   const cwd = process.env['INIT_CWD'] ?? process.cwd();
   const config = parseConfig(process.argv.slice(2), process.env, cwd);
   const store = await loadProjectStore(config.projectDir);
-  const app = buildApp({ store, logger: true, webDir: WEB_DIR });
+  const app = buildApp({ store, logger: true, webDir: WEB_DIR, demo: config.demo });
   await app.listen({ port: config.port, host: '0.0.0.0' });
   app.log.info(`Project "${store.project.name}" from ${store.dir}`);
+  if (config.demo) app.log.info('Demo mode: nothing is saved, commands go to the demo receiver');
   // Only with the build: in development the editor is on the web app's port, not this one.
   if (hasWebBuild(WEB_DIR)) {
     const lines = startBanner({

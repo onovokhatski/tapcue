@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -31,7 +31,7 @@ describe('buildApp', () => {
   it('serves the project with its revision', async () => {
     const response = await get('/api/project');
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ revision: 1, project: store.project });
+    expect(response.json()).toEqual({ revision: 1, project: store.project, demo: false });
   });
 
   describe('saving the project (PUT /api/project)', () => {
@@ -61,6 +61,7 @@ describe('buildApp', () => {
       expect((await app.inject({ method: 'GET', url: '/api/project' })).json()).toEqual({
         revision: 2,
         project: changed,
+        demo: false,
       });
       const onDisk = JSON.parse(await readFile(join(dir, 'project.json'), 'utf8')) as unknown;
       expect(onDisk).toEqual(changed);
@@ -218,5 +219,113 @@ describe('buildApp', () => {
     } finally {
       await app.close();
     }
+  });
+
+  describe('demo mode (spec DEMO-3)', () => {
+    const dirs: string[] = [];
+    afterEach(async () => {
+      await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+    });
+
+    async function demoApp() {
+      const dir = await mkdtemp(join(tmpdir(), 'tapcue-demo-'));
+      dirs.push(dir);
+      await cp(DEFAULT_PROJECT_DIR, dir, { recursive: true });
+      const copy = await loadProjectStore(dir);
+      // Real-looking drivers that must never be called: demo mode replaces them.
+      const sent: string[] = [];
+      const fake = (name: string) => ({
+        send: () => {
+          sent.push(name);
+          return Promise.resolve();
+        },
+        close: () => Promise.resolve(),
+      });
+      const drivers: Drivers = { 'osc-udp': fake('osc-udp'), udp: fake('udp'), http: fake('http') };
+      const app = buildApp({ store: copy, drivers, demo: true });
+      return { app, copy, dir, sent };
+    }
+
+    it('tells the editor it is in demo mode', async () => {
+      const { app } = await demoApp();
+      expect((await app.inject({ method: 'GET', url: '/api/project' })).json()).toMatchObject({
+        demo: true,
+      });
+    });
+
+    it.each([
+      ['PUT', '/api/project'],
+      ['POST', '/api/assets'],
+      ['POST', '/api/project/import'],
+    ] as const)('refuses %s %s with 403 and writes nothing', async (method, url) => {
+      const { app, copy, dir } = await demoApp();
+      const before = await readdir(join(dir, 'assets'));
+      const onDisk = await readFile(join(dir, 'project.json'), 'utf8');
+      const response = await app.inject({
+        method,
+        url,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ ...copy.project, name: 'Changed' }),
+      });
+      expect(response.statusCode).toBe(403);
+      expect(response.json()).toEqual({
+        error: 'Not available in demo mode: changes stay in your browser tab',
+      });
+      expect(copy.revision).toBe(1);
+      expect(await readFile(join(dir, 'project.json'), 'utf8')).toBe(onDisk);
+      expect(await readdir(join(dir, 'assets'))).toEqual(before);
+    });
+
+    it('still exports the project', async () => {
+      const { app } = await demoApp();
+      expect((await app.inject({ method: 'GET', url: '/api/project/export' })).statusCode).toBe(
+        200,
+      );
+    });
+
+    it('delivers taps and test sends to the demo page, whatever the target', async () => {
+      const { app, sent } = await demoApp();
+      await app.listen({ port: 0, host: '127.0.0.1' });
+      try {
+        const port = (app.server.address() as AddressInfo).port;
+        const received: unknown[] = [];
+        const player = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+        await new Promise((resolve) => player.addEventListener('open', resolve));
+        player.send(JSON.stringify({ type: 'hello', stationId: 'main' }));
+        const viewer = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+        viewer.addEventListener('message', (event) =>
+          received.push(JSON.parse(String(event.data))),
+        );
+        await new Promise((resolve) => viewer.addEventListener('open', resolve));
+
+        // Product A card sends OSC to Resolume at 192.168.1.20.
+        player.send(JSON.stringify({ type: 'tap', pageId: 'p_home00', hotspotId: 'h_carda0' }));
+        // Show on the wall sends UDP to the projector, as a test from the editor.
+        const test = await fetch(`http://127.0.0.1:${port}/api/test-send`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ pageId: 'p_prodb0', hotspotId: 'h_bwall0' }),
+        });
+        expect(test.status).toBe(200);
+
+        const demoRequest = (request: object) => ({
+          type: 'demo-received',
+          request: expect.objectContaining(request) as unknown,
+        });
+        await vi.waitFor(() => {
+          expect(received).toContainEqual(
+            demoRequest({ screen: 'resolume', method: 'OSC', station: 'main' }),
+          );
+          expect(received).toContainEqual(
+            demoRequest({ screen: 'projector', method: 'UDP', station: 'test' }),
+          );
+        });
+        expect(sent).toEqual([]);
+        player.close();
+        viewer.close();
+      } finally {
+        await app.close();
+      }
+    });
   });
 });
