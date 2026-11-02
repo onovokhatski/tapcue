@@ -12,6 +12,7 @@ readable, and every module justified. Docs: `docs/spec.md` (requirements with ID
 ## Commands
 
 ```bash
+npm start            # build web + server serving everything on 4000 (as on a stand)
 npm run dev          # server (4000) + web (http://localhost:5173)
 npm run typecheck    # all packages
 npm run lint         # ESLint, type-aware

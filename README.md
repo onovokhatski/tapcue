@@ -97,6 +97,7 @@ npm install
 
 | Command | What it does |
 |---|---|
+| `npm start` | Runs Tapcue as on a stand: builds the web app, serves everything on port 4000 and prints the editor and station URLs (`--port`, `--project <folder>`) |
 | `npm run dev` | Starts the server (port 4000) and the web app (http://localhost:5173) with live reload |
 | `npm run build` | Builds the web app for production |
 | `npm run typecheck` | Type-checks every package (TypeScript, strict mode) |

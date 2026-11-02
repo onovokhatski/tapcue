@@ -20,7 +20,7 @@ const FOREVER = 'public, max-age=31536000, immutable';
  */
 export function registerWebApp(app: FastifyInstance, webDir: string): boolean {
   const indexFile = join(webDir, 'index.html');
-  const built = existsSync(indexFile);
+  const built = hasWebBuild(webDir);
 
   if (built) {
     void app.register(fastifyStatic, {
@@ -67,4 +67,9 @@ export function registerWebApp(app: FastifyInstance, webDir: string): boolean {
   });
 
   return built;
+}
+
+/** Whether `npm run build` has made the web app in `webDir`. */
+export function hasWebBuild(webDir: string): boolean {
+  return existsSync(join(webDir, 'index.html'));
 }
