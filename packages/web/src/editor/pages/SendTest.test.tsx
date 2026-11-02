@@ -14,6 +14,7 @@ async function renderButton(answer: () => Promise<TestSent>, connected = true) {
     load: () => Promise.resolve({ revision: 1, project: demoProject() }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend,
+    importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
   });
   store.getState().start();
   store.getState().setConnection(connected ? 'open' : 'closed');

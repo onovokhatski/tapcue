@@ -149,6 +149,7 @@ describe('editor shell', () => {
         load: () => Promise.resolve({ revision: 1, project: demoProject() }),
         save,
         testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+        importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
       });
       store.getState().start();
       render(

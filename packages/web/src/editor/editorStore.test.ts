@@ -32,6 +32,7 @@ function fakeServer() {
       return answer.promise;
     },
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+    importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
   };
   return { api, loads, saves };
 }
@@ -386,6 +387,48 @@ describe('editor store', () => {
       await expect(state().testSend('p_home00', 'h_carda0')).resolves.toEqual({
         ok: false,
         reason: 'Cannot reach the server.',
+      });
+    });
+  });
+
+  describe('import (spec PRJ-4)', () => {
+    const file = new Blob(['zip']);
+
+    it('saves a waiting change first, then imports, then loads the imported project', async () => {
+      const { state, server, api } = await loaded();
+      const importArchive = vi
+        .spyOn(api, 'importArchive')
+        .mockResolvedValue({ ok: true, revision: 3 });
+      state().change(rename('One'));
+      const answer = state().importArchive(file);
+      await settle();
+      expect(importArchive).not.toHaveBeenCalled(); // not before the save is done
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await wait(40);
+      expect(importArchive).toHaveBeenCalledWith(file);
+      server.loads[1]!.resolve({ revision: 3, project: { ...demoProject(), name: 'Imported' } });
+      await expect(answer).resolves.toEqual({ ok: true, revision: 3 });
+      expect(state().project?.name).toBe('Imported');
+      expect(state().revision).toBe(3);
+    });
+
+    it('keeps the project when the import is refused', async () => {
+      const { state, server, api } = await loaded();
+      vi.spyOn(api, 'importArchive').mockResolvedValue({ ok: false, reason: 'was refused: x.' });
+      await expect(state().importArchive(file)).resolves.toEqual({
+        ok: false,
+        reason: 'was refused: x.',
+      });
+      expect(server.loads).toHaveLength(1);
+      expect(state().project?.name).toBe('Demo stand');
+    });
+
+    it('says so when the server cannot be reached', async () => {
+      const { state, api } = await loaded();
+      vi.spyOn(api, 'importArchive').mockRejectedValue(new TypeError('Failed to fetch'));
+      await expect(state().importArchive(file)).resolves.toEqual({
+        ok: false,
+        reason: 'could not be sent: cannot reach the server.',
       });
     });
   });

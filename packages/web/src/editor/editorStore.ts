@@ -4,6 +4,7 @@
 import type { HotspotId, LogEntry, PageId, Project, ValidationError } from '@tapcue/shared';
 import { createStore } from 'zustand/vanilla';
 import { type ProjectApi, projectApi, type TestSent } from '../lib/projectApi';
+import type { Imported } from '../lib/projectArchive';
 import type { SocketStatus } from '../lib/serverSocket';
 import { readSafeArea, type SafeAreaPreference, writeSafeArea } from './canvas/safeAreaPreference';
 import { addEntry } from './log/logEntries';
@@ -65,6 +66,11 @@ export interface EditorActions {
   testSend: (pageId: PageId, hotspotId: HotspotId) => Promise<TestSent>;
   /** The server says the project was saved, by this editor or another one. */
   projectUpdated: (revision: number) => void;
+  /**
+   * Replaces the project with a .zip (spec PRJ-4). A change still waiting is saved first, so no
+   * save after the import puts the old project back; then the imported project is loaded.
+   */
+  importArchive: (file: Blob) => Promise<Imported>;
 }
 
 export type EditorStore = EditorState & EditorActions;
@@ -215,6 +221,18 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         // replace: the last save wins (architecture §6).
         if (pending || inFlight || revision === get().revision) return;
         void load(true);
+      },
+
+      async importArchive(file) {
+        await get().saveNow();
+        let result: Imported;
+        try {
+          result = await api.importArchive(file);
+        } catch {
+          return { ok: false, reason: 'could not be sent: cannot reach the server.' };
+        }
+        if (result.ok) await load(true);
+        return result;
       },
     };
   });
