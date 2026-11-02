@@ -1,13 +1,13 @@
-// Entry point: read the config, load the project, build the app, and listen on every network
-// interface, so tablets on the stand's network can reach it, not only this computer.
+// Entry point: read the config, load the project, build the app (with the web app's build when there
+// is one), and listen on every network interface, so tablets on the stand's network can reach it.
 import { buildApp } from './app';
-import { ConfigError, parseConfig } from './config';
+import { ConfigError, parseConfig, WEB_DIR } from './config';
 import { loadProjectStore, ProjectLoadError } from './project/store';
 
 try {
   const config = parseConfig(process.argv.slice(2), process.env, process.cwd());
   const store = await loadProjectStore(config.projectDir);
-  const app = buildApp({ store, logger: true });
+  const app = buildApp({ store, logger: true, webDir: WEB_DIR });
   await app.listen({ port: config.port, host: '0.0.0.0' });
   app.log.info(`Project "${store.project.name}" from ${store.dir}`);
 } catch (error) {

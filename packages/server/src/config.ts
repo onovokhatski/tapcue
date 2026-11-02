@@ -10,6 +10,8 @@ export interface Config {
 
 export const DEFAULT_PORT = 4000;
 export const DEFAULT_PROJECT_DIR = resolve(import.meta.dirname, '../../../examples/demo-stand');
+/** The web app's production build, made by `npm run build`. */
+export const WEB_DIR = resolve(import.meta.dirname, '../../web/dist');
 
 export class ConfigError extends Error {}
 
