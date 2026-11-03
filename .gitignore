@@ -16,3 +16,6 @@ coverage/
 # Playwright output (npm run test:e2e)
 e2e/test-results/
 e2e/playwright-report/
+
+# Long-run reports (npm run soak)
+e2e/soak-results/
