@@ -432,6 +432,17 @@ describe('kiosk behaviour (spec PLY-7)', () => {
     expect(opened).toBe(false); // default prevented
   });
 
+  it('asks the browser to keep the screen on (spec PLY-4)', () => {
+    const request = vi.fn(() => new Promise(() => undefined));
+    Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request } });
+    try {
+      renderStation();
+      expect(request).toHaveBeenCalledWith('screen');
+    } finally {
+      Reflect.deleteProperty(navigator, 'wakeLock');
+    }
+  });
+
   it("blocks Safari's pinch zoom only while the player runs", () => {
     const pinch = () => document.dispatchEvent(new Event('gesturestart', { cancelable: true }));
     const { unmount } = render(<Connected project={project} station={main} />);

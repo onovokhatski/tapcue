@@ -1,6 +1,6 @@
 // One station on a tablet: taps sent to the server, navigation, the idle return, page changes
-// that fade without a blank frame, and kiosk behaviour
-// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
+// that fade without a blank frame, kiosk behaviour and a screen that stays on where it can
+// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-4, PLY-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
 import type { Canvas, Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
@@ -9,6 +9,7 @@ import { incoming, playerReducer, startPlayer } from './playerState';
 import { releaseDelay } from './releaseDelay';
 import { useIdleTimer } from './useIdleTimer';
 import type { StationSocket } from './useStationSocket';
+import { useWakeLock } from './useWakeLock';
 import './player.css';
 
 interface StationPlayerProps {
@@ -30,6 +31,7 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
   const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
   const later = useLater();
   useNoPinchZoom();
+  useWakeLock();
 
   function tap(pageId: PageId, hotspot: Hotspot) {
     // Every tap goes to the server at once: it decides what, if anything, to send (ADR 0005),
