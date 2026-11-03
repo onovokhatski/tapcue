@@ -2,6 +2,8 @@
 // the station or explains why it cannot. Both outlive the station, so a tablet showing
 // "Station not found" recovers by itself once the station is added in the editor.
 import { useParams } from 'react-router';
+import { ConnectionIndicator, INDICATOR_DELAY_MS } from './ConnectionIndicator';
+import './player.css';
 import { StationNotFound } from './StationNotFound';
 import { StationPlayer } from './StationPlayer';
 import { useLiveProject } from './useLiveProject';
@@ -18,9 +20,11 @@ export function PlayerRoute() {
     },
   });
 
-  if (live.state !== 'loaded') {
-    return <Message text={live.state === 'loading' ? 'Loading…' : 'Cannot reach the server'} />;
+  if (live.state === 'loading') {
+    return <Waiting label="Loading…" delayMs={LOADING_DELAY_MS} />;
   }
+  // The project is fetched again once the connection is back (useLiveProject, onOpen above).
+  if (live.state !== 'loaded') return <Waiting label="Reconnecting…" />;
 
   const { project } = live;
   const station = project.stations.find((s) => s.id === stationId);
@@ -32,10 +36,17 @@ export function PlayerRoute() {
   );
 }
 
-function Message({ text }: { text: string }) {
+/** A load this quick shows nothing but the dark screen (frame P0). */
+export const LOADING_DELAY_MS = 3000;
+
+/**
+ * Before the project arrives a tablet shows a dark screen, never a page of text: visitors may be
+ * watching. The canvas colour is not known yet, so a dark neutral stands in for it.
+ */
+function Waiting({ label, delayMs = INDICATOR_DELAY_MS }: { label: string; delayMs?: number }) {
   return (
-    <main className="grid h-dvh place-items-center bg-app p-6">
-      <p className="text-body-m text-secondary">{text}</p>
+    <main className="player relative h-dvh w-screen overflow-hidden bg-inverse">
+      <ConnectionIndicator status="closed" label={label} delayMs={delayMs} />
     </main>
   );
 }

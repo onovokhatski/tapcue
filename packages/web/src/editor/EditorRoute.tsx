@@ -18,6 +18,7 @@ import { SettingsTab } from './settings/SettingsTab';
 import { StationsTab } from './stations/StationsTab';
 import { TargetsTab } from './targets/TargetsTab';
 import { TooSmall } from './TooSmall';
+import { EditorSkeleton } from './EditorSkeleton';
 import { EditorStoreContext, useEditor } from './useEditor';
 import { editorLayout, useWindowSize } from './useWindowSize';
 
@@ -62,7 +63,7 @@ export function EditorRoute() {
 
 function Body({ title, compact }: { title: string; compact: boolean }) {
   const load = useEditor((state) => state.load);
-  if (load === 'loading') return <Placeholder title="Loading…" text="" />;
+  if (load === 'loading') return <EditorSkeleton tab={title} />;
   if (load === 'failed') {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
@@ -88,6 +89,8 @@ function TopBar({ connection }: { connection: SocketStatus }) {
   const name = useEditor((state) => state.project?.name);
   const save = useEditor((state) => state.save);
   const demo = useEditor((state) => state.demo);
+  // Before the project arrives there is nothing to save yet (frame E1).
+  const loaded = useEditor((state) => state.load === 'ready');
   return (
     <header className="flex h-12 flex-none items-stretch gap-5 border-b border-default bg-surface pr-3 pl-4">
       <div className="flex items-center gap-2">
@@ -123,7 +126,7 @@ function TopBar({ connection }: { connection: SocketStatus }) {
       <div className="ml-auto flex items-center gap-2">
         <StatusBadge {...CONNECTION_BADGE[connection]} />
         {/* In demo mode nothing is saved, so the save status gives way to that (frame G4). */}
-        <StatusBadge status={demo ? 'demo' : SAVE_BADGE[save.state]} />
+        {loaded && <StatusBadge status={demo ? 'demo' : SAVE_BADGE[save.state]} />}
       </div>
     </header>
   );

@@ -34,6 +34,25 @@ body {
   }
 }
 
+/* Placeholder of content still loading (design: skeleton()). */
+.skeleton {
+  background: var(--color-bg-pressed);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.6s var(--easing-standard) infinite;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* Text-like fields: focus is a 2 px ring on the field edge, error a red one (design-system.md). */
 .field:focus,
 .field:focus-within {
