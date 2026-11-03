@@ -1,6 +1,6 @@
 # Tapcue — Roadmap
 
-Status: **draft** · Last updated: 2026-10-25 · Requirements: [spec.md](spec.md)
+Status: **draft** · Last updated: 2026-11-02 · Requirements: [spec.md](spec.md)
 
 ## 1. Phases
 
@@ -115,11 +115,12 @@ canvas settings; zip export and import. (The command log view moved to M3: it is
 
 Screen wake lock, stand setup guide (Auto-Lock, Guided Access, dedicated access point),
 end-to-end tests, testing on real iPads incl. home-screen mode and Guided Access, error states polish,
-single-command start on macOS and Windows, README with screenshots and a short video,
+single-command start on macOS and Windows, a click-to-run app for both
+([ADR 0017](adr/0017-click-to-run-app.md)), README with screenshots and a short video,
 demo mode and a public online demo.
 
 - **Requirements:** PLY-4, DEMO-3, NFR-1, NFR-3, NFR-5, NFR-6
-- **Done when:** a person new to the project understands it from the README in five minutes and runs it with one command; the player runs for 10 hours on an iPad without intervention.
+- **Done when:** a person new to the project understands it from the README in five minutes and runs it with one command or one click; the player runs for 10 hours on an iPad without intervention.
 
 **Release v0.1.0** — tagged after M5.
 
