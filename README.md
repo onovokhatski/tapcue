@@ -68,6 +68,7 @@ The full list is in the [specification](docs/spec.md).
 |---|---|
 | [Specification](docs/spec.md) | What Tapcue does: requirements, screens, user flows |
 | [Architecture](docs/architecture.md) | How it is built: packages, modules, protocols, reliability |
+| [Stand setup](docs/stand-setup.md) | Network, the Tapcue computer and each tablet, before the stand opens |
 | [Project format](docs/project-format.md) | The `project.json` reference |
 | [Roadmap](docs/roadmap.md) | Phases, milestones and how work is done |
 | [Decisions](docs/adr/README.md) | Architecture decision records |
@@ -81,7 +82,8 @@ Vitest · Playwright · GitHub Actions
 
 Tapcue is designed for a **trusted local network**, such as a stand's own access point. In
 v0.1 the editor has no password: anyone on the network can change the project. Do not
-expose a Tapcue server to the internet except in demo mode.
+expose a Tapcue server to the internet except in demo mode. The
+[stand setup guide](docs/stand-setup.md) shows how to keep the network and the tablets locked down.
 
 ## Getting started
 
