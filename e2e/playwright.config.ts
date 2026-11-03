@@ -19,7 +19,12 @@ export default defineConfig({
     baseURL: WEB_URL,
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // The player's target is Safari on iPadOS (WebKit); the editor's also Chrome and Firefox (spec NFR-1).
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+  ],
   webServer: [
     {
       command: `npx tsx packages/server/src/main.ts --port ${SERVER_PORT} --project "${stand}"`,
