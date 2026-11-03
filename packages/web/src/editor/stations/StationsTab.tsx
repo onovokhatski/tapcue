@@ -22,6 +22,10 @@ import {
 import { useEditor } from '../useEditor';
 import { StationUrlCard } from './StationUrlCard';
 
+/** On GitHub, so it opens from any editor; the stand network itself may have no internet. */
+export const STAND_SETUP_URL =
+  'https://github.com/onovokhatski/tapcue/blob/main/docs/stand-setup.md';
+
 export function StationsTab() {
   const project = useEditor((state) => state.project);
   const change = useEditor((state) => state.change);
@@ -105,7 +109,16 @@ export function StationsTab() {
               <StationUrlCard stationId={selected.id} />
               <p className="w-[288px] text-body-s text-secondary">
                 Scan with the tablet camera to open the station. For a kiosk, add it to the Home
-                Screen and turn on Guided Access.
+                Screen and turn on Guided Access: see the{' '}
+                <a
+                  href={STAND_SETUP_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-link underline hover:text-link-hover"
+                >
+                  stand setup guide
+                </a>
+                .
               </p>
             </div>
           </div>

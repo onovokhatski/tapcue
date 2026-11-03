@@ -86,6 +86,14 @@ describe('StationsTab (spec ST-1, ST-6)', () => {
     expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute('href', expected);
   });
 
+  it('links to the stand setup guide (spec PLY-4)', async () => {
+    await renderTab();
+    expect(screen.getByRole('link', { name: 'stand setup guide' })).toHaveAttribute(
+      'href',
+      'https://github.com/onovokhatski/tapcue/blob/main/docs/stand-setup.md',
+    );
+  });
+
   it('offers a choice of network when the computer is on several', async () => {
     addresses = [
       { address: '192.168.1.40', interface: 'en0' },
