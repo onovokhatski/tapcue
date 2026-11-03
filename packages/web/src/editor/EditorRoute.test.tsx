@@ -132,13 +132,31 @@ describe('editor shell', () => {
       expect(bar.queryByText('Saved')).not.toBeInTheDocument();
     });
 
-    it('says Loading… until the project arrives, and when it cannot', async () => {
+    it('shows the layout with placeholders until the project arrives (frame E1)', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
       renderAt('/edit/pages');
-      expect(screen.getByRole('heading', { name: 'Loading…' })).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: 'Loading' })).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByText('Loading the project…')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add hotspot' })).toBeDisabled();
+      // Connecting…, and no save status: there is nothing to save yet.
+      const bar = within(screen.getByRole('banner'));
+      expect(bar.getAllByRole('status')).toHaveLength(1);
+      expect(connectionBadge()).toHaveTextContent('Connecting…');
       expect(
         await screen.findByRole('heading', { name: 'Cannot reach the server' }),
       ).toBeInTheDocument();
+    });
+
+    it('shows a single-column placeholder on Settings and a list on the other tabs', () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => new Promise(() => undefined)),
+      );
+      renderAt('/edit/settings');
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+      fireEvent.click(tabs().getByRole('link', { name: 'Targets' }));
+      expect(screen.getByRole('complementary', { name: 'Targets' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add hotspot' })).not.toBeInTheDocument();
     });
 
     it('warns under the top bar while the connection is lost (frame E2)', () => {

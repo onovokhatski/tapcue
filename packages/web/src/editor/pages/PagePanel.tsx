@@ -88,6 +88,8 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
   const change = useEditor((state) => state.change);
   // The server refuses uploads in demo mode (spec DEMO-3), so they are off here too.
   const demo = useEditor((state) => state.demo);
+  // With the connection lost, an upload could not reach the server: paused until it is back (E2).
+  const offline = useEditor((state) => state.connection === 'closed');
   const [upload, setUpload] = useState<UploadState>({ state: 'idle' });
   const picker = useRef<HTMLInputElement>(null);
 
@@ -171,7 +173,13 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
         {demo ? (
           <DemoDropzone />
         ) : (
-          <Dropzone canvas={canvas} disabled={busy} onChoose={choose} onFile={start} />
+          <Dropzone
+            canvas={canvas}
+            disabled={busy || offline}
+            offline={offline}
+            onChoose={choose}
+            onFile={start}
+          />
         )}
       </>
     );
@@ -210,8 +218,8 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
               variant="ghost"
               size="s"
               label="Replace"
-              disabled={demo || busy}
-              title={demo ? 'Uploads are off in demo mode' : undefined}
+              disabled={demo || busy || offline}
+              title={demo ? 'Uploads are off in demo mode' : offline ? OFFLINE_UPLOADS : undefined}
               onClick={choose}
             />
             <Button
@@ -227,14 +235,18 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
   );
 }
 
+const OFFLINE_UPLOADS = 'Uploads are paused until the connection to the server is back.';
+
 function Dropzone({
   canvas,
   disabled,
+  offline,
   onChoose,
   onFile,
 }: {
   canvas: Project['canvas'];
   disabled: boolean;
+  offline: boolean;
   onChoose: () => void;
   onFile: (file: File) => void;
 }) {
@@ -267,8 +279,9 @@ function Dropzone({
       <p className="text-label-m">{active ? 'Release to upload' : 'Drop an image or video'}</p>
       {!active && <Button size="s" label="Choose file" disabled={disabled} onClick={onChoose} />}
       <p className="text-body-s text-muted">
-        JPEG, PNG, WebP or MP4, up to 200 MB. {canvas.width} × {canvas.height} fits the canvas
-        exactly.
+        {offline
+          ? OFFLINE_UPLOADS
+          : `JPEG, PNG, WebP or MP4, up to 200 MB. ${canvas.width} × ${canvas.height} fits the canvas exactly.`}
       </p>
     </div>
   );

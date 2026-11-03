@@ -225,6 +225,29 @@ describe('PagePanel', () => {
   });
 });
 
+describe('PagePanel without a connection (frame E2)', () => {
+  it('pauses uploads until the connection is back', async () => {
+    const project = demoProject();
+    project.pages[0]!.background = null;
+    const { background, store } = await renderPanel(project);
+    act(() => store.getState().setConnection('closed'));
+    expect(within(background()).getByRole('button', { name: 'Choose file' })).toBeDisabled();
+    expect(
+      within(background()).getByText(
+        'Uploads are paused until the connection to the server is back.',
+      ),
+    ).toBeInTheDocument();
+    act(() => store.getState().setConnection('open'));
+    expect(within(background()).getByRole('button', { name: 'Choose file' })).toBeEnabled();
+  });
+
+  it('cannot replace a background meanwhile', async () => {
+    const { background, store } = await renderPanel();
+    act(() => store.getState().setConnection('closed'));
+    expect(within(background()).getByRole('button', { name: 'Replace' })).toBeDisabled();
+  });
+});
+
 describe('PagePanel in demo mode (spec DEMO-3)', () => {
   it('turns uploads off and says where they work', async () => {
     const project = demoProject();

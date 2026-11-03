@@ -10,6 +10,9 @@ function routerAt(path: string) {
   return createMemoryRouter(routes, { initialEntries: [path] });
 }
 
+/** The player's indicator appears after its delay (1 s for Reconnecting…). */
+const findIndicator = (text: string) => screen.findByText(text, {}, { timeout: 2000 });
+
 function renderAt(path: string) {
   const router = routerAt(path);
   render(<RouterProvider router={router} />);
@@ -49,7 +52,9 @@ describe('routes', () => {
     it('shows the start page of the station from the URL (spec PLY-1)', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(projectResponse()));
       const { container } = render(<RouterProvider router={routerAt('/play/main')} />);
-      expect(screen.getByText('Loading…')).toBeInTheDocument();
+      // A quick load shows only the dark screen, no text (frame P0).
+      expect(container.querySelector('main.player')).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
       // Station "main" starts on Home: its artwork and its five hotspots.
       const shown = await waitFor(() => {
         const layer = container.querySelector('[data-layer="shown"]');
@@ -188,22 +193,44 @@ describe('routes', () => {
           .mockImplementation(() => Promise.resolve(new Response(JSON.stringify(current))));
         vi.stubGlobal('fetch', failOnce);
         renderAt('/play/main');
-        expect(await screen.findByText('Cannot reach the server')).toBeInTheDocument();
+        expect(await findIndicator('Reconnecting…')).toBeInTheDocument();
         act(() => FakeWebSocket.last.open());
         await waitFor(() => expect(layer('shown')).toHaveAttribute('data-page', 'p_home00'));
       });
     });
 
-    it('says so when the server cannot be reached', async () => {
+    it('shows Reconnecting… on a dark screen when the server cannot be reached', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
-      renderAt('/play/main');
-      expect(await screen.findByText('Cannot reach the server')).toBeInTheDocument();
+      const { container } = render(<RouterProvider router={routerAt('/play/main')} />);
+      expect(await findIndicator('Reconnecting…')).toHaveClass('connection-indicator');
+      expect(container.querySelector('main.player')).toHaveClass('bg-inverse');
     });
 
-    it('says so when the server answers with an error', async () => {
+    it('shows Reconnecting… when the server answers with an error', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })));
       renderAt('/play/main');
-      expect(await screen.findByText('Cannot reach the server')).toBeInTheDocument();
+      expect(await findIndicator('Reconnecting…')).toBeInTheDocument();
+    });
+
+    it('says Loading… only when the project takes longer than 3 s (frame P0)', () => {
+      vi.useFakeTimers();
+      try {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(() => new Promise(() => undefined)),
+        );
+        renderAt('/play/main');
+        act(() => {
+          vi.advanceTimersByTime(2999);
+        });
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+        act(() => {
+          vi.advanceTimersByTime(1);
+        });
+        expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });
