@@ -115,8 +115,22 @@ npm start -- --project ./my-stand
 ```
 
 Before the stand opens, follow the [stand setup guide](docs/stand-setup.md): network, the Tapcue
-computer and each tablet. A click-to-run app for macOS and Windows that needs no Node.js is
-planned for v0.1 ([ADR 0017](docs/adr/0017-click-to-run-app.md)).
+computer and each tablet.
+
+### The click-to-run app
+
+Tapcue also comes as an app that needs no Node.js and no terminal
+([ADR 0017](docs/adr/0017-click-to-run-app.md)): `Tapcue.app` for macOS and `Tapcue.exe` for
+Windows, built by CI and attached to each release from v0.1. A click starts Tapcue and opens the
+editor in the browser; your project lives in `Documents/Tapcue`, which starts as a copy of the
+demo stand. Clicking it again while it runs just opens the editor.
+
+The apps are not code-signed yet, so the first start needs one extra step:
+
+- **macOS:** right-click `Tapcue.app` → Open → Open. Tapcue runs in the background, without a
+  Dock icon; to stop it, quit "Tapcue" in Activity Monitor.
+- **Windows:** unzip the folder, start `Tapcue.exe`, and on the SmartScreen notice choose More
+  info → Run anyway. A console window shows that Tapcue runs; closing it stops Tapcue.
 
 ## Security
 
@@ -160,9 +174,11 @@ npm install
 | `npm run test:e2e` | Runs the end-to-end tests in Chromium, WebKit and Firefox (Playwright): editor, player and demo receiver together. First time: `npx playwright install chromium webkit firefox` |
 | `npm run soak -- --minutes 600` | A long run of a stand without anyone touching it: taps for the given time, then a report of deliveries, errors and memory. Build first (`npm run build`) |
 | `npm run media` | Makes this README's screenshots and player tour again (`docs/media/`). Build first |
+| `npm run package:app -w @tapcue/server` | Builds the click-to-run app for this system: `Tapcue.app` on macOS, `Tapcue.exe` on Windows, and a `.zip` of it, in `packages/server/dist/app/` |
 
 `.nvmrc` pins the Node.js version used in CI. CI runs type check, lint, format check, tests and
-end-to-end tests on every pull request, and starts the app on Windows and macOS; `main` only
+end-to-end tests on every pull request, starts Tapcue on Windows and macOS, and builds and starts
+the click-to-run app on both; `main` only
 changes through pull requests with a green CI.
 
 The repository is an npm workspace with three packages:

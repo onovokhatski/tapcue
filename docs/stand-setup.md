@@ -17,8 +17,9 @@ server do their part; these steps are the part only the devices can do
 
 ## 2. The Tapcue computer
 
-- **Start Tapcue** with `npm start` (see the [README](../README.md#development)). It prints the
-  editor URL and one URL per station.
+- **Start Tapcue** with the click-to-run app, or with `npm start` (see the
+  [README](../README.md#getting-started)). `npm start` prints the editor URL and one URL per
+  station; the app opens the editor, whose Stations tab shows each station's URL and QR code.
 - **Allow incoming connections** when the system asks on the first start (macOS: "Allow";
   Windows Defender Firewall: allow on private networks). Without this, tablets cannot connect.
 - **Keep it awake and powered:** on the power adapter, with sleep turned off (macOS: System

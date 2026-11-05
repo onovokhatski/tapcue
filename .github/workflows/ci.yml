@@ -72,3 +72,52 @@ jobs:
       - name: Show the start output
         if: always()
         run: cat start.log
+
+  # The click-to-run app (ADR 0017): Tapcue.app on macOS and Tapcue.exe on Windows, built, started
+  # with Node.js off the PATH, and kept as a download (the release attaches these zips).
+  app:
+    name: app (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run package:app -w @tapcue/server
+      - name: The app starts without Node.js
+        run: |
+          mkdir -p apphome
+          if [ "$RUNNER_OS" = macOS ]; then
+            APP=packages/server/dist/app/Tapcue.app/Contents/MacOS/Tapcue
+            PROFILE="$PWD/apphome"
+          else
+            APP=packages/server/dist/app/Tapcue/Tapcue.exe
+            PROFILE="$(cygpath -w "$PWD/apphome")"
+          fi
+          # Only system folders on its PATH: the app must not need Node.js.
+          PATH=/usr/bin:/bin:/c/Windows/System32 HOME="$PWD/apphome" USERPROFILE="$PROFILE" \
+            TAPCUE_NO_BROWSER=1 "$APP" --port 4600 > app.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:4600/api/health > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:4600/edit/pages | grep -q '<div id="root">'
+          test -f apphome/Documents/Tapcue/demo-stand/project.json
+      - name: Show the app output
+        if: always()
+        run: cat app.log || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tapcue-${{ runner.os }}
+          path: packages/server/dist/app/Tapcue-*.zip
+          if-no-files-found: error
