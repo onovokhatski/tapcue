@@ -53,7 +53,10 @@ that must follow.
 
 ```
 server/src/
-  main.ts            start-up: read config, wire modules together, listen
+  main.ts            entry for npm start / npm run dev: read config, start
+  start.ts           load the project, build the app, listen, print the addresses
+  launcher.ts        the click-to-run app: its folders, first start, browser, a second click
+  packaged.ts        the click-to-run app's entry, bundled into one file (ADR 0017)
   config.ts          port, project folder path, demo mode (from CLI args / env)
   project/
     store.ts         load, validate and atomically save project.json; keep revision
