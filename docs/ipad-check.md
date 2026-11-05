@@ -8,18 +8,19 @@ record the result below.
 ## Setup
 
 1. Mac and iPad on the same Wi-Fi network.
-2. On the Mac, in two terminals:
+2. On the Mac, start Tapcue as on a stand: it builds the web app and serves everything on one
+   port, and prints the station URLs.
 
 ```bash
-npm run dev -w @tapcue/server
+npm start
 ```
 
-```bash
-npm run dev -w @tapcue/web -- --host
-```
+3. Open the printed URL of station Main catalog (`http://<mac-ip>:4000/play/main`) in Safari on
+   the iPad. The demo stand's Home page fills the screen.
 
-3. Find the Mac's address (`ipconfig getifaddr en0`) and open `http://<mac-ip>:5173/play/main`
-   in Safari on the iPad. The demo stand's Home page fills the screen.
+M1 and M2 were checked with the development servers (`npm run dev`, port 5173); `npm start` is
+the built app, which the "Commands and network loss" section needs anyway: in development,
+Vite's own client reloads the page whenever its connection comes back.
 
 ## Checklist
 
@@ -51,7 +52,7 @@ Home screen (spec flow F1, step 7)
 Idle return (spec ST-4)
 - [ ] On Product B, wait 90 seconds without touching: the player fades back to Home.
 
-Commands and network loss (spec ACT-2, PLY-2, PLY-3) — needs the built app, see below
+Commands and network loss (spec ACT-2, PLY-2, PLY-3)
 - [ ] With `/demo` open on the Mac, "Call our team" and "Play demo" on the iPad change the
       screen-3 and screen-1 tiles within a moment.
 - [ ] Turn the iPad's Wi-Fi off: "Reconnecting…" appears in the bottom-right corner after
@@ -61,20 +62,17 @@ Commands and network loss (spec ACT-2, PLY-2, PLY-3) — needs the built app, se
 - [ ] Wi-Fi off, tap "Call our team", wait 10 s, Wi-Fi on: the indicator goes away and that
       tap does **not** arrive: taps are kept for 5 s, so a late reconnect starts nothing.
 
-For this section, serve the built app instead of the dev server. In development, Vite's own
-client reloads the page whenever its connection comes back, which would hide what the player
-does. Stop `npm run dev -w @tapcue/web`, then:
-
-```bash
-npm run build -w @tapcue/web
-```
-
-```bash
-npm run preview -w @tapcue/web -- --host --port 5173
-```
-
-The preview proxies `/api`, `/assets`, `/ws` and `/demo/` to the server just like the dev
-server, so the same address works on the iPad.
+The stand (M5: spec PLY-4, NFR-3, [stand setup guide](stand-setup.md))
+- [ ] Section 3 of the stand setup guide works as written on this iPad: every menu path exists
+      and does what the guide says.
+- [ ] In Guided Access, started from the Home Screen icon: swiping up, the Home button,
+      notifications and Control Center do not leave the player.
+- [ ] A triple-click and the passcode end Guided Access.
+- [ ] Left untouched for **30 minutes** (Auto-Lock "Never", charging): the screen neither dims
+      nor locks, and the player is still on its start page.
+- [ ] **10 hours** on the charger in Guided Access, tapped now and then: the screen stays on,
+      the player never reloads or shows "Loading…", and taps still reach `/demo` at the end.
+      Note the battery level and anything unusual.
 
 ## Results
 
@@ -94,3 +92,34 @@ All items of "Commands and network loss" passed: taps changed the tiles on `/dem
 with Wi-Fi off, "Reconnecting…" appeared and pages still changed; after Wi-Fi came back
 within a few seconds, the page did not reload and the queued tap arrived; a tap made 10 s
 before Wi-Fi came back did not arrive.
+
+### M5 — the stand
+
+Not run yet.
+
+## Long run
+
+The same day without an iPad: `npm run soak` runs the built app on a server of its own (port
+4700, a copy of the demo stand, demo mode so no command leaves the computer), a player in
+Chromium tapping a random hotspot every few seconds, and the demo page open. Every minute it
+records the server's memory and the player's, and it counts what was delivered. It passes when
+every command was delivered and there were no page errors, reloads or lost connections. The
+report is written to `e2e/soak-results/` (not in git).
+
+```bash
+npm run build
+```
+
+```bash
+npm run soak -- --minutes 600
+```
+
+`--interval` sets the seconds between taps (5 by default), `--station` the station (`main`). It
+runs on macOS and Linux.
+
+### Results
+
+| Date | Length | Taps | Delivered | Server memory, settled → end | Player heap | Result |
+|---|---|---|---|---|---|---|
+| 2026-11-03 | 3 min (trial, a tap every 2 s) | 89 | 56 of 56 | 152 → 131 MB | 10 → 10 MB | Passed |
+| — | 10 h | — | — | — | — | Not run yet |

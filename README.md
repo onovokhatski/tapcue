@@ -107,6 +107,7 @@ npm install
 | `npm run format` | Formats the code (Prettier); `format:check` only reports |
 | `npm test` | Runs the tests of every package once (Vitest); `test:watch` re-runs on change |
 | `npm run test:e2e` | Runs the end-to-end tests in Chromium, WebKit and Firefox (Playwright): editor, player and demo receiver together. First time: `npx playwright install chromium webkit firefox` |
+| `npm run soak -- --minutes 600` | A long run of a stand without anyone touching it: taps for the given time, then a report of deliveries, errors and memory. Build first (`npm run build`) |
 
 CI runs type check, lint, format check, tests and end-to-end tests on every pull request; `main` only changes through
 pull requests with a green CI.

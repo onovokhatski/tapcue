@@ -306,6 +306,7 @@ No error in one tap, one driver or one connection may crash the server.
 | Dispatcher, store | Vitest | With fake drivers and a temporary folder |
 | Editor operations | Vitest | Pure functions, no React |
 | Full flow | Playwright, in Chromium, WebKit and Firefox | Tap in player → entry in demo receiver; edit → player updates; test send; export and import |
+| Long run | `npm run soak` (`e2e/soak.ts`, Playwright) | Hours of taps on the built app in demo mode: every command delivered, no page errors, reloads or lost connections, memory over time ([results](ipad-check.md#long-run)) |
 
 The Playwright tests run on a copy of the demo project in a temporary folder, with their own server
 (port 4400) and web dev server (port 5400, `TAPCUE_SERVER` points its proxy there), so they never
