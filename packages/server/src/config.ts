@@ -19,12 +19,14 @@ export class ConfigError extends Error {}
 
 /**
  * `tapcue --port 4000 --project ./my-stand --demo`, or TAPCUE_PORT / TAPCUE_PROJECT / TAPCUE_DEMO=1.
- * Relative project paths are resolved against `cwd`, where the command was run.
+ * Relative project paths are resolved against `cwd`, where the command was run. Without a project,
+ * `defaultProjectDir`: the demo stand in the repository, or the click-to-run app's own folder.
  */
 export function parseConfig(
   argv: string[],
   env: Record<string, string | undefined>,
   cwd: string,
+  defaultProjectDir = DEFAULT_PROJECT_DIR,
 ): Config {
   let values: {
     port?: string | undefined;
@@ -49,7 +51,7 @@ export function parseConfig(
   }
 
   const projectPath = values.project ?? env['TAPCUE_PROJECT'];
-  const projectDir = projectPath === undefined ? DEFAULT_PROJECT_DIR : resolve(cwd, projectPath);
+  const projectDir = projectPath === undefined ? defaultProjectDir : resolve(cwd, projectPath);
 
   const demo = values.demo ?? ['1', 'true'].includes(env['TAPCUE_DEMO'] ?? '');
 
