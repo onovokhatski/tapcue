@@ -11,11 +11,20 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** pre-implementation — no code yet. The specification, architecture, decisions,
-> technical spike and design are complete; implementation starts with milestone M0.
-> See the [roadmap](docs/roadmap.md) and the [design](docs/design/README.md).
+> **Status:** v0.1 is in its last milestone (M5, reliability and showcase). Everything described
+> below works today; see the [roadmap](docs/roadmap.md) for what is left before the release.
 
-<!-- Screenshot / short video of the editor and player goes here (milestone M5). -->
+![The Tapcue editor: pages on the left, the designer's artwork with its hotspots in the middle, the selected hotspot's action on the right](docs/media/editor.png)
+
+| The player on a tablet | The built-in demo receiver |
+|---|---|
+| ![A station in the player: the demo stand's Home page with three product cards](docs/media/player.png) | ![The demo receiver showing two commands sent from the tablet](docs/media/demo-receiver.png) |
+
+[Watch a 15-second tour of the player](docs/media/player-tour.webm) (WebM video).
+
+Each tablet opens its station by scanning a QR code in the editor:
+
+![The Stations tab: the Main catalog station's settings and its URL as a QR code](docs/media/stations.png)
 
 ## What it is
 
@@ -50,17 +59,71 @@ the commands.
 - One server, any number of tablets, each with its own interface if needed.
 - Commands: OSC over UDP, raw UDP, HTTP.
 
-## Planned for v0.1
+## What it does
 
-- Pages with image or looping video backgrounds, `fit` / `fill` scaling
-- Rectangle and ellipse hotspots, styles, press effects, fade transitions
-- Stations: separate entry points for different tablets, with idle return to the start page
-- Editor with live update of every open tablet
-- Station URLs as QR codes
-- Built-in demo receiver and demo project — try everything without any hardware
-- Public online demo
+- **Pages** with image or looping video backgrounds, `fit` or `fill` scaling, and a safe-area
+  overlay that shows what a 16:10 or 16:9 screen crops.
+- **Hotspots:** rectangles and ellipses, invisible or styled, with press effects; each one opens
+  a page, sends a command, or both. "Send test" fires a command from the editor.
+- **Targets:** where commands go — OSC over UDP, UDP or HTTP — with a log of every command sent.
+- **Stations:** an entry point per tablet with its own start page and idle return, opened by
+  scanning its QR code.
+- **Live editing:** every open tablet follows each change within a second, without reloading.
+- **Reliable on the stand:** tablets keep working through Wi-Fi drops and reconnect on their own.
+- **Export and import** the whole project, backgrounds included, as one `.zip` file.
+- **Demo receiver and demo project:** try the whole flow without any hardware.
+- **Demo mode** for a public online demo: nothing is saved, and commands never leave the server.
 
 The full list is in the [specification](docs/spec.md).
+
+## Getting started
+
+Requirements: [Node.js](https://nodejs.org/) 22 or newer, and Git.
+
+```bash
+git clone https://github.com/onovokhatski/tapcue.git
+```
+
+```bash
+cd tapcue
+```
+
+```bash
+npm install
+```
+
+```bash
+npm start
+```
+
+`npm start` builds the web app, starts Tapcue on port 4000 with the demo stand, and prints the
+addresses to open:
+
+```
+Tapcue is running with "Demo stand".
+  Editor:  http://192.168.1.40:4000/edit
+  Tablets: Main catalog  http://192.168.1.40:4000/play/main
+           Small screen  http://192.168.1.40:4000/play/small
+```
+
+Open the editor on this computer, a station on a tablet (or in another browser tab), and the
+demo receiver at `/demo`: taps on "Call our team" or "Play demo" appear there. To work on your
+own stand, start Tapcue with a project folder of its own:
+
+```bash
+npm start -- --project ./my-stand
+```
+
+Before the stand opens, follow the [stand setup guide](docs/stand-setup.md): network, the Tapcue
+computer and each tablet. A click-to-run app for macOS and Windows that needs no Node.js is
+planned for v0.1 ([ADR 0017](docs/adr/0017-click-to-run-app.md)).
+
+## Security
+
+Tapcue is designed for a **trusted local network**, such as a stand's own access point. In
+v0.1 the editor has no password: anyone on the network can change the project. Do not
+expose a Tapcue server to the internet except in demo mode. The
+[stand setup guide](docs/stand-setup.md) shows how to keep the network and the tablets locked down.
 
 ## Documentation
 
@@ -72,26 +135,14 @@ The full list is in the [specification](docs/spec.md).
 | [Project format](docs/project-format.md) | The `project.json` reference |
 | [Roadmap](docs/roadmap.md) | Phases, milestones and how work is done |
 | [Decisions](docs/adr/README.md) | Architecture decision records |
+| [Design](docs/design/README.md) | Design system, components and a prototype of every screen |
 
 ## Tech stack
 
 TypeScript · React · Vite · Zustand · Tailwind CSS · Node.js · Fastify · WebSocket · Zod ·
 Vitest · Playwright · GitHub Actions
 
-## Security
-
-Tapcue is designed for a **trusted local network**, such as a stand's own access point. In
-v0.1 the editor has no password: anyone on the network can change the project. Do not
-expose a Tapcue server to the internet except in demo mode. The
-[stand setup guide](docs/stand-setup.md) shows how to keep the network and the tablets locked down.
-
-## Getting started
-
-*Available from milestone M1.*
-
 ## Development
-
-Requirements: Node.js 22 LTS or newer (`.nvmrc` pins the version used in CI) and npm 10.
 
 ```bash
 npm install
@@ -108,9 +159,11 @@ npm install
 | `npm test` | Runs the tests of every package once (Vitest); `test:watch` re-runs on change |
 | `npm run test:e2e` | Runs the end-to-end tests in Chromium, WebKit and Firefox (Playwright): editor, player and demo receiver together. First time: `npx playwright install chromium webkit firefox` |
 | `npm run soak -- --minutes 600` | A long run of a stand without anyone touching it: taps for the given time, then a report of deliveries, errors and memory. Build first (`npm run build`) |
+| `npm run media` | Makes this README's screenshots and player tour again (`docs/media/`). Build first |
 
-CI runs type check, lint, format check, tests and end-to-end tests on every pull request; `main` only changes through
-pull requests with a green CI.
+`.nvmrc` pins the Node.js version used in CI. CI runs type check, lint, format check, tests and
+end-to-end tests on every pull request, and starts the app on Windows and macOS; `main` only
+changes through pull requests with a green CI.
 
 The repository is an npm workspace with three packages:
 
