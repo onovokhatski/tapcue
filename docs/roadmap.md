@@ -140,6 +140,6 @@ In order of value; each becomes its own milestone when started.
 
 ## 7. Open questions
 
-- **Online demo hosting** (M5): which hosting service runs the demo-mode server. Decided before M5.
+- **Online demo hosting** (M5): decided — Railway, built from a Dockerfile ([ADR 0018](adr/0018-online-demo-on-railway.md)).
 - **Design tool** (Design phase): Figma, Claude Design or HTML prototypes. Decided before
   the design phase starts.
