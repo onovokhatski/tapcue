@@ -6,21 +6,28 @@ The public online demo runs on Railway, built from the repository's `Dockerfile`
 every command is shown on the demo page instead of being sent ([spec DEMO-3](spec.md#510-demo-receiver)).
 CI builds and runs the same image on every pull request (the `docker` job).
 
+GitHub sends each deploy to Railway: after CI passes on `main`, the `Deploy demo` workflow runs
+`railway up` with a Railway project token. The Railway account therefore does not need access to
+this repository, which may belong to another GitHub account.
+
 ## Set up once
 
-In the Railway dashboard, with the maintainer's account:
+In the Railway dashboard:
 
-1. **New Project → Deploy from GitHub repo**, and choose `onovokhatski/tapcue`. Railway finds the
-   `Dockerfile` and builds from it; no build or start command is needed.
-2. **Settings → Deploy:**
+1. **New Project → Empty Project**, then in it **Create → Empty Service**, named `tapcue-demo`.
+2. In the service's **Settings**:
    - Healthcheck path: `/api/health`.
    - One replica, and no app sleeping (serverless): the demo must answer at once, and its command
      log and connections live in one process.
-   - If offered, wait for CI before deploying, so only a green `main` goes live.
-3. **Settings → Networking → Generate Domain.** No environment variables are needed: demo mode is
-   set in the image, and Railway provides `PORT`.
+   - **Networking → Generate Domain.** No environment variables are needed: demo mode is set in
+     the image, and Railway provides `PORT`.
+3. In the **project's** Settings → **Tokens**, create a token for the `production` environment.
 
-From then on every merge into `main` deploys again.
+On GitHub, in this repository's **Settings → Secrets and variables → Actions**, add it as the
+secret `RAILWAY_TOKEN`.
+
+From then on every merge into `main` deploys again. To deploy without a merge, run the
+`Deploy demo` workflow by hand (Actions → Deploy demo → Run workflow).
 
 ## Check after a deploy
 
