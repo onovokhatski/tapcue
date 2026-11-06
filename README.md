@@ -14,6 +14,11 @@
 > **Status:** v0.1 is in its last milestone (M5, reliability and showcase). Everything described
 > below works today; see the [roadmap](docs/roadmap.md) for what is left before the release.
 
+**[Try the online demo](https://tapcue-demo-production.up.railway.app)** — the editor, a player at
+[`/play/main`](https://tapcue-demo-production.up.railway.app/play/main) and the demo receiver at
+[`/demo`](https://tapcue-demo-production.up.railway.app/demo). It runs in demo mode: your changes
+stay in your browser tab, and commands only show up on the demo page.
+
 ![The Tapcue editor: pages on the left, the designer's artwork with its hotspots in the middle, the selected hotspot's action on the right](docs/media/editor.png)
 
 | The player on a tablet | The built-in demo receiver |
@@ -73,6 +78,7 @@ the commands.
 - **Export and import** the whole project, backgrounds included, as one `.zip` file.
 - **Demo receiver and demo project:** try the whole flow without any hardware.
 - **Demo mode** for a public online demo: nothing is saved, and commands never leave the server.
+  [Try it.](https://tapcue-demo-production.up.railway.app)
 
 The full list is in the [specification](docs/spec.md).
 

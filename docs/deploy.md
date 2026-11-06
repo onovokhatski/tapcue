@@ -31,7 +31,7 @@ From then on every merge into `main` deploys again. To deploy without a merge, r
 
 ## Check after a deploy
 
-On the public URL:
+On the public URL, https://tapcue-demo-production.up.railway.app:
 
 - `/` opens the editor, with "Demo mode · not saved" in the top bar.
 - `/play/main` shows the demo stand's Home page; a tap on "Call our team" appears on `/demo`.
