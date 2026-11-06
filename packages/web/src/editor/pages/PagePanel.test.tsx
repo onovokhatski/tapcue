@@ -44,6 +44,7 @@ async function renderPanel(project: Project = demoProject(), demo = false) {
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+    quitServer: () => Promise.resolve(false),
   });
   store.getState().start();
   await act(() => Promise.resolve());

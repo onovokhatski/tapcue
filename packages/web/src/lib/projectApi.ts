@@ -8,6 +8,8 @@ export interface Loaded {
   project: Project;
   /** The public online demo: the server saves nothing (spec DEMO-3). */
   demo?: boolean;
+  /** The click-to-run app, which the editor can stop (ADR 0017). */
+  quit?: boolean;
 }
 
 /** A refusal says why; `errors` lists the fields when the project itself was invalid. */
@@ -23,6 +25,8 @@ export interface ProjectApi {
   testSend(pageId: PageId, hotspotId: HotspotId): Promise<TestSent>;
   /** Replaces the whole project with a .zip (spec PRJ-4). */
   importArchive(file: Blob): Promise<Imported>;
+  /** Stops the click-to-run app; true once the server has agreed (ADR 0017). */
+  quitServer(): Promise<boolean>;
 }
 
 export const projectApi: ProjectApi = {
@@ -66,4 +70,9 @@ export const projectApi: ProjectApi = {
   },
 
   importArchive,
+
+  async quitServer() {
+    const response = await fetch('/api/quit', { method: 'POST' });
+    return response.ok;
+  },
 };

@@ -2,7 +2,7 @@
 // editor's own connection to the server and the save status (spec ED-1, ED-5, ED-7, ED-11;
 // design: shell(), topBar(), frames E2 and E3). No sign-in: anyone on the stand's network can open
 // it (ADR 0010).
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { openServerSocket, type SocketStatus } from '../lib/serverSocket';
 import { Button } from '../ui/Button';
@@ -48,16 +48,37 @@ export function EditorRoute() {
 
   return (
     <EditorStoreContext value={store}>
-      <div className="flex h-dvh flex-col overflow-hidden bg-app text-primary">
-        <TopBar connection={connection} />
-        <Banners connection={connection} />
-        <main className="flex min-h-0 flex-1">
-          <Body title={tab.label} compact={layout === 'compact'} />
-        </main>
-        {/* On every tab (spec ED-9). */}
-        <CommandLog />
-      </div>
+      <StoppedOr>
+        <div className="flex h-dvh flex-col overflow-hidden bg-app text-primary">
+          <TopBar connection={connection} />
+          <Banners connection={connection} />
+          <main className="flex min-h-0 flex-1">
+            <Body title={tab.label} compact={layout === 'compact'} />
+          </main>
+          {/* On every tab (spec ED-9). */}
+          <CommandLog />
+        </div>
+      </StoppedOr>
     </EditorStoreContext>
+  );
+}
+
+/**
+ * After Quit Tapcue (ADR 0017) the server is gone for good, so the editor says so instead of
+ * warning about a lost connection that will never come back by itself.
+ */
+function StoppedOr({ children }: { children: ReactNode }) {
+  const stopped = useEditor((state) => state.stopped);
+  if (!stopped) return children;
+  return (
+    <main className="grid h-dvh place-items-center bg-app p-6 text-primary">
+      <div className="max-w-[420px] space-y-2 text-center">
+        <h1 className="text-heading-l">Tapcue has stopped</h1>
+        <p className="text-body-m text-secondary">
+          Start it again from the Tapcue app. This tab can be closed.
+        </p>
+      </div>
+    </main>
   );
 }
 

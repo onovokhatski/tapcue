@@ -86,6 +86,12 @@ describe('the click-to-run app’s bundle (ADR 0017)', () => {
       const second = await runApp().done;
       expect(second.code).toBe(0);
       expect(second.output).toContain(`Tapcue is already running on port ${PORT}.`);
+
+      // Quit from the editor stops the app itself.
+      expect((await fetch(`http://localhost:${PORT}/api/quit`, { method: 'POST' })).status).toBe(
+        202,
+      );
+      expect((await app.done).code).toBe(0);
     } finally {
       app.child.kill();
       await app.done;

@@ -9,9 +9,24 @@ import { localAddresses } from './network';
 import { loadProjectStore, ProjectLoadError } from './project/store';
 import { hasWebBuild } from './webApp';
 
-export async function startServer(config: Config, webDir: string): Promise<FastifyInstance> {
+/** `quittable`: the click-to-run app, which the editor can stop (POST /api/quit). */
+export async function startServer(
+  config: Config,
+  webDir: string,
+  { quittable = false } = {},
+): Promise<FastifyInstance> {
   const store = await loadProjectStore(config.projectDir);
-  const app = buildApp({ store, logger: true, webDir, demo: config.demo });
+  const quit = () => {
+    app.log.info('Quit from the editor');
+    void app.close().then(() => process.exit(0));
+  };
+  const app = buildApp({
+    store,
+    logger: true,
+    webDir,
+    demo: config.demo,
+    ...(quittable ? { onQuit: quit } : {}),
+  });
   await app.listen({ port: config.port, host: '0.0.0.0' });
   app.log.info(`Project "${store.project.name}" from ${store.dir}`);
   if (config.demo) app.log.info('Demo mode: nothing is saved, commands go to the demo receiver');

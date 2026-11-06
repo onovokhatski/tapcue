@@ -31,7 +31,12 @@ describe('buildApp', () => {
   it('serves the project with its revision', async () => {
     const response = await get('/api/project');
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ revision: 1, project: store.project, demo: false });
+    expect(response.json()).toEqual({
+      revision: 1,
+      project: store.project,
+      demo: false,
+      quit: false,
+    });
   });
 
   describe('saving the project (PUT /api/project)', () => {
@@ -62,6 +67,7 @@ describe('buildApp', () => {
         revision: 2,
         project: changed,
         demo: false,
+        quit: false,
       });
       const onDisk = JSON.parse(await readFile(join(dir, 'project.json'), 'utf8')) as unknown;
       expect(onDisk).toEqual(changed);
@@ -219,6 +225,37 @@ describe('buildApp', () => {
     } finally {
       await app.close();
     }
+  });
+
+  describe('quitting the click-to-run app (ADR 0017)', () => {
+    const quitIt = (app: ReturnType<typeof buildApp>) =>
+      app.inject({ method: 'POST', url: '/api/quit' });
+    const canQuit = async (app: ReturnType<typeof buildApp>) =>
+      (await app.inject({ method: 'GET', url: '/api/project' })).json<{ quit: boolean }>().quit;
+
+    it('answers first, then stops, and tells the editor it can', async () => {
+      const onQuit = vi.fn();
+      const app = buildApp({ store, onQuit });
+      expect(await canQuit(app)).toBe(true);
+      const response = await quitIt(app);
+      expect(response.statusCode).toBe(202);
+      expect(response.json()).toEqual({ ok: true });
+      await vi.waitFor(() => expect(onQuit).toHaveBeenCalledOnce());
+    });
+
+    it('has no quit without the app, as with npm start', async () => {
+      const app = buildApp({ store });
+      expect(await canQuit(app)).toBe(false);
+      expect((await quitIt(app)).statusCode).toBe(404);
+    });
+
+    it('never quits in demo mode, where anyone on the internet could ask', async () => {
+      const onQuit = vi.fn();
+      const app = buildApp({ store, onQuit, demo: true });
+      expect(await canQuit(app)).toBe(false);
+      expect((await quitIt(app)).statusCode).toBe(404);
+      expect(onQuit).not.toHaveBeenCalled();
+    });
   });
 
   describe('demo mode (spec DEMO-3)', () => {

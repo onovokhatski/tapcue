@@ -134,9 +134,12 @@ demo stand. Clicking it again while it runs just opens the editor.
 The apps are not code-signed yet, so the first start needs one extra step:
 
 - **macOS:** right-click `Tapcue.app` → Open → Open. Tapcue runs in the background, without a
-  Dock icon; to stop it, quit "Tapcue" in Activity Monitor.
+  Dock icon.
 - **Windows:** unzip the folder, start `Tapcue.exe`, and on the SmartScreen notice choose More
-  info → Run anyway. A console window shows that Tapcue runs; closing it stops Tapcue.
+  info → Run anyway. A console window shows that Tapcue runs.
+
+To stop the app, choose **Quit Tapcue** in the editor's Settings tab. Closing the console window
+on Windows, or quitting "Tapcue" in Activity Monitor on macOS, works too.
 
 ## Security
 
