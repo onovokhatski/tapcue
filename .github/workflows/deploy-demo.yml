@@ -1,0 +1,38 @@
+name: Deploy demo
+
+# The public online demo (ADR 0018, docs/deploy.md): after CI passes on main, the repository is sent
+# to Railway, which builds the Dockerfile and replaces the running demo. The Railway project is
+# reached with a project token (secret RAILWAY_TOKEN), so its account need not see this repository.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer one replaces a deploy still waiting.
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Only a green CI run on a push to main (a merge), or a deploy started by hand.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: ghcr.io/railwayapp/cli:latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit CI checked, not whatever main is by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      # --ci streams the build and fails this job if the build or deploy fails.
+      - run: railway up --service tapcue-demo --ci
