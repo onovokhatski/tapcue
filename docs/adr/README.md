@@ -23,6 +23,7 @@ decision gets a new ADR that supersedes the old one.
 | [0015](0015-screen-wake.md) | Screen wake is part of stand setup, not a player guarantee | Accepted |
 | [0016](0016-load-next-page-on-tap.md) | Load the next page on tap, then fade it in on top | Accepted |
 | [0017](0017-click-to-run-app.md) | Click-to-run app as a single executable | Accepted |
+| [0018](0018-online-demo-on-railway.md) | Online demo on Railway, built from a Dockerfile | Accepted |
 
 ## Template
 
