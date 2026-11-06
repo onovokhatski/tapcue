@@ -1,0 +1,10 @@
+# What the demo image never needs (Dockerfile).
+**/node_modules
+**/dist
+.git
+.github
+.claude
+coverage
+docs
+e2e
+*.log

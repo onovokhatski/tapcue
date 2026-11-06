@@ -121,3 +121,29 @@ jobs:
           name: Tapcue-${{ runner.os }}
           path: packages/server/dist/app/Tapcue-*.zip
           if-no-files-found: error
+
+  # The online demo's image (ADR 0018), built and run as Railway runs it: the port in PORT, demo
+  # mode on, so saving is refused.
+  docker:
+    name: docker (online demo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t tapcue-demo .
+      - name: The image serves the demo in demo mode
+        run: |
+          docker run -d --name demo -e PORT=8080 -p 8080:8080 tapcue-demo
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/api/health > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:8080/edit/pages | grep -q '<div id="root">'
+          curl -sf http://localhost:8080/play/main | grep -q '<div id="root">'
+          curl -sf http://localhost:8080/api/project | grep -q '"demo":true'
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
+            -H 'content-type: application/json' -d '{}' http://localhost:8080/api/project)
+          test "$status" = 403
+      - name: Show the demo's output
+        if: always()
+        run: docker logs demo || true

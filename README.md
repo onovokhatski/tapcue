@@ -147,6 +147,7 @@ expose a Tapcue server to the internet except in demo mode. The
 | [Architecture](docs/architecture.md) | How it is built: packages, modules, protocols, reliability |
 | [Stand setup](docs/stand-setup.md) | Network, the Tapcue computer and each tablet, before the stand opens |
 | [Project format](docs/project-format.md) | The `project.json` reference |
+| [Deploying the online demo](docs/deploy.md) | Railway, from the repository's Dockerfile |
 | [Roadmap](docs/roadmap.md) | Phases, milestones and how work is done |
 | [Decisions](docs/adr/README.md) | Architecture decision records |
 | [Design](docs/design/README.md) | Design system, components and a prototype of every screen |
