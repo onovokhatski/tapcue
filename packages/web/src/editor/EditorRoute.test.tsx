@@ -132,6 +132,31 @@ describe('editor shell', () => {
       expect(bar.queryByText('Saved')).not.toBeInTheDocument();
     });
 
+    it('says Tapcue has stopped after Quit Tapcue, instead of a lost connection (ADR 0017)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) =>
+          Promise.resolve(
+            url === '/api/quit'
+              ? new Response('{ "ok": true }', { status: 202 })
+              : new Response(`{ "revision": 1, "project": ${demoProjectJson}, "quit": true }`),
+          ),
+        ),
+      );
+      renderAt('/edit/settings');
+      fireEvent.click(await screen.findByRole('button', { name: 'Quit Tapcue' }));
+      fireEvent.click(
+        within(screen.getByRole('dialog')).getByRole('button', { name: 'Quit Tapcue' }),
+      );
+      expect(
+        await screen.findByRole('heading', { name: 'Tapcue has stopped' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('Start it again from the Tapcue app. This tab can be closed.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    });
+
     it('shows the layout with placeholders until the project arrives (frame E1)', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
       renderAt('/edit/pages');
@@ -183,6 +208,7 @@ describe('editor shell', () => {
         save,
         testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
         importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+        quitServer: () => Promise.resolve(false),
       });
       store.getState().start();
       render(

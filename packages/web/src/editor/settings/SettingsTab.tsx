@@ -12,6 +12,7 @@ import type { ReferenceScreen } from '../canvas/safeArea';
 import { checkCanvasSize, updateCanvas } from '../operations/canvas';
 import { useEditor } from '../useEditor';
 import { ProjectCard } from './ProjectCard';
+import { QuitCard } from './QuitCard';
 import { ScaleDiagram } from './ScaleDiagram';
 
 const MODES: { value: ScaleMode; label: string }[] = [
@@ -35,7 +36,10 @@ export function SettingsTab() {
         )}
         <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
           <CanvasCard project={project} />
-          <ProjectCard />
+          <div className="space-y-6">
+            <ProjectCard />
+            <QuitCard />
+          </div>
         </div>
       </div>
     </main>

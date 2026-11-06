@@ -29,6 +29,7 @@ async function renderCard(answer: Imported = { ok: true, revision: 2 }, demo = f
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive,
+    quitServer: () => Promise.resolve(false),
   });
   store.getState().start();
   await act(() => Promise.resolve());

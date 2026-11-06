@@ -33,6 +33,11 @@ export interface AppOptions {
   webDir?: string;
   /** The public online demo: saving, uploads and import refused, commands to the demo receiver. */
   demo?: boolean;
+  /**
+   * How the click-to-run app stops, offered to the editor as POST /api/quit: that app has no
+   * terminal and, on macOS, no Dock icon (ADR 0017). Never in demo mode.
+   */
+  onQuit?: () => void;
 }
 
 /** What demo mode refuses, before a body is read (spec DEMO-3). */
@@ -47,12 +52,27 @@ export function buildApp({
   archive = {},
   webDir,
   demo = false,
+  onQuit,
 }: AppOptions): FastifyInstance {
   const app = Fastify({ logger });
+  const canQuit = onQuit !== undefined && !demo;
 
   app.get('/api/health', () => ({ ok: true }));
 
-  app.get('/api/project', () => ({ revision: store.revision, project: store.project, demo }));
+  app.get('/api/project', () => ({
+    revision: store.revision,
+    project: store.project,
+    demo,
+    quit: canQuit,
+  }));
+
+  if (canQuit) {
+    // The answer reaches the editor first; then the server stops.
+    app.post('/api/quit', (_request, reply) => {
+      reply.raw.once('finish', onQuit);
+      return reply.code(202).send({ ok: true });
+    });
+  }
 
   // In demo mode the editor keeps its changes in the browser tab; nothing reaches the disk.
   if (demo) {

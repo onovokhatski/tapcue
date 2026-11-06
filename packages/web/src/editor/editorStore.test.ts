@@ -33,6 +33,7 @@ function fakeServer() {
     },
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+    quitServer: () => Promise.resolve(false),
   };
   return { api, loads, saves };
 }
@@ -425,6 +426,42 @@ describe('editor store', () => {
       await settle();
       expect(state().project?.name).toBe('Visitor stand');
       expect(server.saves).toHaveLength(0);
+    });
+  });
+
+  describe('quit (ADR 0017)', () => {
+    it('learns from the server whether it can quit it', async () => {
+      const server = fakeServer();
+      const store = createEditorStore(server.api);
+      store.getState().start();
+      server.loads[0]!.resolve({ revision: 1, project: demoProject(), quit: true });
+      await settle();
+      expect(store.getState().canQuit).toBe(true);
+      const { state } = await loaded();
+      expect(state().canQuit).toBe(false);
+    });
+
+    it('saves what waits, then quits, and is stopped', async () => {
+      const { state, server, api } = await loaded();
+      const quitServer = vi.spyOn(api, 'quitServer').mockResolvedValue(true);
+      state().change(rename('Last change'));
+      const answer = state().quit();
+      await settle();
+      expect(quitServer).not.toHaveBeenCalled(); // not before the save is done
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await wait(40);
+      await expect(answer).resolves.toBe(true);
+      expect(quitServer).toHaveBeenCalledOnce();
+      expect(state().stopped).toBe(true);
+    });
+
+    it('is not stopped when the server did not agree or cannot be reached', async () => {
+      const { state, api } = await loaded();
+      vi.spyOn(api, 'quitServer').mockResolvedValueOnce(false);
+      await expect(state().quit()).resolves.toBe(false);
+      vi.spyOn(api, 'quitServer').mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      await expect(state().quit()).resolves.toBe(false);
+      expect(state().stopped).toBe(false);
     });
   });
 

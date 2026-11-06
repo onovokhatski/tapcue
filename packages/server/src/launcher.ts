@@ -70,7 +70,7 @@ export async function launch() {
   const editor = `http://localhost:${config.port}/edit`;
   try {
     prepareDefaultProject(config.projectDir, defaultDir, join(resources, 'demo-stand'));
-    await startServer(config, join(resources, 'web'));
+    await startServer(config, join(resources, 'web'), { quittable: true });
     openBrowser(editor);
   } catch (error) {
     const port = portInUse(error);

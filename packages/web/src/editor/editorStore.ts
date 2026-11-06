@@ -41,6 +41,10 @@ export interface EditorState {
   connection: SocketStatus;
   /** Demo mode: changes stay in this tab and are never saved (spec DEMO-3). */
   demo: boolean;
+  /** The click-to-run app, which this editor can stop (ADR 0017). */
+  canQuit: boolean;
+  /** Quit from this editor: the server is gone and will not come back by itself. */
+  stopped: boolean;
 }
 
 export interface EditorActions {
@@ -73,6 +77,11 @@ export interface EditorActions {
    * save after the import puts the old project back; then the imported project is loaded.
    */
   importArchive: (file: Blob) => Promise<Imported>;
+  /**
+   * Stops the click-to-run app (ADR 0017): what waits is saved first, so quitting loses nothing.
+   * Resolves with whether the server stopped.
+   */
+  quit: () => Promise<boolean>;
 }
 
 export type EditorStore = EditorState & EditorActions;
@@ -89,7 +98,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
     /** Loads the project; with `onlyIfNew`, keeps the current one when the revision is the same. */
     async function load(onlyIfNew: boolean) {
       try {
-        const { revision, project, demo = false } = await api.load();
+        const { revision, project, demo = false, quit = false } = await api.load();
         // A change made while loading wins: the editor never drops the integrator's work.
         if (pending || inFlight || (onlyIfNew && revision === get().revision)) return;
         set({
@@ -98,6 +107,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
           revision,
           selection: keepSelection(get().selection, project),
           demo,
+          canQuit: quit,
         });
       } catch {
         if (get().load !== 'ready') set({ load: 'failed' });
@@ -140,6 +150,8 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       log: [],
       connection: 'connecting',
       demo: false,
+      canQuit: false,
+      stopped: false,
 
       start() {
         set({ load: 'loading' });
@@ -236,6 +248,17 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         }
         if (result.ok) await load(true);
         return result;
+      },
+
+      async quit() {
+        await get().saveNow();
+        try {
+          if (!(await api.quitServer())) return false;
+        } catch {
+          return false;
+        }
+        set({ stopped: true });
+        return true;
       },
     };
   });
