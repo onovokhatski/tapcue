@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # A version tag runs every job on the tagged commit, then the release job below.
+    tags: ['v*']
   pull_request:
 
 # A newer push to the same branch makes the older run pointless.
@@ -147,3 +149,39 @@ jobs:
       - name: Show the demo's output
         if: always()
         run: docker logs demo || true
+
+  # A pushed version tag (v0.1.0) becomes a GitHub release: its notes are the tag's section of
+  # CHANGELOG.md, and the app zips built and started above are attached. Runs only when every
+  # other job passed, so a release always ships what CI checked.
+  release:
+    name: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check, start, app, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: The tag matches package.json
+        run: test "${GITHUB_REF_NAME}" = "v$(node -p "require('./package.json').version")"
+      - name: Release notes from CHANGELOG.md
+        run: |
+          # The lines under "## [0.1.0] ..." up to the next "## [" heading or link list.
+          awk -v v="${GITHUB_REF_NAME#v}" '
+            /^## \[/ { on = index($0, "## [" v "]") == 1; next }
+            /^\[[^]]*\]: / { on = 0 }
+            on' CHANGELOG.md > notes.md
+          test -s notes.md
+          cat notes.md
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Tapcue-*
+          path: apps
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" apps/Tapcue-macos.zip apps/Tapcue-windows.zip \
+            --title "Tapcue $GITHUB_REF_NAME" --notes-file notes.md --verify-tag

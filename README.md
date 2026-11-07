@@ -11,8 +11,9 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.1 is in its last milestone (M5, reliability and showcase). Everything described
-> below works today; see the [roadmap](docs/roadmap.md) for what is left before the release.
+> **Status:** v0.1.0, the first release ([changelog](CHANGELOG.md),
+> [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
+> [roadmap](docs/roadmap.md) for what comes next.
 
 **[Try the online demo](https://tapcue-demo-production.up.railway.app)** — the editor, a player at
 [`/play/main`](https://tapcue-demo-production.up.railway.app/play/main) and the demo receiver at
@@ -127,9 +128,10 @@ computer and each tablet.
 
 Tapcue also comes as an app that needs no Node.js and no terminal
 ([ADR 0017](docs/adr/0017-click-to-run-app.md)): `Tapcue.app` for macOS and `Tapcue.exe` for
-Windows, built by CI and attached to each release from v0.1. A click starts Tapcue and opens the
-editor in the browser; your project lives in `Documents/Tapcue`, which starts as a copy of the
-demo stand. Clicking it again while it runs just opens the editor.
+Windows, built by CI and attached to each
+[release](https://github.com/onovokhatski/tapcue/releases/latest) from v0.1.0. A click starts
+Tapcue and opens the editor in the browser; your project lives in `Documents/Tapcue`, which
+starts as a copy of the demo stand. Clicking it again while it runs just opens the editor.
 
 The apps are not code-signed yet, so the first start needs one extra step:
 
@@ -157,6 +159,7 @@ expose a Tapcue server to the internet except in demo mode. The
 | [Stand setup](docs/stand-setup.md) | Network, the Tapcue computer and each tablet, before the stand opens |
 | [Project format](docs/project-format.md) | The `project.json` reference |
 | [Deploying the online demo](docs/deploy.md) | Railway, from the repository's Dockerfile |
+| [Releasing](docs/release.md) | A version tag, and what CI builds and attaches |
 | [Roadmap](docs/roadmap.md) | Phases, milestones and how work is done |
 | [Decisions](docs/adr/README.md) | Architecture decision records |
 | [Design](docs/design/README.md) | Design system, components and a prototype of every screen |
