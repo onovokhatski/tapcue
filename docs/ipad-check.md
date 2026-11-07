@@ -122,4 +122,4 @@ runs on macOS and Linux.
 | Date | Length | Taps | Delivered | Server memory, settled → end | Player heap | Result |
 |---|---|---|---|---|---|---|
 | 2026-11-03 | 3 min (trial, a tap every 2 s) | 89 | 56 of 56 | 152 → 131 MB | 10 → 10 MB | Passed |
-| — | 10 h | — | — | — | — | Not run yet |
+| 2026-11-05 → 06 | 10 h (a tap every 5 s) | 7155 | 4489 of 4489 | 102 → 85 MB (82–121 MB over the run) | 10 → 10 MB | Passed: no page errors, reloads or reconnects |
