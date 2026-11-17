@@ -20,6 +20,7 @@ import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geomet
 import { useEditor } from '../useEditor';
 import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
+import { HotspotTextFields } from './HotspotText';
 
 export function HotspotPanel() {
   const project = useEditor((state) => state.project);
@@ -97,6 +98,9 @@ export function HotspotPanel() {
       </Section>
       <Section title="Style">
         <StyleFields key={`style-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
+      </Section>
+      <Section title="Text">
+        <HotspotTextFields key={`text-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
       </Section>
       <Section title="Stacking">
         <div className="flex gap-2">

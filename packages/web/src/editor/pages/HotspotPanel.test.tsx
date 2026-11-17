@@ -273,6 +273,68 @@ describe('HotspotPanel', () => {
     });
   });
 
+  describe('text (spec HS-10)', () => {
+    it('adds a label, which makes the hotspot visible, and removes it', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+      expect(cardA().text).toMatchObject({ content: 'Label', align: 'center' });
+      expect(screen.getByRole('textbox', { name: 'Text' })).toHaveValue('Label');
+      expect(screen.queryByText(/visitors see only the artwork/)).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Remove text' }));
+      expect(cardA()).not.toHaveProperty('text');
+      expect(screen.getByRole('button', { name: 'Add text' })).toBeInTheDocument();
+    });
+
+    it('changes the words, keeping empty text out of the project', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+      const words = screen.getByRole('textbox', { name: 'Text' });
+      fireEvent.change(words, { target: { value: 'Play\nthe reel' } });
+      expect(cardA().text?.content).toBe('Play\nthe reel');
+      fireEvent.change(words, { target: { value: '  ' } });
+      expect(screen.getByText('Type some text, or remove the label')).toBeInTheDocument();
+      expect(cardA().text?.content).toBe('Play\nthe reel');
+    });
+
+    it('sets size and padding within their limits', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+      fireEvent.change(screen.getByRole('textbox', { name: 'Text size' }), {
+        target: { value: '72' },
+      });
+      fireEvent.change(screen.getByRole('textbox', { name: 'Text padding' }), {
+        target: { value: '0' },
+      });
+      expect(cardA().text).toMatchObject({ size: 72, padding: 0 });
+      fireEvent.change(screen.getByRole('textbox', { name: 'Text size' }), {
+        target: { value: '7' },
+      });
+      expect(screen.getByText('Size: 8 to 400')).toBeInTheDocument();
+      fireEvent.change(screen.getByRole('textbox', { name: 'Text padding' }), {
+        target: { value: '501' },
+      });
+      expect(screen.getByText('Padding: 0 to 500')).toBeInTheDocument();
+      expect(cardA().text).toMatchObject({ size: 72, padding: 0 });
+    });
+
+    it('sets weight, alignment, position and colour', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.click(screen.getByRole('button', { name: 'Add text' }));
+      fireEvent.click(screen.getByRole('radio', { name: 'Bold' }));
+      fireEvent.click(screen.getByRole('radio', { name: 'Left' }));
+      fireEvent.click(screen.getByRole('radio', { name: 'Bottom' }));
+      fireEvent.change(screen.getByRole('textbox', { name: 'text hex' }), {
+        target: { value: '#112233' },
+      });
+      expect(cardA().text).toMatchObject({
+        weight: 'bold',
+        align: 'left',
+        verticalAlign: 'bottom',
+        color: '#112233',
+      });
+    });
+  });
+
   it('sets the press effect (spec HS-5)', async () => {
     const { cardA } = await renderPanel();
     const effect = screen.getByRole('combobox', { name: 'Press effect' });

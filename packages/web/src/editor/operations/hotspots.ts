@@ -5,6 +5,7 @@ import type {
   AssetPath,
   Hotspot,
   HotspotId,
+  HotspotText,
   PageId,
   PressEffect,
   Project,
@@ -211,6 +212,38 @@ export function setHotspotImage(
     if ((h.style.image ?? null) === image) return h;
     const { image: _, ...rest } = h.style;
     return { ...h, style: image ? { ...rest, image } : rest };
+  });
+}
+
+/** A new label: centred, white, medium, sized for a button on a 2048-wide canvas (spec HS-10). */
+export const DEFAULT_TEXT: HotspotText = {
+  content: 'Label',
+  size: 48,
+  weight: 'medium',
+  color: '#FFFFFF',
+  align: 'center',
+  verticalAlign: 'middle',
+  padding: 24,
+};
+
+/**
+ * Adds or changes the hotspot's text (spec HS-10): a change applies to its text, or to a new
+ * default one; null removes it, stored as no field (ADR 0019).
+ */
+export function setHotspotText(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  change: Partial<HotspotText> | null,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) => {
+    if (change === null) {
+      if (!h.text) return h;
+      const { text: _, ...rest } = h;
+      return rest;
+    }
+    const text = { ...(h.text ?? DEFAULT_TEXT), ...change };
+    return JSON.stringify(text) === JSON.stringify(h.text) ? h : { ...h, text };
   });
 }
 

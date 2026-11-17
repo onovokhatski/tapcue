@@ -115,6 +115,65 @@ describe('HotspotView', () => {
     });
   });
 
+  describe('text (spec HS-10)', () => {
+    const text = {
+      content: 'Play\nthe reel',
+      size: 48,
+      weight: 'bold' as const,
+      color: '#FFEE00',
+      align: 'right' as const,
+      verticalAlign: 'bottom' as const,
+      padding: 24,
+    };
+
+    it('draws the label in canvas pixels, above the image and below the border', () => {
+      const { container } = render(
+        <HotspotView
+          hotspot={{
+            ...hotspot,
+            style: {
+              ...hotspot.style,
+              image: 'assets/a.png',
+              border: { color: '#000000', width: 2 },
+            },
+            text,
+          }}
+        />,
+      );
+      const group = container.querySelector<HTMLElement>('.hotspot-style')!;
+      expect([...group.children].map((el) => el.className)).toEqual([
+        'hotspot-image',
+        'hotspot-text',
+        'hotspot-border',
+      ]);
+      const layer = group.querySelector<HTMLElement>('.hotspot-text')!;
+      expect(layer.textContent).toBe('Play\nthe reel'); // line breaks kept, shown by pre-wrap
+      expect(layer.style.fontSize).toBe('48px');
+      expect(layer.style.fontWeight).toBe('700');
+      expect(layer.style.color).toBe('#FFEE00');
+      expect(layer.style.textAlign).toBe('right');
+      expect(layer.style.justifyContent).toBe('flex-end');
+      expect(layer.style.padding).toBe('24px');
+    });
+
+    it.each([
+      ['regular', 'top', '400', 'flex-start'],
+      ['medium', 'middle', '500', 'center'],
+    ] as const)('maps %s and %s', (weight, verticalAlign, fontWeight, justify) => {
+      const { container } = render(
+        <HotspotView hotspot={{ ...hotspot, text: { ...text, weight, verticalAlign } }} />,
+      );
+      const layer = container.querySelector<HTMLElement>('.hotspot-text')!;
+      expect(layer.style.fontWeight).toBe(fontWeight);
+      expect(layer.style.justifyContent).toBe(justify);
+    });
+
+    it('draws no text layer without the field', () => {
+      const { container } = render(<HotspotView hotspot={hotspot} />);
+      expect(container.querySelector('.hotspot-text')).toBeNull();
+    });
+  });
+
   describe('image (spec HS-9)', () => {
     it('draws the image from the assets above the fill and below the border', () => {
       const { container } = render(

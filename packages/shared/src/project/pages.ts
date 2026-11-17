@@ -40,6 +40,28 @@ export const Style = z.strictObject({
 });
 export type Style = z.infer<typeof Style>;
 
+/**
+ * A text label drawn on the hotspot (spec HS-10, ADR 0019), above the image and below the border.
+ * Sizes are canvas pixels; the font is the device's system sans-serif.
+ */
+export const HotspotText = z.strictObject({
+  // Line breaks are kept; a label with no visible text is no label, so it is removed instead.
+  content: z.string().min(1, 'Expected some text').max(500, 'Expected at most 500 characters'),
+  size: z
+    .number('Expected a number')
+    .min(8, 'Expected 8 to 400 px')
+    .max(400, 'Expected 8 to 400 px'),
+  weight: z.enum(['regular', 'medium', 'bold']),
+  color: Color,
+  align: z.enum(['left', 'center', 'right']),
+  verticalAlign: z.enum(['top', 'middle', 'bottom']),
+  padding: z
+    .number('Expected a number')
+    .min(0, 'Expected 0 to 500 px')
+    .max(500, 'Expected 0 to 500 px'),
+});
+export type HotspotText = z.infer<typeof HotspotText>;
+
 export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple']);
 export type PressEffect = z.infer<typeof PressEffect>;
 
@@ -60,6 +82,8 @@ export const Hotspot = z.strictObject({
   height: Length,
   shape: Shape,
   style: Style,
+  // Absent means no text, so projects from before v0.2 stay valid.
+  text: HotspotText.optional(),
   pressEffect: PressEffect,
   action: Action,
 });
