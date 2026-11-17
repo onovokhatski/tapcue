@@ -286,6 +286,22 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expectValid(removed);
     });
 
+    it('sets the fill opacity, and stores a solid fill as no field (spec HS-4)', () => {
+      const glass = setStyle(demoProject(), 'p_home00', 'h_carda0', {
+        fill: '#FFFFFF',
+        fillOpacity: 0.3,
+      });
+      expect(cardA(glass).style).toEqual({
+        fill: '#FFFFFF',
+        border: null,
+        opacity: 1,
+        fillOpacity: 0.3,
+      });
+      expectValid(glass);
+      const solid = setStyle(glass, 'p_home00', 'h_carda0', { fillOpacity: 1 });
+      expect(cardA(solid).style).toEqual({ fill: '#FFFFFF', border: null, opacity: 1 });
+    });
+
     it('sets the press effect', () => {
       expect(
         cardA(setPressEffect(demoProject(), 'p_home00', 'h_carda0', 'ripple')).pressEffect,
