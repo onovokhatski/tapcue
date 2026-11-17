@@ -154,14 +154,23 @@ async function checkProject(dir: string, input: unknown): Promise<ValidationResu
 
 /** The schema cannot see the disk, so the server checks the files (project format §10). */
 async function missingAssets(dir: string, project: Project): Promise<ValidationError[]> {
-  const checks = project.pages.map(async (page, p) => {
-    if (!page.background) return null;
-    const { asset } = page.background;
+  // Every file the project names: page backgrounds and hotspot images (spec HS-9).
+  const named = project.pages.flatMap((page, p) => [
+    ...(page.background
+      ? [{ path: `pages[${p}].background.asset`, asset: page.background.asset }]
+      : []),
+    ...page.hotspots.flatMap((hotspot, h) =>
+      hotspot.style.image
+        ? [{ path: `pages[${p}].hotspots[${h}].style.image`, asset: hotspot.style.image }]
+        : [],
+    ),
+  ]);
+  const checks = named.map(async ({ path, asset }) => {
     try {
       await access(join(dir, asset));
       return null;
     } catch {
-      return { path: `pages[${p}].background.asset`, message: `file "${asset}" does not exist` };
+      return { path, message: `file "${asset}" does not exist` };
     }
   });
   return (await Promise.all(checks)).filter((error) => error !== null);

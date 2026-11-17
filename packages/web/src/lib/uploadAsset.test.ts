@@ -23,6 +23,16 @@ describe('checkFile', () => {
     );
   });
 
+  it('takes only images for a hotspot image (spec HS-9)', () => {
+    expect(checkFile({ name: 'card.webp', type: 'image/webp', size: 1000 }, 'image')).toBeNull();
+    expect(checkFile({ name: 'loop.mp4', type: 'video/mp4', size: 1000 }, 'image')).toBe(
+      'loop.mp4 is not a JPEG, PNG or WebP image.',
+    );
+    expect(
+      checkFile({ name: 'big.png', type: 'image/png', size: 312 * 1024 * 1024 }, 'image'),
+    ).toContain('The limit is 200 MB');
+  });
+
   it('takes a file of exactly 200 MB', () => {
     expect(MAX_UPLOAD_BYTES).toBe(200 * 1024 * 1024);
     expect(checkFile({ name: 'max.mp4', type: 'video/mp4', size: MAX_UPLOAD_BYTES })).toBeNull();

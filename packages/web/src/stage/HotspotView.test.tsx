@@ -1,5 +1,5 @@
 import type { Hotspot, PressEffect } from '@tapcue/shared';
-import { fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { HotspotView } from './HotspotView';
 
@@ -100,14 +100,62 @@ describe('HotspotView', () => {
         '.hotspot-style',
       )!;
 
-    it('blurs what lies under the hotspot, in canvas pixels, on the layer under the fill', () => {
+    it('blurs what lies under the hotspot, in canvas pixels, on a layer under the fill', () => {
       const layer = styleLayer({ fill: '#FFFFFF', border: null, opacity: 0.3, backdropBlur: 24 });
-      expect(layer.getAttribute('style')).toContain('backdrop-filter: blur(24px)');
-      expect(layer.style.backgroundColor).not.toBe('');
+      const backdrop = layer.previousElementSibling as HTMLElement;
+      expect(backdrop).toHaveClass('hotspot-backdrop');
+      expect(backdrop.getAttribute('style')).toContain('backdrop-filter: blur(24px)');
+      // Faded like the rest; outside the faded group, which would hide the page from the blur.
+      expect(backdrop.style.opacity).toBe('0.3');
+      expect(layer.getAttribute('style')).not.toContain('backdrop');
     });
 
     it('draws no blur without the field', () => {
-      expect(styleLayer(hotspot.style).getAttribute('style') ?? '').not.toContain('backdrop');
+      expect(styleLayer(hotspot.style).previousElementSibling).toBeNull();
+    });
+  });
+
+  describe('image (spec HS-9)', () => {
+    it('draws the image from the assets above the fill and below the border', () => {
+      const { container } = render(
+        <HotspotView
+          hotspot={{
+            ...hotspot,
+            style: {
+              fill: '#000000',
+              border: { color: '#FFFFFF', width: 2 },
+              opacity: 0.8,
+              image: 'assets/card.png',
+            },
+          }}
+        />,
+      );
+      const group = container.querySelector<HTMLElement>('.hotspot-style')!;
+      expect([...group.children].map((el) => el.className)).toEqual([
+        'hotspot-image',
+        'hotspot-border',
+      ]);
+      const img = group.querySelector('img')!;
+      expect(img.getAttribute('src')).toBe('/assets/card.png');
+      expect(img).toHaveAttribute('alt', '');
+      expect(group.style.opacity).toBe('0.8'); // the group fades as one
+    });
+
+    it('says when its image is decoded, or failed', async () => {
+      const onImageReady = vi.fn();
+      const { container } = render(
+        <HotspotView
+          hotspot={{ ...hotspot, style: { ...hotspot.style, image: 'assets/card.png' } }}
+          onImageReady={onImageReady}
+        />,
+      );
+      const img = container.querySelector('img')!;
+      img.decode = () => Promise.resolve();
+      fireEvent.load(img);
+      await act(() => Promise.resolve());
+      expect(onImageReady).toHaveBeenCalledWith('assets/card.png');
+      fireEvent.error(img);
+      expect(onImageReady).toHaveBeenCalledTimes(2);
     });
   });
 

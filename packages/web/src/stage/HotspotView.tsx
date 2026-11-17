@@ -1,7 +1,8 @@
 // One hotspot: its area in canvas pixels, the user's style and the press effect (spec HS-3–HS-5,
-// HS-8).
+// HS-8, HS-9).
 import type { Hotspot } from '@tapcue/shared';
 import { useRef, useState, type PointerEvent } from 'react';
+import { assetUrl } from './assetUrl';
 import { usePress } from './usePress';
 import './hotspot.css';
 
@@ -16,9 +17,11 @@ interface Ripple {
 interface HotspotViewProps {
   hotspot: Hotspot;
   onTap?: ((hotspot: Hotspot) => void) | undefined;
+  /** Called when the hotspot's image is decoded, or failed to load, so the page can show it. */
+  onImageReady?: ((image: string) => void) | undefined;
 }
 
-export function HotspotView({ hotspot, onTap }: HotspotViewProps) {
+export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) {
   const { id, x, y, width, height, shape, style, pressEffect } = hotspot;
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const nextRippleId = useRef(0);
@@ -55,19 +58,48 @@ export function HotspotView({ hotspot, onTap }: HotspotViewProps) {
       }}
       {...handlers}
     >
-      {/* The user's style is its own layer, so its opacity does not fade the press effect. */}
+      {/* Content layers, bottom to top (ADR 0019): backdrop blur, then fill, image and border.
+          They are layers of their own, so the opacity does not fade the press effect. */}
+      {style.backdropBlur ? (
+        // Frosted backdrop (spec HS-8), in canvas pixels like the border. Outside the group
+        // below: an element with opacity under 1 would hide the page from a blur inside it.
+        // Unprefixed since Safari 18, the oldest Safari the player supports (NFR-1).
+        <div
+          className="hotspot-backdrop"
+          style={{ backdropFilter: `blur(${style.backdropBlur}px)`, opacity: style.opacity }}
+        />
+      ) : null}
       <div
         className="hotspot-style"
-        style={{
-          // fill and border both null leave nothing visible: the button is part of the artwork.
-          backgroundColor: style.fill ?? undefined,
-          border: style.border ? `${style.border.width}px solid ${style.border.color}` : undefined,
-          opacity: style.opacity,
-          // Frosted backdrop (spec HS-8): drawn under the fill, in canvas pixels like the border.
-          // Unprefixed since Safari 18, the oldest Safari the player supports (NFR-1).
-          backdropFilter: style.backdropBlur ? `blur(${style.backdropBlur}px)` : undefined,
-        }}
-      />
+        // fill and border both null leave nothing visible: the button is part of the artwork.
+        style={{ backgroundColor: style.fill ?? undefined, opacity: style.opacity }}
+      >
+        {style.image && (
+          // Image (spec HS-9): covers the box, cropped; decorative, the hotspot's meaning is its action.
+          // Loaded is not yet decoded: decode() keeps it from appearing a frame after the page.
+          // A file that fails still counts, so a page is never held back by one missing image.
+          <img
+            className="hotspot-image"
+            src={assetUrl(style.image)}
+            alt=""
+            draggable={false}
+            onLoad={(event) => {
+              const image = style.image!;
+              void event.currentTarget
+                .decode()
+                .catch(() => undefined)
+                .then(() => onImageReady?.(image));
+            }}
+            onError={() => onImageReady?.(style.image!)}
+          />
+        )}
+        {style.border && (
+          <div
+            className="hotspot-border"
+            style={{ border: `${style.border.width}px solid ${style.border.color}` }}
+          />
+        )}
+      </div>
       {(pressEffect === 'highlight' || pressEffect === 'press') && <div className="press-layer" />}
       {ripples.map((ripple) => (
         <span

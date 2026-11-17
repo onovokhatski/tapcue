@@ -17,6 +17,20 @@
   pointer-events: none;
 }
 
+/* The style group's layers (image, border) fill it and follow the shape too. */
+.hotspot-style > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+/* An image covers the box keeping its proportions, cropped at the edges (spec HS-9). */
+.hotspot-image {
+  object-fit: cover;
+}
+
 /* highlight and press: a layer that fades in on touch-down, holds while pressed, fades out on release. */
 .press-layer {
   opacity: 0;

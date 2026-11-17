@@ -124,6 +124,7 @@ my-stand/
 | `border` | `{ "color": Color, "width": number }` \| `null` | Width 1–100 canvas pixels. `null` = no border. |
 | `opacity` | number | 0–1, applies to the whole hotspot. |
 | `backdropBlur` | number, optional | 1–100 canvas pixels. Blurs what lies under the hotspot, within its shape, below the fill: a semi-transparent fill over it looks like frosted glass ([ADR 0019](adr/0019-hotspot-content.md)). Absent = no blur. |
+| `image` | [asset path](#93-asset-paths), optional | A JPEG, PNG or WebP that covers the hotspot's whole box, keeping its proportions (cropped at the edges), within its shape, above the fill and below the border ([ADR 0019](adr/0019-hotspot-content.md)). The file must exist. Absent = no image. |
 
 A hotspot with `fill: null` and `border: null` is **invisible** — the most common case when
 the button is drawn on the background.

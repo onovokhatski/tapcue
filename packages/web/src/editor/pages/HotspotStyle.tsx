@@ -10,6 +10,7 @@ import { Select } from '../../ui/Select';
 import { useDraft } from '../../ui/useDraft';
 import { setPressEffect, setShape, setStyle } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
+import { HotspotImage } from './HotspotImage';
 
 interface Props {
   pageId: PageId;
@@ -176,7 +177,8 @@ export function StyleFields({ pageId, hotspot }: Props) {
       {errors.map((error) => (
         <FieldError key={error}>{error}</FieldError>
       ))}
-      {!style.fill && !style.border && !style.backdropBlur && (
+      <HotspotImage pageId={pageId} hotspot={hotspot} />
+      {!style.fill && !style.border && !style.backdropBlur && !style.image && (
         <p className="text-body-s text-muted">
           No fill and no border: visitors see only the artwork.
         </p>

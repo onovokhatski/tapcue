@@ -254,6 +254,14 @@ describe('HotspotPanel', () => {
       expect(cardA().style).not.toHaveProperty('backdropBlur');
     });
 
+    it('does not call a hotspot with an image invisible (spec HS-9)', async () => {
+      const project = demoProject();
+      project.pages[0]!.hotspots[0]!.style.image = 'assets/home.jpg';
+      await renderPanel(project);
+      expect(screen.queryByText(/visitors see only the artwork/)).toBeNull();
+      expect(screen.getByText('home.jpg')).toBeInTheDocument();
+    });
+
     it('keeps the border width when the border colour changes', async () => {
       const project = demoProject();
       project.pages[0]!.hotspots[0]!.style.border = { color: '#000000', width: 7 };

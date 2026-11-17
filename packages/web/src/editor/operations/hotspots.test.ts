@@ -12,6 +12,7 @@ import {
   restackHotspot,
   setPressEffect,
   setShape,
+  setHotspotImage,
   setStyle,
 } from './hotspots';
 
@@ -251,6 +252,23 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expect(cardA(cleared).style).toEqual({ fill: null, border: null, opacity: 1 });
       expectValid(cleared);
       expect(setStyle(cleared, 'p_home00', 'h_carda0', { backdropBlur: 0 })).toBe(cleared);
+    });
+
+    it('sets, replaces and removes the image, none being no field (spec HS-9)', () => {
+      const withImage = setHotspotImage(demoProject(), 'p_home00', 'h_carda0', 'assets/a.png');
+      expect(cardA(withImage).style).toEqual({
+        fill: null,
+        border: null,
+        opacity: 1,
+        image: 'assets/a.png',
+      });
+      expect(setHotspotImage(withImage, 'p_home00', 'h_carda0', 'assets/a.png')).toBe(withImage);
+      const replaced = setHotspotImage(withImage, 'p_home00', 'h_carda0', 'assets/b.png');
+      expect(cardA(replaced).style.image).toBe('assets/b.png');
+      const removed = setHotspotImage(replaced, 'p_home00', 'h_carda0', null);
+      expect(cardA(removed).style).toEqual({ fill: null, border: null, opacity: 1 });
+      expect(setHotspotImage(removed, 'p_home00', 'h_carda0', null)).toBe(removed);
+      expectValid(removed);
     });
 
     it('sets the press effect', () => {

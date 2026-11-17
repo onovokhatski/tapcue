@@ -34,6 +34,9 @@ export const Style = z.strictObject({
     .min(1, 'Expected 1 to 100 px')
     .max(100, 'Expected 1 to 100 px')
     .optional(),
+  // Image (spec HS-9, ADR 0019): covers the hotspot's box, cropped, above the fill. Absent means
+  // none. That the file exists is checked by the server, which sees the disk.
+  image: AssetPath.optional(),
 });
 export type Style = z.infer<typeof Style>;
 

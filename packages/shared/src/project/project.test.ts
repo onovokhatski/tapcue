@@ -55,6 +55,12 @@ describe('Hotspot', () => {
     expect(Object.keys(hotspot.style)).not.toContain('backdropBlur');
   });
 
+  it('accepts an image from the assets folder, and no field for none (spec HS-9)', () => {
+    const image = { ...hotspot, style: { ...hotspot.style, image: 'assets/studio-1.webp' } };
+    expect(errorOf(Hotspot, image)).toBeNull();
+    expect(Object.keys(hotspot.style)).not.toContain('image');
+  });
+
   it('accepts an empty name, which is only a label', () => {
     expect(errorOf(Hotspot, { ...hotspot, name: '' })).toBeNull();
   });
@@ -92,6 +98,11 @@ describe('Hotspot', () => {
       'a frost that is not a number',
       { style: { fill: null, border: null, opacity: 1, backdropBlur: '8' } },
       'style.backdropBlur: Expected a number',
+    ],
+    [
+      'an image outside the assets folder',
+      { style: { fill: null, border: null, opacity: 1, image: '../secret.png' } },
+      'style.image: Expected "assets/<file name>"',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
     ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],

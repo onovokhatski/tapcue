@@ -1,6 +1,6 @@
 // Draws one page — background and hotspots — at canvas size, scaled to fill its parent (ADR 0004).
 import type { Background, Canvas, Hotspot, Page } from '@tapcue/shared';
-import { useEffect, useEffectEvent, type SyntheticEvent } from 'react';
+import { useEffect, useEffectEvent, useState, type SyntheticEvent } from 'react';
 import { assetUrl } from './assetUrl';
 import { stageGeometry } from './geometry';
 import { HotspotView } from './HotspotView';
@@ -12,8 +12,8 @@ interface PageViewProps {
   /** Called when a hotspot is tapped: released inside after being pressed (spec ACT-2). */
   onTap?: (hotspot: Hotspot) => void;
   /**
-   * Called once the background can be shown without a blank frame: an image loaded and decoded,
-   * a video with its first frame, or no background at all (spec PG-5).
+   * Called once the page can be shown without a blank frame (spec PG-5): its background (an image
+   * loaded and decoded, a video with its first frame, or none) and every hotspot image (HS-9).
    */
   onReady?: () => void;
 }
@@ -23,10 +23,19 @@ export function PageView({ page, canvas, onTap, onReady }: PageViewProps) {
   const { scale, offsetX, offsetY } = stageGeometry(canvas, viewport, canvas.scaleMode);
   const ready = useEffectEvent(() => onReady?.());
 
+  // What has to load before the page is ready: its background and each hotspot's image, by name.
+  const needed = [
+    ...(page.background ? [`background ${page.background.asset}`] : []),
+    ...page.hotspots.flatMap((h) => (h.style.image ? [`hotspot ${h.id} ${h.style.image}`] : [])),
+  ];
+  const [loaded, setLoaded] = useState<ReadonlySet<string>>(new Set());
+  const markLoaded = (name: string) => setLoaded((current) => new Set(current).add(name));
+  const allLoaded = needed.every((name) => loaded.has(name));
+
   useEffect(() => {
-    // Nothing to load: the canvas colour is there at once.
-    if (!page.background) ready();
-  }, [page.background]);
+    // With nothing to load, the canvas colour is there at once.
+    if (allLoaded) ready();
+  }, [allLoaded]);
 
   return (
     // The outer box takes the parent's size; its colour shows in the bars of `fit` mode.
@@ -46,10 +55,18 @@ export function PageView({ page, canvas, onTap, onReady }: PageViewProps) {
         }}
       >
         {page.background && (
-          <BackgroundView background={page.background} onReady={() => onReady?.()} />
+          <BackgroundView
+            background={page.background}
+            onReady={() => markLoaded(`background ${page.background!.asset}`)}
+          />
         )}
         {page.hotspots.map((hotspot) => (
-          <HotspotView key={hotspot.id} hotspot={hotspot} onTap={onTap} />
+          <HotspotView
+            key={hotspot.id}
+            hotspot={hotspot}
+            onTap={onTap}
+            onImageReady={(image) => markLoaded(`hotspot ${hotspot.id} ${image}`)}
+          />
         ))}
       </div>
     </div>

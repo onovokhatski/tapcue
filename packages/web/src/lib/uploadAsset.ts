@@ -12,8 +12,17 @@ const FORMATS: Record<string, string> = {
   'video/mp4': 'video',
 };
 
-/** Why a file cannot be a background, or null when it can. Saves a long upload that would fail. */
-export function checkFile(file: { name: string; type: string; size: number }): string | null {
+/**
+ * Why a file cannot be uploaded, or null when it can. Saves a long upload that would fail. A page
+ * background may be an image or a video; a hotspot image only an image (spec HS-9).
+ */
+export function checkFile(
+  file: { name: string; type: string; size: number },
+  kind: 'media' | 'image' = 'media',
+): string | null {
+  if (kind === 'image' && FORMATS[file.type] !== 'image') {
+    return `${file.name} is not a JPEG, PNG or WebP image.`;
+  }
   if (!FORMATS[file.type]) {
     return `${file.name} is not a JPEG, PNG or WebP image or an MP4 video.`;
   }
