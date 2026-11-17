@@ -76,6 +76,13 @@ describe('Hotspot', () => {
     expect(Object.keys(hotspot)).not.toContain('text');
   });
 
+  it('accepts a fill opacity from 0 to 1, and no field for a solid fill (spec HS-4)', () => {
+    for (const fillOpacity of [0, 0.3, 1]) {
+      expect(errorOf(Hotspot, { ...hotspot, style: { ...hotspot.style, fillOpacity } })).toBeNull();
+    }
+    expect(Object.keys(hotspot.style)).not.toContain('fillOpacity');
+  });
+
   it('accepts an empty name, which is only a label', () => {
     expect(errorOf(Hotspot, { ...hotspot, name: '' })).toBeNull();
   });
@@ -312,6 +319,16 @@ describe('Hotspot', () => {
         },
       },
       'text.color',
+    ],
+    [
+      'a fill opacity of 1.5',
+      { style: { fill: '#FFFFFF', border: null, opacity: 1, fillOpacity: 1.5 } },
+      'style.fillOpacity: Expected 0 to 1',
+    ],
+    [
+      'a negative fill opacity',
+      { style: { fill: '#FFFFFF', border: null, opacity: 1, fillOpacity: -0.1 } },
+      'style.fillOpacity: Expected 0 to 1',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
     ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],

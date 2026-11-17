@@ -72,7 +72,10 @@ export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) 
       <div
         className="hotspot-style"
         // fill and border both null leave nothing visible: the button is part of the artwork.
-        style={{ backgroundColor: style.fill ?? undefined, opacity: style.opacity }}
+        style={{
+          backgroundColor: style.fill ? fillColor(style.fill, style.fillOpacity) : undefined,
+          opacity: style.opacity,
+        }}
       >
         {style.image && (
           // Image (spec HS-9): covers the box, cropped; decorative, the hotspot's meaning is its action.
@@ -140,4 +143,11 @@ function TextLayer({ text }: { text: HotspotText }) {
       <span>{text.content}</span>
     </div>
   );
+}
+
+/** "#RRGGBB" with the fill's own opacity (spec HS-4); a solid fill stays as it is written. */
+export function fillColor(hex: string, fillOpacity = 1): string {
+  if (fillOpacity >= 1) return hex;
+  const channel = (at: number) => parseInt(hex.slice(at, at + 2), 16);
+  return `rgba(${channel(1)}, ${channel(3)}, ${channel(5)}, ${fillOpacity})`;
 }

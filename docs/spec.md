@@ -94,7 +94,8 @@ IDs are referenced from issues and tests.
 - **HS-1** The integrator adds a hotspot with an "Add hotspot" button; it appears in the centre of the page with a default size.
 - **HS-2** A hotspot can be selected, moved and resized on the canvas, and positioned precisely with numeric fields (x, y, width, height).
 - **HS-3** Shape: rectangle (with optional corner radius) or ellipse.
-- **HS-4** Style: invisible, or fill colour, border colour and width, opacity.
+- **HS-4** Style: invisible, or fill colour and its own opacity, border colour and width, and the
+  opacity of the whole hotspot.
 - **HS-5** Press effect: none, highlight, press-in, or ripple.
 - **HS-6** Hotspots can be deleted and their stacking order changed.
 - **HS-7** A hotspot can be duplicated: the copy gets a new id, the same properties and a small

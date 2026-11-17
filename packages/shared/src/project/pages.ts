@@ -27,6 +27,13 @@ export const Style = z.strictObject({
     })
     .nullable(),
   opacity: z.number().min(0, 'Expected 0 to 1').max(1, 'Expected 0 to 1'),
+  // The fill's own opacity (spec HS-4), so a translucent glass fill can carry crisp text and an
+  // image; `opacity` above still fades the whole hotspot. Absent means 1, a solid fill.
+  fillOpacity: z
+    .number('Expected a number')
+    .min(0, 'Expected 0 to 1')
+    .max(1, 'Expected 0 to 1')
+    .optional(),
   // Frosted backdrop (spec HS-8, ADR 0019): blurs what lies under the hotspot, radius in canvas
   // pixels. Absent means none, so projects from before v0.2 stay valid.
   backdropBlur: z

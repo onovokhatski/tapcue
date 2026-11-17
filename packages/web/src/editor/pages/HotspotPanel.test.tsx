@@ -254,6 +254,21 @@ describe('HotspotPanel', () => {
       expect(cardA().style).not.toHaveProperty('backdropBlur');
     });
 
+    it('sets the fill opacity in percent, only while there is a fill (spec HS-4)', async () => {
+      const { cardA } = await renderPanel();
+      const fillOpacity = () => screen.getByRole('textbox', { name: 'Fill opacity' });
+      expect(fillOpacity()).toBeDisabled();
+      fireEvent.change(screen.getByLabelText('Pick fill'), { target: { value: '#ffffff' } });
+      expect(fillOpacity()).toHaveValue('100');
+      fireEvent.change(fillOpacity(), { target: { value: '30' } });
+      expect(cardA().style).toMatchObject({ fillOpacity: 0.3, opacity: 1 });
+      fireEvent.change(fillOpacity(), { target: { value: '120' } });
+      expect(screen.getByText('Fill opacity: 0 to 100')).toBeInTheDocument();
+      expect(cardA().style.fillOpacity).toBe(0.3);
+      fireEvent.change(fillOpacity(), { target: { value: '100' } });
+      expect(cardA().style).not.toHaveProperty('fillOpacity');
+    });
+
     it('does not call a hotspot with an image invisible (spec HS-9)', async () => {
       const project = demoProject();
       project.pages[0]!.hotspots[0]!.style.image = 'assets/home.jpg';

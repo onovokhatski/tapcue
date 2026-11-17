@@ -32,6 +32,10 @@ Rules for all three:
 - **One layer order** inside a hotspot, bottom to top: backdrop blur, fill, image, text, border.
   Everything is clipped to the shape (rectangle with its corner radius, or ellipse). The opacity
   and the press effect act on the hotspot as a whole.
+- **The fill has its own opacity** (`style.fillOpacity`, added while building the text, #171).
+  A glass button needs a translucent fill with crisp text and image on it, and the hotspot's
+  opacity fades all of them. Keeping text out of that opacity was the other option; a separate fill
+  opacity keeps the rule above and is how design tools treat a fill.
 - **Canvas pixels.** Sizes (blur radius, text size, padding) are in canvas pixels, like the box
   and the border, so the hotspot scales with the page.
 - **The editor shows them live on its canvas,** exactly as the player does.

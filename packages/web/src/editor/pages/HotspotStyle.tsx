@@ -83,7 +83,7 @@ const EFFECTS: { value: PressEffect; label: string }[] = [
   { value: 'ripple', label: 'Ripple' },
 ];
 
-/** Fill, opacity, border and press effect (spec HS-4, HS-5). */
+/** Fill and its opacity, border, the hotspot's opacity, frost, image and press effect (spec HS-4, HS-5, HS-8, HS-9). */
 export function StyleFields({ pageId, hotspot }: Props) {
   const change = useEditor((state) => state.change);
   const { style } = hotspot;
@@ -99,11 +99,18 @@ export function StyleFields({ pageId, hotspot }: Props) {
       if (style.border) restyle({ border: { ...style.border, width: Number(text) } });
     },
   );
+  // The fill's own opacity in percent (spec HS-4); 100 % is stored as no field.
+  const fillOpacity = useDraft(
+    String(Math.round((style.fillOpacity ?? 1) * 100)),
+    wholeNumber(0, 100),
+    (text) => restyle({ fillOpacity: Number(text) / 100 }),
+  );
   // Frost (spec HS-8): 0 is no blur, stored as no field.
   const frost = useDraft(String(style.backdropBlur ?? 0), wholeNumber(0, 100), (text) =>
     restyle({ backdropBlur: Number(text) }),
   );
   const errors = [
+    fillOpacity.error && `Fill opacity: ${fillOpacity.error}`,
     opacity.error && `Opacity: ${opacity.error}`,
     borderWidth.error && `Border width: ${borderWidth.error}`,
     frost.error && `Frost: ${frost.error}`,
@@ -122,16 +129,17 @@ export function StyleFields({ pageId, hotspot }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <p className="text-label-s text-secondary">Opacity</p>
+          <p className="text-label-s text-secondary">Fill opacity</p>
           <NumberField
             suffix="%"
-            ariaLabel="Opacity"
+            ariaLabel="Fill opacity"
             min={0}
             max={100}
-            value={opacity.text}
-            error={opacity.error !== null}
-            onChange={opacity.onChange}
-            onBlur={opacity.onBlur}
+            value={style.fill ? fillOpacity.text : '–'}
+            disabled={!style.fill}
+            error={fillOpacity.error !== null}
+            onChange={fillOpacity.onChange}
+            onBlur={fillOpacity.onBlur}
           />
         </div>
         <div className="space-y-1">
@@ -158,6 +166,19 @@ export function StyleFields({ pageId, hotspot }: Props) {
             error={borderWidth.error !== null}
             onChange={borderWidth.onChange}
             onBlur={borderWidth.onBlur}
+          />
+        </div>
+        <div className="space-y-1">
+          <p className="text-label-s text-secondary">Opacity</p>
+          <NumberField
+            suffix="%"
+            ariaLabel="Opacity"
+            min={0}
+            max={100}
+            value={opacity.text}
+            error={opacity.error !== null}
+            onChange={opacity.onChange}
+            onBlur={opacity.onBlur}
           />
         </div>
         <div className="space-y-1">

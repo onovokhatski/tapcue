@@ -1,7 +1,7 @@
 import type { Hotspot, PressEffect } from '@tapcue/shared';
 import { act, fireEvent, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { HotspotView } from './HotspotView';
+import { fillColor, HotspotView } from './HotspotView';
 
 const hotspot: Hotspot = {
   id: 'h_test00',
@@ -22,6 +22,12 @@ function renderHotspot(pressEffect: PressEffect = 'highlight') {
   const el = container.querySelector<HTMLElement>('[data-hotspot]')!;
   return { el, onTap };
 }
+
+/** The faded group of a hotspot with this style: fill, image, text and border. */
+const styleLayer = (style: Hotspot['style']) =>
+  render(<HotspotView hotspot={{ ...hotspot, style }} />).container.querySelector<HTMLElement>(
+    '.hotspot-style',
+  )!;
 
 const finger = (pointerId: number) => ({ pointerId, pointerType: 'touch', button: 0 });
 
@@ -95,11 +101,6 @@ describe('HotspotView', () => {
   });
 
   describe('frosted backdrop (spec HS-8)', () => {
-    const styleLayer = (style: Hotspot['style']) =>
-      render(<HotspotView hotspot={{ ...hotspot, style }} />).container.querySelector<HTMLElement>(
-        '.hotspot-style',
-      )!;
-
     it('blurs what lies under the hotspot, in canvas pixels, on a layer under the fill', () => {
       const layer = styleLayer({ fill: '#FFFFFF', border: null, opacity: 0.3, backdropBlur: 24 });
       const backdrop = layer.previousElementSibling as HTMLElement;
@@ -171,6 +172,20 @@ describe('HotspotView', () => {
     it('draws no text layer without the field', () => {
       const { container } = render(<HotspotView hotspot={hotspot} />);
       expect(container.querySelector('.hotspot-text')).toBeNull();
+    });
+  });
+
+  describe('fill opacity (spec HS-4)', () => {
+    it('fades only the fill, so the group stays at the hotspot opacity', () => {
+      const layer = styleLayer({ fill: '#FF8000', border: null, opacity: 1, fillOpacity: 0.3 });
+      expect(layer.style.backgroundColor).toBe('rgba(255, 128, 0, 0.3)');
+      expect(layer.style.opacity).toBe('1');
+    });
+
+    it('keeps a solid fill as it is written', () => {
+      expect(fillColor('#3A7BFF')).toBe('#3A7BFF');
+      expect(fillColor('#3A7BFF', 1)).toBe('#3A7BFF');
+      expect(fillColor('#0a0b0c', 0)).toBe('rgba(10, 11, 12, 0)');
     });
   });
 
