@@ -2,6 +2,7 @@
 // (spec HS-1, HS-2, architecture §4.2). An operation that cannot apply returns the same project.
 import type {
   Action,
+  AssetPath,
   Hotspot,
   HotspotId,
   PageId,
@@ -196,6 +197,20 @@ export function setStyle(
     // No frost is stored as no field, the way projects from before v0.2 have it (ADR 0019).
     if (style.backdropBlur === 0) delete style.backdropBlur;
     return JSON.stringify(style) === JSON.stringify(h.style) ? h : { ...h, style };
+  });
+}
+
+/** Sets or removes the hotspot's image (spec HS-9). None is stored as no field (ADR 0019). */
+export function setHotspotImage(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  image: AssetPath | null,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) => {
+    if ((h.style.image ?? null) === image) return h;
+    const { image: _, ...rest } = h.style;
+    return { ...h, style: image ? { ...rest, image } : rest };
   });
 }
 

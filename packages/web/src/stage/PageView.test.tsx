@@ -109,6 +109,30 @@ describe('PageView', () => {
       expect(renderReady(page()).onReady).toHaveBeenCalledTimes(1);
     });
 
+    it('waits for every hotspot image too, decoded or failed (spec HS-9)', async () => {
+      const withImage = (id: string, image: string) => ({
+        ...hotspot,
+        id,
+        style: { ...hotspot.style, image },
+      });
+      const { container, onReady } = renderReady(
+        page({
+          background: { type: 'image', asset: 'assets/home.jpg' },
+          hotspots: [withImage('h_imga00', 'assets/a.png'), withImage('h_imgb00', 'assets/b.png')],
+        }),
+      );
+      const [background, a, b] = [...container.querySelectorAll('img')];
+      for (const img of [background!, a!]) img.decode = () => Promise.resolve();
+      await act(async () => {
+        fireEvent.load(background!);
+        fireEvent.load(a!);
+        await Promise.resolve();
+      });
+      expect(onReady).not.toHaveBeenCalled(); // b is still loading
+      fireEvent.error(b!);
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+
     it('reports a background that fails to load, so the player never waits forever', () => {
       const { container, onReady } = renderReady(
         page({ background: { type: 'image', asset: 'assets/missing.jpg' } }),
@@ -171,7 +195,9 @@ describe('PageView', () => {
       const el = renderPage(page({ hotspots: [styled] })).hotspotEl('h_test00');
       const layer = el?.querySelector<HTMLElement>('.hotspot-style');
       expect(layer?.style.backgroundColor).toBe('#3a7bff');
-      expect(layer?.style.border).toBe('4px solid #ffffff');
+      expect(layer?.querySelector<HTMLElement>('.hotspot-border')?.style.border).toBe(
+        '4px solid #ffffff',
+      );
       expect(layer?.style.opacity).toBe('0.5');
       // Only the style layer is faded, so a press effect stays fully visible.
       expect(el?.style.opacity).toBe('');
@@ -182,7 +208,7 @@ describe('PageView', () => {
       const el = renderPage(page({ hotspots: [hotspot] })).hotspotEl('h_test00');
       const layer = el?.querySelector<HTMLElement>('.hotspot-style');
       expect(layer?.style.backgroundColor).toBe('');
-      expect(layer?.style.border).toBe('');
+      expect(layer?.children).toHaveLength(0);
       expect(el?.style.width).toBe('300px');
     });
 

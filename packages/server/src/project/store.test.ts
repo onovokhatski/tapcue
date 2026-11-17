@@ -142,6 +142,43 @@ describe('save', () => {
     expect(store.revision).toBe(1);
   });
 
+  it('refuses a project whose hotspot image is not in the folder (spec HS-9)', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const [home, ...rest] = store.project.pages;
+    if (!home) throw new Error('the demo stand has pages');
+    const [first, ...others] = home.hotspots;
+    if (!first) throw new Error('the home page has hotspots');
+    const withImage = { ...first, style: { ...first.style, image: 'assets/card.png' } };
+    const page = { ...home, hotspots: [withImage, ...others] };
+
+    const result = await store.save({ ...store.project, pages: [page, ...rest] });
+
+    expect(result.ok ? [] : result.errors).toEqual([
+      {
+        path: 'pages[0].hotspots[0].style.image',
+        message: 'file "assets/card.png" does not exist',
+      },
+    ]);
+  });
+
+  it('saves a hotspot image that is in the folder', async () => {
+    const dir = await demoCopy();
+    const store = await loadProjectStore(dir);
+    const [home, ...rest] = store.project.pages;
+    if (!home) throw new Error('the demo stand has pages');
+    const [first, ...others] = home.hotspots;
+    if (!first) throw new Error('the home page has hotspots');
+    const withImage = { ...first, style: { ...first.style, image: 'assets/home.jpg' } };
+
+    const result = await store.save({
+      ...store.project,
+      pages: [{ ...home, hotspots: [withImage, ...others] }, ...rest],
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
   it('leaves no temporary file behind', async () => {
     const dir = await demoCopy();
     const store = await loadProjectStore(dir);
