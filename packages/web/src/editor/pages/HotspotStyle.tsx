@@ -59,6 +59,8 @@ export function ShapeRow({ pageId, hotspot }: Props) {
             prefix="R"
             suffix="px"
             ariaLabel="Corner radius"
+            min={0}
+            max={10_000}
             // An ellipse fills its box, so it has no corners.
             value={shape.type === 'ellipse' ? '–' : radius.text}
             disabled={shape.type === 'ellipse'}
@@ -118,6 +120,8 @@ export function StyleFields({ pageId, hotspot }: Props) {
           <NumberField
             suffix="%"
             ariaLabel="Opacity"
+            min={0}
+            max={100}
             value={opacity.text}
             error={opacity.error !== null}
             onChange={opacity.onChange}
@@ -141,6 +145,8 @@ export function StyleFields({ pageId, hotspot }: Props) {
           <NumberField
             suffix="px"
             ariaLabel="Border width"
+            min={1}
+            max={100}
             value={style.border ? borderWidth.text : '–'}
             disabled={!style.border}
             error={borderWidth.error !== null}

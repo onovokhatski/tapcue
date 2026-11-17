@@ -55,16 +55,21 @@ export type BoxKey = keyof Rect;
  * Why a value typed into one of a hotspot's X, Y, W or H fields cannot be used, or null. Whole
  * pixels only, and the box must stay inside the canvas with the other three values as they are.
  */
-export function checkBoxField(key: BoxKey, text: string, box: Rect, canvas: Size): string | null {
-  if (!/^\d+$/.test(text.trim())) return 'expected a whole number';
-  const value = Number(text);
+/** The values a box field may take while the box stays inside the canvas. */
+export function boxFieldLimits(key: BoxKey, box: Rect, canvas: Size): { min: number; max: number } {
   const max = {
     x: canvas.width - box.width,
     y: canvas.height - box.height,
     width: canvas.width - box.x,
     height: canvas.height - box.y,
   }[key];
-  const min = key === 'width' || key === 'height' ? 1 : 0;
+  return { min: key === 'width' || key === 'height' ? 1 : 0, max };
+}
+
+export function checkBoxField(key: BoxKey, text: string, box: Rect, canvas: Size): string | null {
+  if (!/^\d+$/.test(text.trim())) return 'expected a whole number';
+  const value = Number(text);
+  const { min, max } = boxFieldLimits(key, box, canvas);
   if (value < min || value > max) return `${min} to ${max}, to stay inside the canvas`;
   return null;
 }

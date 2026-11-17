@@ -16,7 +16,7 @@ import {
   restackHotspot,
 } from '../operations/hotspots';
 import { croppedBy } from '../canvas/safeArea';
-import { type BoxKey, checkBoxField } from '../operations/geometry';
+import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geometry';
 import { useEditor } from '../useEditor';
 import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
@@ -210,6 +210,7 @@ function GeometryFields({
             prefix={prefix}
             ariaLabel={label}
             value={texts[key] ?? String(hotspot[key])}
+            {...boxFieldLimits(key, hotspot, canvas)}
             error={errors.some((e) => e.key === key)}
             onChange={(text) => edit(key, text)}
             onBlur={() => leave(key)}

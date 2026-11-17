@@ -84,6 +84,26 @@ describe('HotspotPanel', () => {
       expect(field('Height')).toHaveValue('40');
     });
 
+    it('moves the hotspot while X is dragged, up to the canvas edge, then follows it again', async () => {
+      const { store, field, cardA } = await renderPanel();
+      const handle = within(field('X').closest('label')!).getByText('X');
+      fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientX: 0 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 6 });
+      expect(cardA().x).toBe(150);
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 5000 }); // past 2048 - 560
+      expect(cardA().x).toBe(1488);
+      expect(field('X')).not.toHaveAttribute('aria-invalid');
+      fireEvent.pointerUp(handle, { pointerId: 1, clientX: 5000 });
+      act(() =>
+        store
+          .getState()
+          .change((p) =>
+            placeHotspot(p, 'p_home00', 'h_carda0', { x: 300, y: 500, width: 560, height: 720 }),
+          ),
+      );
+      expect(field('X')).toHaveValue('300');
+    });
+
     it('goes back to following the hotspot after a valid edit', async () => {
       const { store, field } = await renderPanel();
       fireEvent.change(field('X'), { target: { value: '200' } });

@@ -60,6 +60,11 @@ body {
   border-color: var(--color-border-focus);
   box-shadow: 0 0 0 1px var(--color-border-focus);
 }
+/* A control inside a field (the input of a number field) shows its focus through that ring, not
+   an outline of its own, which would draw a second box inside the field. */
+.field :focus-visible {
+  outline: none;
+}
 .field-error,
 .field-error:focus,
 .field-error:focus-within {

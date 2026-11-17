@@ -255,6 +255,8 @@ function StationForm({
               <NumberField
                 suffix="s"
                 ariaLabel="Idle seconds"
+                min={5}
+                max={3600}
                 value={station.idleTimeoutSeconds === null ? '–' : seconds.text}
                 disabled={station.idleTimeoutSeconds === null}
                 error={seconds.error !== null}

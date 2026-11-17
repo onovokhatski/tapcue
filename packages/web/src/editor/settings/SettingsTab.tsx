@@ -124,6 +124,8 @@ function SizeField({
       <NumberField
         suffix="px"
         ariaLabel={label}
+        min={1}
+        max={8192}
         value={draft.text}
         error={draft.error !== null}
         onChange={draft.onChange}
