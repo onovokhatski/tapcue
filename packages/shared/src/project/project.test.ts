@@ -61,6 +61,21 @@ describe('Hotspot', () => {
     expect(Object.keys(hotspot.style)).not.toContain('image');
   });
 
+  it('accepts a text label, and no field for none (spec HS-10)', () => {
+    const text = {
+      content: 'Play',
+      size: 48,
+      weight: 'medium',
+      color: '#FFFFFF',
+      align: 'center',
+      verticalAlign: 'middle',
+      padding: 24,
+    };
+    expect(errorOf(Hotspot, { ...hotspot, text })).toBeNull();
+    expect(errorOf(Hotspot, { ...hotspot, text: { ...text, content: 'Two\nlines' } })).toBeNull();
+    expect(Object.keys(hotspot)).not.toContain('text');
+  });
+
   it('accepts an empty name, which is only a label', () => {
     expect(errorOf(Hotspot, { ...hotspot, name: '' })).toBeNull();
   });
@@ -103,6 +118,200 @@ describe('Hotspot', () => {
       'an image outside the assets folder',
       { style: { fill: null, border: null, opacity: 1, image: '../secret.png' } },
       'style.image: Expected "assets/<file name>"',
+    ],
+    [
+      'empty text',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          content: '',
+        },
+      },
+      'text.content: Expected some text',
+    ],
+    [
+      'text over 500 characters',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          content: 'x'.repeat(501),
+        },
+      },
+      'text.content: Expected at most 500 characters',
+    ],
+    [
+      'a text size of 7 px',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          size: 7,
+        },
+      },
+      'text.size: Expected 8 to 400 px',
+    ],
+    [
+      'a text size of 401 px',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          size: 401,
+        },
+      },
+      'text.size: Expected 8 to 400 px',
+    ],
+    [
+      'an unknown weight',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          weight: 'light',
+        },
+      },
+      'text.weight',
+    ],
+    [
+      'a text colour by name',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          color: 'white',
+        },
+      },
+      'text.color',
+    ],
+    [
+      'justified text',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          align: 'justify',
+        },
+      },
+      'text.align',
+    ],
+    [
+      'an unknown position',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          verticalAlign: 'center',
+        },
+      },
+      'text.verticalAlign',
+    ],
+    [
+      'negative padding',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          padding: -1,
+        },
+      },
+      'text.padding: Expected 0 to 500 px',
+    ],
+    [
+      'padding over 500 px',
+      {
+        text: {
+          ...{
+            content: 'Play',
+            size: 48,
+            weight: 'medium',
+            color: '#FFFFFF',
+            align: 'center',
+            verticalAlign: 'middle',
+            padding: 24,
+          },
+          padding: 501,
+        },
+      },
+      'text.padding: Expected 0 to 500 px',
+    ],
+    [
+      'a text without its colour',
+      {
+        text: {
+          content: 'x',
+          size: 48,
+          weight: 'bold',
+          align: 'left',
+          verticalAlign: 'top',
+          padding: 0,
+        },
+      },
+      'text.color',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
     ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],

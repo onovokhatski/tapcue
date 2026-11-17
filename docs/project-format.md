@@ -106,6 +106,7 @@ my-stand/
 | `width`, `height` | number | ≥ 1. The hotspot lies fully inside the canvas: `x ≥ 0`, `y ≥ 0`, `x + width ≤ canvas.width`, `y + height ≤ canvas.height`. |
 | `shape` | Shape | See below. |
 | `style` | Style | See below. |
+| `text` | Text, optional | A label drawn on the hotspot. See below. Absent = no text. |
 | `pressEffect` | `"none"` \| `"highlight"` \| `"press"` \| `"ripple"` | Animation on tap. |
 | `action` | [Action](#7-action) | |
 
@@ -126,8 +127,20 @@ my-stand/
 | `backdropBlur` | number, optional | 1–100 canvas pixels. Blurs what lies under the hotspot, within its shape, below the fill: a semi-transparent fill over it looks like frosted glass ([ADR 0019](adr/0019-hotspot-content.md)). Absent = no blur. |
 | `image` | [asset path](#93-asset-paths), optional | A JPEG, PNG or WebP that covers the hotspot's whole box, keeping its proportions (cropped at the edges), within its shape, above the fill and below the border ([ADR 0019](adr/0019-hotspot-content.md)). The file must exist. Absent = no image. |
 
-A hotspot with `fill: null` and `border: null` is **invisible** — the most common case when
-the button is drawn on the background.
+**Text** ([ADR 0019](adr/0019-hotspot-content.md)) — drawn above the image and below the border, clipped to the shape, in the device's system sans-serif font.
+
+| Field | Type | Rules |
+|---|---|---|
+| `content` | string | 1–500 characters. Line breaks (`\n`) are kept. |
+| `size` | number | 8–400 canvas pixels. |
+| `weight` | `"regular"` \| `"medium"` \| `"bold"` | |
+| `color` | [Color](#91-color) | |
+| `align` | `"left"` \| `"center"` \| `"right"` | How the lines line up. |
+| `verticalAlign` | `"top"` \| `"middle"` \| `"bottom"` | Where the text sits in the hotspot. |
+| `padding` | number | 0–500 canvas pixels between the hotspot's edge and the text. |
+
+A hotspot with `fill: null`, `border: null` and no frost, image or text is **invisible** — the
+most common case when the button is drawn on the background.
 
 ## 6. Target
 

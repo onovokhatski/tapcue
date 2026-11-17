@@ -12,7 +12,9 @@ import {
   restackHotspot,
   setPressEffect,
   setShape,
+  DEFAULT_TEXT,
   setHotspotImage,
+  setHotspotText,
   setStyle,
 } from './hotspots';
 
@@ -268,6 +270,19 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       const removed = setHotspotImage(replaced, 'p_home00', 'h_carda0', null);
       expect(cardA(removed).style).toEqual({ fill: null, border: null, opacity: 1 });
       expect(setHotspotImage(removed, 'p_home00', 'h_carda0', null)).toBe(removed);
+      expectValid(removed);
+    });
+
+    it('adds a default text, changes it, and removes it as no field (spec HS-10)', () => {
+      const added = setHotspotText(demoProject(), 'p_home00', 'h_carda0', {});
+      expect(cardA(added).text).toEqual(DEFAULT_TEXT);
+      expectValid(added);
+      const changed = setHotspotText(added, 'p_home00', 'h_carda0', { content: 'Play', size: 60 });
+      expect(cardA(changed).text).toEqual({ ...DEFAULT_TEXT, content: 'Play', size: 60 });
+      expect(setHotspotText(changed, 'p_home00', 'h_carda0', { size: 60 })).toBe(changed);
+      const removed = setHotspotText(changed, 'p_home00', 'h_carda0', null);
+      expect(cardA(removed)).not.toHaveProperty('text');
+      expect(setHotspotText(removed, 'p_home00', 'h_carda0', null)).toBe(removed);
       expectValid(removed);
     });
 

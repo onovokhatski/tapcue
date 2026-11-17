@@ -31,6 +31,22 @@
   object-fit: cover;
 }
 
+/* A text label (spec HS-10): one block placed by the vertical alignment, lines aligned within it,
+   line breaks kept, in the device's system sans-serif. What does not fit is clipped by the shape. */
+.hotspot-text {
+  display: flex;
+  flex-direction: column;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* highlight and press: a layer that fades in on touch-down, holds while pressed, fades out on release. */
 .press-layer {
   opacity: 0;

@@ -1,6 +1,6 @@
 // One hotspot: its area in canvas pixels, the user's style and the press effect (spec HS-3–HS-5,
-// HS-8, HS-9).
-import type { Hotspot } from '@tapcue/shared';
+// HS-8, HS-9, HS-10).
+import type { Hotspot, HotspotText } from '@tapcue/shared';
 import { useRef, useState, type PointerEvent } from 'react';
 import { assetUrl } from './assetUrl';
 import { usePress } from './usePress';
@@ -22,7 +22,7 @@ interface HotspotViewProps {
 }
 
 export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) {
-  const { id, x, y, width, height, shape, style, pressEffect } = hotspot;
+  const { id, x, y, width, height, shape, style, text, pressEffect } = hotspot;
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const nextRippleId = useRef(0);
 
@@ -93,6 +93,7 @@ export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) 
             onError={() => onImageReady?.(style.image!)}
           />
         )}
+        {text && <TextLayer text={text} />}
         {style.border && (
           <div
             className="hotspot-border"
@@ -114,6 +115,29 @@ export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) 
           onAnimationEnd={() => setRipples((current) => current.filter((r) => r !== ripple))}
         />
       ))}
+    </div>
+  );
+}
+
+const WEIGHT = { regular: 400, medium: 500, bold: 700 } as const;
+const JUSTIFY = { top: 'flex-start', middle: 'center', bottom: 'flex-end' } as const;
+
+/** The hotspot's label (spec HS-10): sizes in canvas pixels, so it scales with the page. */
+function TextLayer({ text }: { text: HotspotText }) {
+  return (
+    <div
+      className="hotspot-text"
+      style={{
+        justifyContent: JUSTIFY[text.verticalAlign],
+        padding: text.padding,
+        fontSize: text.size,
+        fontWeight: WEIGHT[text.weight],
+        color: text.color,
+        textAlign: text.align,
+      }}
+    >
+      {/* One block, so the lines keep their own alignment and the block is placed as a whole. */}
+      <span>{text.content}</span>
     </div>
   );
 }

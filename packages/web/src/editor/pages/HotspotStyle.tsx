@@ -178,7 +178,7 @@ export function StyleFields({ pageId, hotspot }: Props) {
         <FieldError key={error}>{error}</FieldError>
       ))}
       <HotspotImage pageId={pageId} hotspot={hotspot} />
-      {!style.fill && !style.border && !style.backdropBlur && !style.image && (
+      {!style.fill && !style.border && !style.backdropBlur && !style.image && !hotspot.text && (
         <p className="text-body-s text-muted">
           No fill and no border: visitors see only the artwork.
         </p>
