@@ -64,12 +64,8 @@ export function HotspotView({ hotspot, onTap }: HotspotViewProps) {
           border: style.border ? `${style.border.width}px solid ${style.border.color}` : undefined,
           opacity: style.opacity,
           // Frosted backdrop (spec HS-8): drawn under the fill, in canvas pixels like the border.
-          ...(style.backdropBlur
-            ? {
-                backdropFilter: `blur(${style.backdropBlur}px)`,
-                WebkitBackdropFilter: `blur(${style.backdropBlur}px)`,
-              }
-            : {}),
+          // Unprefixed since Safari 18, the oldest Safari the player supports (NFR-1).
+          backdropFilter: style.backdropBlur ? `blur(${style.backdropBlur}px)` : undefined,
         }}
       />
       {(pressEffect === 'highlight' || pressEffect === 'press') && <div className="press-layer" />}

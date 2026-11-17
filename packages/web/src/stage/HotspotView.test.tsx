@@ -103,7 +103,6 @@ describe('HotspotView', () => {
     it('blurs what lies under the hotspot, in canvas pixels, on the layer under the fill', () => {
       const layer = styleLayer({ fill: '#FFFFFF', border: null, opacity: 0.3, backdropBlur: 24 });
       expect(layer.getAttribute('style')).toContain('backdrop-filter: blur(24px)');
-      expect(layer.getAttribute('style')).toContain('-webkit-backdrop-filter: blur(24px)');
       expect(layer.style.backgroundColor).not.toBe('');
     });
 
