@@ -94,6 +94,24 @@ describe('HotspotView', () => {
     });
   });
 
+  describe('frosted backdrop (spec HS-8)', () => {
+    const styleLayer = (style: Hotspot['style']) =>
+      render(<HotspotView hotspot={{ ...hotspot, style }} />).container.querySelector<HTMLElement>(
+        '.hotspot-style',
+      )!;
+
+    it('blurs what lies under the hotspot, in canvas pixels, on the layer under the fill', () => {
+      const layer = styleLayer({ fill: '#FFFFFF', border: null, opacity: 0.3, backdropBlur: 24 });
+      expect(layer.getAttribute('style')).toContain('backdrop-filter: blur(24px)');
+      expect(layer.getAttribute('style')).toContain('-webkit-backdrop-filter: blur(24px)');
+      expect(layer.style.backgroundColor).not.toBe('');
+    });
+
+    it('draws no blur without the field', () => {
+      expect(styleLayer(hotspot.style).getAttribute('style') ?? '').not.toContain('backdrop');
+    });
+  });
+
   describe('press effects (spec HS-5)', () => {
     it.each(['highlight', 'press'] as const)('%s: a press layer in the hotspot shape', (effect) => {
       const { el } = renderHotspot(effect);

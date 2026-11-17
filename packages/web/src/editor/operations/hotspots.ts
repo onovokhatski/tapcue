@@ -193,6 +193,8 @@ export function setStyle(
 ): Project {
   return updateHotspot(project, pageId, hotspotId, (h) => {
     const style = { ...h.style, ...change };
+    // No frost is stored as no field, the way projects from before v0.2 have it (ADR 0019).
+    if (style.backdropBlur === 0) delete style.backdropBlur;
     return JSON.stringify(style) === JSON.stringify(h.style) ? h : { ...h, style };
   });
 }

@@ -46,6 +46,15 @@ describe('Hotspot', () => {
     expect(errorOf(Hotspot, { ...hotspot, action: { goTo: null, command: null } })).toBeNull();
   });
 
+  it('accepts a frosted backdrop from 1 to 100 px, and no field for none (spec HS-8)', () => {
+    for (const backdropBlur of [1, 24, 100]) {
+      expect(
+        errorOf(Hotspot, { ...hotspot, style: { ...hotspot.style, backdropBlur } }),
+      ).toBeNull();
+    }
+    expect(Object.keys(hotspot.style)).not.toContain('backdropBlur');
+  });
+
   it('accepts an empty name, which is only a label', () => {
     expect(errorOf(Hotspot, { ...hotspot, name: '' })).toBeNull();
   });
@@ -68,6 +77,21 @@ describe('Hotspot', () => {
       'a border 0 px wide',
       { style: { fill: null, border: { color: '#000000', width: 0 }, opacity: 1 } },
       'style.border.width: Expected at least 1 px',
+    ],
+    [
+      'a frost of 0 px (none is no field)',
+      { style: { fill: null, border: null, opacity: 1, backdropBlur: 0 } },
+      'style.backdropBlur: Expected 1 to 100 px',
+    ],
+    [
+      'a frost of 101 px',
+      { style: { fill: null, border: null, opacity: 1, backdropBlur: 101 } },
+      'style.backdropBlur: Expected 1 to 100 px',
+    ],
+    [
+      'a frost that is not a number',
+      { style: { fill: null, border: null, opacity: 1, backdropBlur: '8' } },
+      'style.backdropBlur: Expected a number',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
     ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],

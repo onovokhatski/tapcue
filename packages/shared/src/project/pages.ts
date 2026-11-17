@@ -27,6 +27,13 @@ export const Style = z.strictObject({
     })
     .nullable(),
   opacity: z.number().min(0, 'Expected 0 to 1').max(1, 'Expected 0 to 1'),
+  // Frosted backdrop (spec HS-8, ADR 0019): blurs what lies under the hotspot, radius in canvas
+  // pixels. Absent means none, so projects from before v0.2 stay valid.
+  backdropBlur: z
+    .number('Expected a number')
+    .min(1, 'Expected 1 to 100 px')
+    .max(100, 'Expected 1 to 100 px')
+    .optional(),
 });
 export type Style = z.infer<typeof Style>;
 

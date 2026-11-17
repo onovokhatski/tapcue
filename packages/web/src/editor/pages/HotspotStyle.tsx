@@ -98,9 +98,14 @@ export function StyleFields({ pageId, hotspot }: Props) {
       if (style.border) restyle({ border: { ...style.border, width: Number(text) } });
     },
   );
+  // Frost (spec HS-8): 0 is no blur, stored as no field.
+  const frost = useDraft(String(style.backdropBlur ?? 0), wholeNumber(0, 100), (text) =>
+    restyle({ backdropBlur: Number(text) }),
+  );
   const errors = [
     opacity.error && `Opacity: ${opacity.error}`,
     borderWidth.error && `Border width: ${borderWidth.error}`,
+    frost.error && `Frost: ${frost.error}`,
   ].filter(Boolean);
 
   return (
@@ -154,11 +159,24 @@ export function StyleFields({ pageId, hotspot }: Props) {
             onBlur={borderWidth.onBlur}
           />
         </div>
+        <div className="space-y-1">
+          <p className="text-label-s text-secondary">Frost</p>
+          <NumberField
+            suffix="px"
+            ariaLabel="Frost"
+            min={0}
+            max={100}
+            value={frost.text}
+            error={frost.error !== null}
+            onChange={frost.onChange}
+            onBlur={frost.onBlur}
+          />
+        </div>
       </div>
       {errors.map((error) => (
         <FieldError key={error}>{error}</FieldError>
       ))}
-      {!style.fill && !style.border && (
+      {!style.fill && !style.border && !style.backdropBlur && (
         <p className="text-body-s text-muted">
           No fill and no border: visitors see only the artwork.
         </p>
