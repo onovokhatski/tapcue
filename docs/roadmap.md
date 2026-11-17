@@ -1,6 +1,6 @@
 # Tapcue — Roadmap
 
-Status: **draft** · Last updated: 2026-11-02 · Requirements: [spec.md](spec.md)
+Status: **draft** · Last updated: 2026-11-16 · Requirements: [spec.md](spec.md)
 
 ## 1. Phases
 
@@ -123,6 +123,17 @@ demo mode and a public online demo.
 - **Done when:** a person new to the project understands it from the README in five minutes and runs it with one command or one click; the player runs for 10 hours on an iPad without intervention.
 
 **Release v0.1.0** — tagged after M5.
+
+### v0.2 — Hotspot content
+
+Hotspots carry their own visuals on top of the artwork: a frosted backdrop, a background image and
+text ([ADR 0019](adr/0019-hotspot-content.md)), so a stand's button labels change in the editor
+instead of the design tool. Also: number fields that change by dragging their label.
+
+- **Requirements:** HS-8, HS-9, HS-10
+- **Done when:** a stand's buttons can be labelled and styled in the editor without re-exporting the
+  artwork, and the player shows them identically on an iPad, also over a video background, without
+  stutter.
 
 ## 6. After MVP
 

@@ -1,6 +1,6 @@
 # Tapcue — MVP Specification
 
-Status: **draft** · Last updated: 2026-10-25
+Status: **draft** · Last updated: 2026-11-16
 
 ## 1. Overview
 
@@ -30,7 +30,9 @@ commands.
 
 **Goals**
 - An integrator builds a multi-page interface from images/videos without writing code.
-- The interface looks exactly as the designer drew it: Tapcue adds interactivity, not visuals of its own.
+- The interface looks exactly as the designer drew it: Tapcue adds interactivity, and since v0.2 a
+  few visuals on hotspots — a frosted backdrop, an image and a text label
+  ([ADR 0019](adr/0019-hotspot-content.md)) — so labels can change without new artwork.
 - A tap reaches the media server reliably over the local network.
 - One server serves several tablets, each possibly with its own interface.
 - The whole system can be demonstrated in a browser without external hardware.
@@ -38,7 +40,8 @@ commands.
 **Non-goals (MVP)**
 - Show logic (conditions, timers, sequences) — this belongs to the media server.
 - Knowing what the media server is actually playing (no state feedback).
-- A graphic editor: artwork is made in the designer's own tools.
+- A graphic editor: artwork is made in the designer's own tools. A hotspot gets a few content
+  properties (HS-8–HS-10), never layers or free-form design.
 - Operation over the internet, multiple users, roles.
 
 ## 4. Concepts
@@ -96,6 +99,16 @@ IDs are referenced from issues and tests.
 - **HS-6** Hotspots can be deleted and their stacking order changed.
 - **HS-7** A hotspot can be duplicated: the copy gets a new id, the same properties and a small
   offset, clamped to the canvas, and becomes the selection.
+
+Since v0.2 ([ADR 0019](adr/0019-hotspot-content.md)), a hotspot may also carry content of its own,
+drawn bottom to top as backdrop blur, fill, image, text, border, all clipped to its shape:
+
+- **HS-8** Frosted backdrop: what lies under the hotspot is blurred within its shape, with a radius
+  in canvas pixels.
+- **HS-9** Image: an uploaded image covers the hotspot's whole box, keeping its proportions
+  (cropped at the edges).
+- **HS-10** Text: a label with its size, weight, colour, horizontal and vertical alignment and
+  padding, in the system sans-serif font.
 
 ### 5.5 Actions
 
@@ -257,7 +270,8 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 - One server runs one project. Several stands need several server instances.
 - The media server owns all show logic; Tapcue does not know what is playing.
 - Tablets and the server are on the same local network; the network is trusted. Anyone on it can open the editor — on a stand this network is typically a dedicated access point, not the venue Wi-Fi.
-- Artwork is prepared to the canvas size by a designer.
+- Artwork is prepared to the canvas size by a designer; button labels and pictures may instead be
+  hotspot content (HS-8–HS-10).
 
 ## 9. Out of scope for MVP (planned later)
 
