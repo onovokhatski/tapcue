@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { checkBoxField, type Handle, MIN_SIZE, moveRect, resizeRect } from './geometry';
+import {
+  boxFieldLimits,
+  checkBoxField,
+  type Handle,
+  MIN_SIZE,
+  moveRect,
+  resizeRect,
+} from './geometry';
 
 const canvas = { width: 2048, height: 1536 };
 const box = { x: 100, y: 200, width: 300, height: 400 };
@@ -70,6 +77,17 @@ describe('resizeRect', () => {
 
   it('rounds to whole pixels', () => {
     expect(resizeRect(box, 'se', 0.6, 0.4, canvas)).toEqual({ ...box, width: 301, height: 400 });
+  });
+});
+
+describe('boxFieldLimits', () => {
+  it.each([
+    ['x', { min: 0, max: 1748 }], // 2048 - 300
+    ['y', { min: 0, max: 1136 }], // 1536 - 400
+    ['width', { min: 1, max: 1948 }], // 2048 - 100
+    ['height', { min: 1, max: 1336 }], // 1536 - 200
+  ] as const)('keeps %s inside the canvas', (key, limits) => {
+    expect(boxFieldLimits(key, box, canvas)).toEqual(limits);
   });
 });
 
