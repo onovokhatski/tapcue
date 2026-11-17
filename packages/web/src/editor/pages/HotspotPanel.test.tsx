@@ -240,6 +240,20 @@ describe('HotspotPanel', () => {
       expect(width()).toBeDisabled();
     });
 
+    it('sets the frost in px, 0 for none, and the hotspot is no longer invisible (spec HS-8)', async () => {
+      const { cardA } = await renderPanel();
+      const frost = screen.getByRole('textbox', { name: 'Frost' });
+      expect(frost).toHaveValue('0');
+      fireEvent.change(frost, { target: { value: '20' } });
+      expect(cardA().style.backdropBlur).toBe(20);
+      expect(screen.queryByText(/visitors see only the artwork/)).toBeNull();
+      fireEvent.change(frost, { target: { value: '101' } });
+      expect(screen.getByText('Frost: 0 to 100')).toBeInTheDocument();
+      expect(cardA().style.backdropBlur).toBe(20);
+      fireEvent.change(frost, { target: { value: '0' } });
+      expect(cardA().style).not.toHaveProperty('backdropBlur');
+    });
+
     it('keeps the border width when the border colour changes', async () => {
       const project = demoProject();
       project.pages[0]!.hotspots[0]!.style.border = { color: '#000000', width: 7 };

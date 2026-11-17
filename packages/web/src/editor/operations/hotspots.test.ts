@@ -238,6 +238,21 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expectValid(bordered);
     });
 
+    it('sets the frost, and stores none as no field (spec HS-8)', () => {
+      const frosted = setStyle(demoProject(), 'p_home00', 'h_carda0', { backdropBlur: 16 });
+      expect(cardA(frosted).style).toEqual({
+        fill: null,
+        border: null,
+        opacity: 1,
+        backdropBlur: 16,
+      });
+      expectValid(frosted);
+      const cleared = setStyle(frosted, 'p_home00', 'h_carda0', { backdropBlur: 0 });
+      expect(cardA(cleared).style).toEqual({ fill: null, border: null, opacity: 1 });
+      expectValid(cleared);
+      expect(setStyle(cleared, 'p_home00', 'h_carda0', { backdropBlur: 0 })).toBe(cleared);
+    });
+
     it('sets the press effect', () => {
       expect(
         cardA(setPressEffect(demoProject(), 'p_home00', 'h_carda0', 'ripple')).pressEffect,

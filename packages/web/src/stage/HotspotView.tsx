@@ -1,4 +1,5 @@
-// One hotspot: its area in canvas pixels, the user's style and the press effect (spec HS-3–HS-5).
+// One hotspot: its area in canvas pixels, the user's style and the press effect (spec HS-3–HS-5,
+// HS-8).
 import type { Hotspot } from '@tapcue/shared';
 import { useRef, useState, type PointerEvent } from 'react';
 import { usePress } from './usePress';
@@ -62,6 +63,9 @@ export function HotspotView({ hotspot, onTap }: HotspotViewProps) {
           backgroundColor: style.fill ?? undefined,
           border: style.border ? `${style.border.width}px solid ${style.border.color}` : undefined,
           opacity: style.opacity,
+          // Frosted backdrop (spec HS-8): drawn under the fill, in canvas pixels like the border.
+          // Unprefixed since Safari 18, the oldest Safari the player supports (NFR-1).
+          backdropFilter: style.backdropBlur ? `blur(${style.backdropBlur}px)` : undefined,
         }}
       />
       {(pressEffect === 'highlight' || pressEffect === 'press') && <div className="press-layer" />}
