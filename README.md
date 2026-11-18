@@ -11,7 +11,7 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.1.0, the first release ([changelog](CHANGELOG.md),
+> **Status:** v0.2.0: hotspots with their own frost, image and text ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
@@ -71,6 +71,8 @@ the commands.
   overlay that shows what a 16:10 or 16:9 screen crops.
 - **Hotspots:** rectangles and ellipses, invisible or styled, with press effects; each one opens
   a page, sends a command, or both. "Send test" fires a command from the editor.
+- **Hotspot content:** a frosted-glass backdrop, a translucent fill, an image and a text label,
+  so button labels change in the editor without new artwork.
 - **Targets:** where commands go — OSC over UDP, UDP or HTTP — with a log of every command sent.
 - **Stations:** an entry point per tablet with its own start page and idle return, opened by
   scanning its QR code.
