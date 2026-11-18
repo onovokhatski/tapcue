@@ -4,6 +4,38 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-18
+
+Hotspots carry their own content on top of the artwork, so button labels and pictures change in
+the editor instead of the design tool ([ADR 0019](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0019-hotspot-content.md)).
+Milestone v0.2.
+
+### Added
+
+- **Frosted backdrop** (`style.backdropBlur`): a hotspot blurs what lies under it, within its
+  shape. The editor's Style section has a Frost field.
+- **Fill opacity** (`style.fillOpacity`): the fill fades on its own, so a glass button keeps
+  crisp text and images on it. The hotspot's Opacity still fades it as a whole.
+- **Image on a hotspot** (`style.image`): an uploaded JPEG, PNG or WebP covers the hotspot's
+  box, cropped, within its shape. The player shows a page once its hotspot images are loaded too.
+- **Text on a hotspot** (`text`): a label with its size, weight, colour, horizontal and vertical
+  alignment and padding, in the system font. The editor has a Text section.
+- **Number fields like in design tools:** drag a field's label (X, Y, W, H, R) or unit (%, px, s)
+  to change the value, 10 at a time with Shift; arrow keys step it too.
+
+### Changed
+
+- **Project format:** new fields are optional, and an absent one means none. Projects from 0.1.0
+  open unchanged; `schemaVersion` stays 1.
+- **One focus ring** on a focused number field instead of two.
+- **CI:** the check job may take up to 20 minutes, since a browser install can be slow.
+
+### Known limitations
+
+- The frosted backdrop over a video background is not yet checked on an iPad for smoothness.
+- The iPad check of the stand setup (from 0.1.0) is still to be recorded in
+  [docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md).
+
 ## [0.1.0] - 2026-11-06
 
 The first release: everything planned for the MVP in the
@@ -51,4 +83,5 @@ The first release: everything planned for the MVP in the
 - The iPad check of the stand setup (Guided Access, 10 hours on the iPad itself) is still to be
   recorded in [docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md).
 
+[0.2.0]: https://github.com/onovokhatski/tapcue/releases/tag/v0.2.0
 [0.1.0]: https://github.com/onovokhatski/tapcue/releases/tag/v0.1.0
