@@ -184,6 +184,109 @@ describe('StationPlayer', () => {
     });
   });
 
+  describe('faders (spec FD-2, FD-4, FD-5, ADR 0020)', () => {
+    /** The demo stand with "Call our team" turned into a vertical volume fader, 0–1 by 0.01. */
+    function withFader(): Project {
+      const next = demoProject();
+      const call = next.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!;
+      call.kind = 'fader';
+      call.fader = {
+        orientation: 'vertical',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        start: 0.8,
+        value: { at: 0, as: 'f' },
+      };
+      call.pressEffect = 'none';
+      call.action = { goTo: null, command: call.action.command };
+      return next;
+    }
+
+    function renderFader() {
+      const faderProject = withFader();
+      const { container } = render(<Connected project={faderProject} station={main} />);
+      const fader = container.querySelector<HTMLElement>('[data-hotspot="h_call00"]')!;
+      // On screen the fader is 100 px tall, from y 100 (max) to 200 (min).
+      fader.getBoundingClientRect = () =>
+        ({ left: 0, top: 100, width: 40, height: 100, right: 40, bottom: 200 }) as DOMRect;
+      const knob = () => fader.querySelector('.fader-knob')!.getAttribute('data-value');
+      return { container, fader, knob };
+    }
+
+    const connect = () => {
+      const server = FakeWebSocket.last;
+      act(() => server.open());
+      return server;
+    };
+    const value = (v: number, final: boolean) => ({
+      type: 'value',
+      pageId: 'p_home00',
+      hotspotId: 'h_call00',
+      value: v,
+      final,
+    });
+
+    it('sends values while dragged and the last one as final, never a tap', () => {
+      const { fader, knob } = renderFader();
+      const server = connect();
+      fireEvent.pointerDown(fader, { pointerId: 1, button: 0, clientX: 20, clientY: 150 });
+      fireEvent.pointerMove(fader, { pointerId: 1, clientX: 20, clientY: 125 });
+      fireEvent.pointerMove(fader, { pointerId: 1, clientX: 20, clientY: 125.2 }); // same step
+      expect(knob()).toBe('0.75');
+      fireEvent.pointerUp(fader, { pointerId: 1, button: 0, clientX: 20, clientY: 125 });
+      expect(server.sent.slice(1)).toEqual([
+        value(0.5, false),
+        value(0.75, false),
+        value(0.75, true),
+      ]);
+    });
+
+    it('shows the start value, then the value the server holds', () => {
+      const { knob } = renderFader();
+      expect(knob()).toBe('0.8');
+      const server = connect();
+      act(() => server.receive({ type: 'fader-values', values: { h_call00: 0.3 } }));
+      expect(knob()).toBe('0.3');
+    });
+
+    it('follows the finger, not the server, while dragged', () => {
+      const { fader, knob } = renderFader();
+      const server = connect();
+      fireEvent.pointerDown(fader, { pointerId: 1, button: 0, clientX: 20, clientY: 110 });
+      act(() => server.receive({ type: 'fader-values', values: { h_call00: 0.2 } }));
+      expect(knob()).toBe('0.9');
+      fireEvent.pointerUp(fader, { pointerId: 1, button: 0 });
+      act(() => server.receive({ type: 'fader-values', values: { h_call00: 0.9 } }));
+      expect(knob()).toBe('0.9');
+    });
+
+    it('keeps the value offline and sends only the last one once connected (spec FD-5)', () => {
+      const { fader, knob } = renderFader();
+      fireEvent.pointerDown(fader, { pointerId: 1, button: 0, clientX: 20, clientY: 190 });
+      fireEvent.pointerMove(fader, { pointerId: 1, clientX: 20, clientY: 170 });
+      fireEvent.pointerUp(fader, { pointerId: 1, button: 0 });
+      expect(knob()).toBe('0.3');
+      advance(60_000); // much later than a tap would be kept
+      expect(connect().sent).toEqual([{ type: 'hello', stationId: 'main' }, value(0.3, true)]);
+    });
+
+    it('lets another finger tap a button while the fader is held', () => {
+      const { container, fader } = renderFader();
+      const server = connect();
+      fireEvent.pointerDown(fader, { pointerId: 1, button: 0, clientX: 20, clientY: 150 });
+      const card = container.querySelector('[data-hotspot="h_carda0"]')!;
+      fireEvent.pointerDown(card, { pointerId: 2, button: 0 });
+      fireEvent.pointerUp(card, { pointerId: 2, button: 0 });
+      fireEvent.pointerMove(fader, { pointerId: 1, clientX: 20, clientY: 140 });
+      expect(server.sent.slice(1)).toEqual([
+        value(0.5, false),
+        { type: 'tap', pageId: 'p_home00', hotspotId: 'h_carda0' },
+        value(0.6, false),
+      ]);
+    });
+  });
+
   describe('taps to the server (spec ACT-2, ADR 0005)', () => {
     /** The station's connection, open, with what it has sent so far. */
     function connected() {

@@ -68,6 +68,16 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
             layer={layer}
             fading={layer === 'incoming' && state.fading}
             onTap={(hotspot) => tap(page.id, hotspot)}
+            faderValues={connection.faderValues}
+            onValue={(hotspot, value, final) =>
+              connection.sendValue({
+                type: 'value',
+                pageId: page.id,
+                hotspotId: hotspot.id,
+                value,
+                final,
+              })
+            }
             onReady={() => dispatch({ type: 'ready', pageId: page.id })}
             onFaded={() => dispatch({ type: 'faded', pageId: page.id })}
           />
@@ -84,11 +94,23 @@ interface PageLayerProps {
   layer: Layer;
   fading: boolean;
   onTap: (hotspot: Hotspot) => void;
+  faderValues: Readonly<Record<string, number>>;
+  onValue: (hotspot: Hotspot, value: number, final: boolean) => void;
   onReady: () => void;
   onFaded: () => void;
 }
 
-function PageLayer({ page, canvas, layer, fading, onTap, onReady, onFaded }: PageLayerProps) {
+function PageLayer({
+  page,
+  canvas,
+  layer,
+  fading,
+  onTap,
+  faderValues,
+  onValue,
+  onReady,
+  onFaded,
+}: PageLayerProps) {
   const [loaded, setLoaded] = useState(false);
   const reportReady = useEffectEvent(onReady);
 
@@ -111,7 +133,14 @@ function PageLayer({ page, canvas, layer, fading, onTap, onReady, onFaded }: Pag
         if (event.target === event.currentTarget) onFaded();
       }}
     >
-      <PageView page={page} canvas={canvas} onTap={onTap} onReady={() => setLoaded(true)} />
+      <PageView
+        page={page}
+        canvas={canvas}
+        onTap={onTap}
+        faderValues={faderValues}
+        onValue={onValue}
+        onReady={() => setLoaded(true)}
+      />
     </div>
   );
 }

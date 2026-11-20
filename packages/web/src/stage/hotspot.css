@@ -47,6 +47,18 @@
   overflow-wrap: anywhere;
 }
 
+/* A fader (spec FD-1): a light level from the min end to the value, and a knob at the value.
+   Their positions are set inline; the knob's inset is replaced there too. */
+.hotspot > .fader-level {
+  background: color-mix(in srgb, var(--color-overlay-light) 24%, transparent);
+}
+
+.hotspot > .fader-knob {
+  border-radius: 12px;
+  background: var(--color-overlay-light);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-overlay-dark) 35%, transparent);
+}
+
 /* highlight and press: a layer that fades in on touch-down, holds while pressed, fades out on release. */
 .press-layer {
   opacity: 0;

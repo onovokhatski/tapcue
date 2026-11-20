@@ -16,9 +16,13 @@ interface PageViewProps {
    * loaded and decoded, a video with its first frame, or none) and every hotspot image (HS-9).
    */
   onReady?: () => void;
+  /** Fader values held by the server, by hotspot (spec FD-4). */
+  faderValues?: Readonly<Record<string, number>>;
+  /** A fader's new value while it is dragged, and the last one with `final` (spec FD-2). */
+  onValue?: (hotspot: Hotspot, value: number, final: boolean) => void;
 }
 
-export function PageView({ page, canvas, onTap, onReady }: PageViewProps) {
+export function PageView({ page, canvas, onTap, onReady, faderValues, onValue }: PageViewProps) {
   const [ref, viewport] = useElementSize<HTMLDivElement>();
   const { scale, offsetX, offsetY } = stageGeometry(canvas, viewport, canvas.scaleMode);
   const ready = useEffectEvent(() => onReady?.());
@@ -65,6 +69,8 @@ export function PageView({ page, canvas, onTap, onReady }: PageViewProps) {
             key={hotspot.id}
             hotspot={hotspot}
             onTap={onTap}
+            faderValue={faderValues?.[hotspot.id]}
+            onValue={onValue}
             onImageReady={(image) => markLoaded(`hotspot ${hotspot.id} ${image}`)}
           />
         ))}
