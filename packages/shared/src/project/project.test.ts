@@ -83,6 +83,24 @@ describe('Hotspot', () => {
     expect(Object.keys(hotspot.style)).not.toContain('fillOpacity');
   });
 
+  it('accepts a fader with its settings, and no kind for a button (ADR 0020)', () => {
+    const fader = {
+      ...hotspot,
+      kind: 'fader',
+      pressEffect: 'none',
+      fader: {
+        orientation: 'horizontal',
+        min: -10,
+        max: 10,
+        step: 0.5,
+        start: 0,
+        value: { at: 0, as: 'f' },
+      },
+    };
+    expect(errorOf(Hotspot, fader)).toBeNull();
+    expect(Object.keys(hotspot)).not.toContain('kind');
+  });
+
   it('accepts an empty name, which is only a label', () => {
     expect(errorOf(Hotspot, { ...hotspot, name: '' })).toBeNull();
   });
@@ -329,6 +347,67 @@ describe('Hotspot', () => {
       'a negative fill opacity',
       { style: { fill: '#FFFFFF', border: null, opacity: 1, fillOpacity: -0.1 } },
       'style.fillOpacity: Expected 0 to 1',
+    ],
+    ['an unknown kind', { kind: 'knob' }, 'kind'],
+    [
+      'a fader step of 0',
+      {
+        kind: 'fader',
+        fader: {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0,
+          start: 0,
+          value: { at: 0, as: 'f' },
+        },
+      },
+      'fader.step: Expected more than 0',
+    ],
+    [
+      'a diagonal fader',
+      {
+        kind: 'fader',
+        fader: {
+          orientation: 'diagonal',
+          min: 0,
+          max: 1,
+          step: 0.1,
+          start: 0,
+          value: { at: 0, as: 'f' },
+        },
+      },
+      'fader.orientation',
+    ],
+    [
+      'a value placed at a negative position',
+      {
+        kind: 'fader',
+        fader: {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0.1,
+          start: 0,
+          value: { at: -1, as: 'f' },
+        },
+      },
+      'fader.value.at: Expected 0 or more',
+    ],
+    [
+      'a value sent as a string',
+      {
+        kind: 'fader',
+        fader: {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0.1,
+          start: 0,
+          value: { at: 0, as: 's' },
+        },
+      },
+      'fader.value.as',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
     ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],

@@ -107,6 +107,8 @@ my-stand/
 | `shape` | Shape | See below. |
 | `style` | Style | See below. |
 | `text` | Text, optional | A label drawn on the hotspot. See below. Absent = no text. |
+| `kind` | `"button"` \| `"fader"`, optional | Absent = `"button"`. A fader sends a value while it is dragged ([ADR 0020](adr/0020-faders.md)). |
+| `fader` | Fader, optional | Required for a fader, not allowed otherwise. See below. |
 | `pressEffect` | `"none"` \| `"highlight"` \| `"press"` \| `"ripple"` | Animation on tap. |
 | `action` | [Action](#7-action) | |
 
@@ -139,6 +141,31 @@ my-stand/
 | `align` | `"left"` \| `"center"` \| `"right"` | How the lines line up. |
 | `verticalAlign` | `"top"` \| `"middle"` \| `"bottom"` | Where the text sits in the hotspot. |
 | `padding` | number | 0–500 canvas pixels between the hotspot's edge and the text. |
+
+**Fader** ([ADR 0020](adr/0020-faders.md)) — a hotspot with `kind: "fader"` sets a value by
+dragging along it and sends its command with that value.
+
+```json
+"kind": "fader",
+"fader": {
+  "orientation": "vertical", "min": 0, "max": 1, "step": 0.01, "start": 0.8,
+  "value": { "at": 0, "as": "f" }
+},
+"pressEffect": "none",
+"action": { "goTo": null, "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
+            "address": "/composition/layers/1/video/opacity", "args": [] } }
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `orientation` | `"vertical"` \| `"horizontal"` | Vertical: bottom is `min`. Horizontal: left is `min`. |
+| `min`, `max` | number | `min` < `max`. |
+| `step` | number | More than 0 and at most `max − min`. Values snap to it, counted from `min`. |
+| `start` | number | From `min` to `max`. The value before anyone drags it, and after a server restart. |
+| `value` | `{ "at": number, "as": "f" \| "i" }` | Where the value goes in the OSC command: inserted before argument `at` (0 = first, the number of arguments = last), sent as a 32-bit float or integer. `"i"` needs a whole-number `step`. |
+
+A fader also follows these rules: its `action.goTo` is `null`, its `pressEffect` is `"none"`, and
+its command, if any, is OSC (UDP and HTTP values come in a later version).
 
 A hotspot with `fill: null`, `border: null` and no frost, image or text is **invisible** — the
 most common case when the button is drawn on the background.
