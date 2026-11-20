@@ -4,6 +4,47 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-20
+
+Besides buttons, a hotspot can be a fader that sends a value while it is dragged: a volume, a
+layer's opacity, a light level ([ADR 0020](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0020-faders.md)).
+Milestone v0.3.
+
+### Added
+
+- **Faders** (`kind: "fader"`, `fader`): a vertical or horizontal control with a range, a step
+  and a start value. It keeps everything a hotspot has (shape, style, frost, image, text) and
+  shows a level and a knob on the player. Dragging it, or touching its track, sets the value.
+- **Value commands:** for OSC the value is an argument of its own, sent as a float or an integer,
+  at a position you choose. For UDP text and an HTTP path or body, `{value}` is replaced by the
+  value as text: `128`, or up to 3 decimals such as `0.75`.
+- **Shared value:** the Tapcue server holds each fader's value. Every tablet on any station shows
+  the same position, and a reloaded tablet shows it again. While a fader is dragged, about 25
+  commands a second are sent, and the value where the finger stops is always sent. Offline, a
+  tablet sends that last value once it is back.
+- **Editor:** a Type section makes a hotspot a button or a fader, with fields for direction,
+  range, step, start value and where the value goes; each field accepts only a value that fits
+  the others. Send test sends a value of your choice.
+- **Command log:** a drag is one row, for its final value, with the number of values it sent.
+- **Demo:** the demo stand has a Volume fader on the Product A page, and the demo receiver shows
+  a fader's value as a level on its screen's tile. HTTP commands of a fader carry an
+  `X-Tapcue-Fader` header with the value, min and max.
+
+### Changed
+
+- **Project format:** `kind` and `fader` are optional, and an absent `kind` means a button.
+  Projects from 0.2.0 open unchanged; `schemaVersion` stays 1.
+- **Number fields** step by fractions where a field needs it, such as 0.01 for a fader's range.
+
+### Known limitations
+
+- A fader shows the last value Tapcue sent, not the media server's level: a change made on the
+  media server itself is not seen (no feedback from media servers yet). After a server restart
+  faders are back at their start values.
+- Faders are not yet checked on an iPad
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)),
+  nor are the stand setup (from 0.1.0) and the frosted backdrop over video (from 0.2.0).
+
 ## [0.2.0] - 2026-11-18
 
 Hotspots carry their own content on top of the artwork, so button labels and pictures change in
