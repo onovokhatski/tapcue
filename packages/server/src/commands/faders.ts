@@ -10,6 +10,7 @@ import type {
   Project,
   Protocol,
 } from '@tapcue/shared';
+import { snapFaderValue } from '@tapcue/shared';
 import type { Drivers } from './dispatcher';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
@@ -44,13 +45,6 @@ export interface Faders {
   subscribe(listener: (hotspotId: HotspotId, value: number) => void): () => void;
   /** Drops pending sends when the server stops. */
   close(): void;
-}
-
-/** A value on the fader's grid: snapped to the step counted from min, within the range. */
-export function snap(value: number, { min, max, step }: FaderSettings): number {
-  const steps = Math.round((value - min) / step);
-  // Rounded to 10 decimals, so 0.1 + 0.2 is stored as 0.3, not 0.30000000000000004.
-  return Math.min(max, Number((min + steps * step).toFixed(10)));
 }
 
 /** The fader's OSC command with the value inserted where its settings say, as f or i. */
@@ -192,7 +186,7 @@ export function createFaders({
           `Value ${input.value} is outside "${hotspot.name}"'s range, ${min} to ${max}`,
         );
       }
-      const value = snap(input.value, hotspot.fader);
+      const value = snapFaderValue(input.value, hotspot.fader);
       held.set(input.hotspotId, value);
       for (const listener of listeners) listener(input.hotspotId, value);
       if (!hotspot.action.command) return Promise.resolve(null); // a fader that sends nothing yet

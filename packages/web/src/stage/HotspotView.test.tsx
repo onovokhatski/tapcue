@@ -175,6 +175,98 @@ describe('HotspotView', () => {
     });
   });
 
+  describe('fader (spec FD-1, FD-2)', () => {
+    const fader = {
+      ...hotspot,
+      kind: 'fader' as const,
+      pressEffect: 'none' as const,
+      fader: {
+        orientation: 'vertical' as const,
+        min: 0,
+        max: 100,
+        step: 10,
+        start: 20,
+        value: { at: 0, as: 'i' as const },
+      },
+    };
+
+    function renderFader(
+      props: { faderValue?: number; orientation?: 'vertical' | 'horizontal' } = {},
+    ) {
+      const onValue = vi.fn<(h: Hotspot, value: number, final: boolean) => void>();
+      const onTap = vi.fn();
+      const settings = { ...fader.fader, orientation: props.orientation ?? 'vertical' };
+      const { container } = render(
+        <HotspotView
+          hotspot={{ ...fader, fader: settings }}
+          faderValue={props.faderValue}
+          onValue={onValue}
+          onTap={onTap}
+        />,
+      );
+      const el = container.querySelector<HTMLElement>('[data-hotspot]')!;
+      // On screen: 100 px wide, 200 px tall, at (0, 0).
+      el.getBoundingClientRect = () =>
+        ({ left: 0, top: 0, width: 100, height: 200, right: 100, bottom: 200 }) as DOMRect;
+      const knob = () => el.querySelector<HTMLElement>('.fader-knob')!;
+      const level = () => el.querySelector<HTMLElement>('.fader-level')!;
+      return { el, onValue, onTap, knob, level };
+    }
+
+    it('draws a level and a knob at the value, from the bottom of a vertical fader', () => {
+      // The 400 × 200 hotspot is a vertical fader 200 tall: the knob travels 200 - 24 px.
+      const { el, knob, level } = renderFader({ faderValue: 50 });
+      expect(el).toHaveAttribute('data-kind', 'fader');
+      expect(knob()).toHaveAttribute('data-value', '50');
+      expect(knob().style.bottom).toBe('88px');
+      expect(knob().style.height).toBe('24px');
+      expect(level().style.top).toBe('50%');
+      expect(el.querySelector('.press-layer')).toBeNull();
+    });
+
+    it('draws from the left of a horizontal fader, and at the start value with none held', () => {
+      const { knob, level } = renderFader({ orientation: 'horizontal' });
+      expect(knob()).toHaveAttribute('data-value', '20');
+      expect(knob().style.left).toBe(`${(400 - 24) * 0.2}px`);
+      expect(level().style.right).toBe('80%');
+    });
+
+    it('reports values while dragged, each step once, then the last as final; never a tap', () => {
+      const { el, onValue, onTap } = renderFader();
+      fireEvent.pointerDown(el, { pointerId: 1, button: 0, clientX: 50, clientY: 100 });
+      fireEvent.pointerMove(el, { pointerId: 1, clientX: 50, clientY: 98 }); // still 50
+      fireEvent.pointerMove(el, { pointerId: 1, clientX: 50, clientY: 40 });
+      fireEvent.pointerUp(el, { pointerId: 1, button: 0 });
+      expect(onValue.mock.calls.map(([, value, final]) => [value, final])).toEqual([
+        [50, false],
+        [80, false],
+        [80, true],
+      ]);
+      expect(onTap).not.toHaveBeenCalled();
+    });
+
+    it('follows only the finger that holds it, and ends with a cancel too', () => {
+      const { el, onValue, knob } = renderFader({ faderValue: 0 });
+      fireEvent.pointerDown(el, { pointerId: 1, button: 0, clientX: 50, clientY: 180 });
+      fireEvent.pointerDown(el, { pointerId: 2, button: 0, clientX: 50, clientY: 20 });
+      fireEvent.pointerMove(el, { pointerId: 2, clientX: 50, clientY: 0 });
+      expect(knob()).toHaveAttribute('data-value', '10');
+      fireEvent.pointerCancel(el, { pointerId: 1 });
+      expect(onValue.mock.calls.map(([, value, final]) => [value, final])).toEqual([
+        [10, false],
+        [10, true],
+      ]);
+      expect(knob()).toHaveAttribute('data-value', '0'); // back to the held value
+    });
+
+    it('ignores the right mouse button', () => {
+      const { el, onValue } = renderFader();
+      fireEvent.pointerDown(el, { pointerId: 1, button: 2, clientX: 50, clientY: 100 });
+      fireEvent.pointerUp(el, { pointerId: 1, button: 2 });
+      expect(onValue).not.toHaveBeenCalled();
+    });
+  });
+
   describe('fill opacity (spec HS-4)', () => {
     it('fades only the fill, so the group stays at the hotspot opacity', () => {
       const layer = styleLayer({ fill: '#FF8000', border: null, opacity: 1, fillOpacity: 0.3 });

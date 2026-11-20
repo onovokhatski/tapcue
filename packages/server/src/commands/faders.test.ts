@@ -3,7 +3,7 @@ import { validateProject } from '@tapcue/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Drivers } from './dispatcher';
 import type { CommandOf, Driver, TargetOf } from './drivers/driver';
-import { createFaders, type Faders, SEND_INTERVAL_MS, snap, withValue } from './faders';
+import { createFaders, type Faders, SEND_INTERVAL_MS, withValue } from './faders';
 import { createCommandLog } from './log';
 
 const settings: FaderSettings = {
@@ -112,25 +112,6 @@ const sentValues = () =>
 describe('the test project', () => {
   it('is a valid project', () => {
     expect(validateProject(project)).toMatchObject({ ok: true });
-  });
-});
-
-describe('snap', () => {
-  it.each([
-    [0.123, 0.12],
-    [0.125, 0.13],
-    [0.3, 0.3],
-    [1, 1],
-    [0, 0],
-  ])('puts %s on a 0.01 grid as %s', (value, expected) => {
-    expect(snap(value, settings)).toBe(expected);
-  });
-
-  it('counts steps from min and stays within max', () => {
-    const odd = { ...settings, min: 1, max: 10, step: 4 };
-    expect(snap(4, odd)).toBe(5);
-    expect(snap(10, odd)).toBe(9);
-    expect(snap(2.9, odd)).toBe(1);
   });
 });
 

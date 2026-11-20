@@ -1,8 +1,10 @@
 // One hotspot: its area in canvas pixels, the user's style and the press effect (spec HS-3–HS-5,
 // HS-8, HS-9, HS-10).
-import type { Hotspot, HotspotText } from '@tapcue/shared';
+import type { FaderSettings, Hotspot, HotspotText } from '@tapcue/shared';
+import { faderRatio } from '@tapcue/shared';
 import { useRef, useState, type PointerEvent } from 'react';
 import { assetUrl } from './assetUrl';
+import { useFaderDrag } from './useFaderDrag';
 import { usePress } from './usePress';
 import './hotspot.css';
 
@@ -19,9 +21,19 @@ interface HotspotViewProps {
   onTap?: ((hotspot: Hotspot) => void) | undefined;
   /** Called when the hotspot's image is decoded, or failed to load, so the page can show it. */
   onImageReady?: ((image: string) => void) | undefined;
+  /** A fader's value held by the server; its start value until one arrives (spec FD-4). */
+  faderValue?: number | undefined;
+  /** A fader's new value while it is dragged, and the last one with `final` (spec FD-2). */
+  onValue?: ((hotspot: Hotspot, value: number, final: boolean) => void) | undefined;
 }
 
-export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) {
+export function HotspotView({
+  hotspot,
+  onTap,
+  onImageReady,
+  faderValue,
+  onValue,
+}: HotspotViewProps) {
   const { id, x, y, width, height, shape, style, text, pressEffect } = hotspot;
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const nextRippleId = useRef(0);
@@ -38,15 +50,21 @@ export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) 
     setRipples((current) => [...current, ripple]);
   }
 
-  const { pressed, handlers } = usePress(
+  const press = usePress(
     () => onTap?.(hotspot),
     pressEffect === 'ripple' ? startRipple : undefined,
   );
+  // A fader is dragged, not tapped (ADR 0020); both hooks run, as hooks must, and one is used.
+  const fader = hotspot.kind === 'fader' ? hotspot.fader : undefined;
+  const drag = useFaderDrag(fader, (value, final) => onValue?.(hotspot, value, final));
+  const handlers = fader ? drag.handlers : press.handlers;
+  const pressed = !fader && press.pressed;
 
   return (
     <div
       data-hotspot={id}
       data-effect={pressEffect}
+      data-kind={fader ? 'fader' : undefined}
       data-pressed={pressed || undefined}
       className="hotspot"
       style={{
@@ -104,7 +122,16 @@ export function HotspotView({ hotspot, onTap, onImageReady }: HotspotViewProps) 
           />
         )}
       </div>
-      {(pressEffect === 'highlight' || pressEffect === 'press') && <div className="press-layer" />}
+      {fader && (
+        <FaderLayers
+          fader={fader}
+          value={drag.dragValue ?? faderValue ?? fader.start}
+          length={fader.orientation === 'vertical' ? height : width}
+        />
+      )}
+      {!fader && (pressEffect === 'highlight' || pressEffect === 'press') && (
+        <div className="press-layer" />
+      )}
       {ripples.map((ripple) => (
         <span
           key={ripple.id}
@@ -150,4 +177,43 @@ export function fillColor(hex: string, fillOpacity = 1): string {
   if (fillOpacity >= 1) return hex;
   const channel = (at: number) => parseInt(hex.slice(at, at + 2), 16);
   return `rgba(${channel(1)}, ${channel(3)}, ${channel(5)}, ${fillOpacity})`;
+}
+
+/** The knob's thickness along the fader, in canvas pixels: easy to see and to grab. */
+const KNOB = 24;
+
+/**
+ * A fader's level and knob over its content (spec FD-1): the level fills from the min end to the
+ * value, the knob sits at the value. Positions are fractions of the box, so they scale with it.
+ */
+function FaderLayers({
+  fader,
+  value,
+  length,
+}: {
+  fader: FaderSettings;
+  value: number;
+  length: number;
+}) {
+  const ratio = faderRatio(value, fader);
+  // The knob travels over the length minus its own thickness, so it never leaves the box.
+  const travel = Math.max(0, length - KNOB) * ratio;
+  const vertical = fader.orientation === 'vertical';
+  return (
+    <>
+      <div
+        className="fader-level"
+        style={vertical ? { top: `${(1 - ratio) * 100}%` } : { right: `${(1 - ratio) * 100}%` }}
+      />
+      <div
+        className="fader-knob"
+        data-value={value}
+        style={
+          vertical
+            ? { left: 0, right: 0, top: 'auto', bottom: travel, height: KNOB }
+            : { top: 0, bottom: 0, right: 'auto', left: travel, width: KNOB }
+        }
+      />
+    </>
+  );
 }
