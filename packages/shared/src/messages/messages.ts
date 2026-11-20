@@ -64,6 +64,17 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('hello'), stationId: StationId }),
   /** Which hotspot was tapped, not what to send: the server looks the command up (ADR 0005). */
   z.strictObject({ type: z.literal('tap'), pageId: PageId, hotspotId: HotspotId }),
+  /**
+   * A fader's value while it is dragged, and once more where the finger stops (`final`): which
+   * fader and the value, never the command (ADR 0020). The server checks it against the range.
+   */
+  z.strictObject({
+    type: z.literal('value'),
+    pageId: PageId,
+    hotspotId: HotspotId,
+    value: z.number('Expected a number'),
+    final: z.boolean(),
+  }),
   Ping,
   Pong,
 ]);
@@ -75,6 +86,11 @@ export const ServerMessage = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('project-updated'), revision: z.int().min(1) }),
   z.strictObject({ type: z.literal('log-entry'), entry: LogEntry }),
   z.strictObject({ type: z.literal('demo-received'), request: DemoRequest }),
+  /**
+   * Fader values held by the server (spec FD-4): all of them for a player that says hello, then
+   * each change, so every tablet shows the same position.
+   */
+  z.strictObject({ type: z.literal('fader-values'), values: z.record(HotspotId, z.number()) }),
   Ping,
   Pong,
 ]);

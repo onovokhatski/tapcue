@@ -3,6 +3,7 @@ import type { ServerMessage } from '@tapcue/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Tap } from '../commands/dispatcher';
+import type { FaderValue, Faders } from '../commands/faders';
 import { createCommandLog, type CommandLog } from '../commands/log';
 import { type Hub, PING_INTERVAL_MS, PONG_TIMEOUT_MS, registerHub } from './hub';
 
@@ -10,6 +11,11 @@ let app: FastifyInstance | undefined;
 let hub: Hub;
 let log: CommandLog;
 let taps: Tap[];
+let values: FaderValue[];
+/** Stands in for the server's faders: what a subscriber of the real ones would hear. */
+let announce: (hotspotId: string, value: number) => void;
+/** What the stand-in faders report as held; empty for a project without faders. */
+let held: Record<string, number>;
 let url: string;
 const clients: WebSocket[] = [];
 
@@ -22,7 +28,21 @@ async function start(timing: { pingIntervalMs?: number; pongTimeoutMs?: number }
     taps.push(tap);
     return Promise.resolve(null);
   };
-  hub = registerHub(server, { dispatch, log, ...timing });
+  values = [];
+  held = { h_vol000: 0.8 };
+  const faders: Faders = {
+    receive: (input) => {
+      values.push(input);
+      return Promise.resolve(null);
+    },
+    values: () => held,
+    subscribe: (listener) => {
+      announce = listener;
+      return () => undefined;
+    },
+    close: () => undefined,
+  };
+  hub = registerHub(server, { dispatch, log, faders, ...timing });
   await server.listen({ port: 0, host: '127.0.0.1' });
   url = `ws://127.0.0.1:${(server.server.address() as AddressInfo).port}/ws`;
 }
@@ -107,6 +127,76 @@ describe('WebSocket hub', () => {
       await settle(first);
       await settle(second);
       expect(taps.map((t) => t.hotspotId).sort()).toEqual(['h_call00', 'h_carda0']);
+    });
+  });
+
+  describe('fader values (spec FD-2, FD-4, ADR 0020)', () => {
+    const value = {
+      type: 'value',
+      pageId: 'p_home00',
+      hotspotId: 'h_vol000',
+      value: 0.4,
+      final: true,
+    };
+
+    it('sends the held fader values to a player that says hello', async () => {
+      await start();
+      const player = await connect();
+      player.send({ type: 'hello', stationId: 'main' });
+      await settle(player);
+      expect(player.received).toContainEqual({
+        type: 'fader-values',
+        values: { h_vol000: 0.8 },
+      });
+    });
+
+    it('says nothing about faders to a player when the project has none', async () => {
+      await start();
+      held = {};
+      const player = await connect();
+      player.send({ type: 'hello', stationId: 'main' });
+      await settle(player);
+      expect(player.received.filter((m) => m.type === 'fader-values')).toEqual([]);
+    });
+
+    it('hands a value to the faders with the station that sent it', async () => {
+      await start();
+      const player = await connect();
+      player.send({ type: 'hello', stationId: 'kiosk-2' });
+      player.send(value);
+      await settle(player);
+      expect(values).toEqual([
+        {
+          source: { type: 'station', stationId: 'kiosk-2' },
+          pageId: 'p_home00',
+          hotspotId: 'h_vol000',
+          value: 0.4,
+          final: true,
+        },
+      ]);
+    });
+
+    it('ignores a value before hello, and keeps the connection', async () => {
+      await start();
+      const player = await connect();
+      player.send(value);
+      await settle(player);
+      expect(values).toEqual([]);
+    });
+
+    it('tells every tablet and viewer about a new value, so they show the same position', async () => {
+      await start();
+      const first = await connect();
+      const second = await connect();
+      const viewer = await connect();
+      for (const player of [first, second]) player.send({ type: 'hello', stationId: 'main' });
+      await settle(first);
+      await settle(second);
+      announce('h_vol000', 0.25);
+      const update = { type: 'fader-values', values: { h_vol000: 0.25 } };
+      for (const client of [first, second, viewer]) {
+        await vi.waitFor(() => expect(client.received).toContainEqual(update));
+      }
     });
   });
 

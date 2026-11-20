@@ -6,6 +6,7 @@ import { createDispatcher, type Drivers } from './commands/dispatcher';
 import { createHttpDriver } from './commands/drivers/http';
 import { createOscUdpDriver } from './commands/drivers/osc-udp';
 import { createUdpDriver } from './commands/drivers/udp';
+import { createFaders } from './commands/faders';
 import { createCommandLog } from './commands/log';
 import { registerTestSend } from './commands/testSend';
 import { createDemoDrivers } from './demo/demoDrivers';
@@ -99,7 +100,9 @@ export function buildApp({
     ? createDemoDrivers((request) => hub.toViewers({ type: 'demo-received', request }))
     : (drivers ?? realDrivers());
   const dispatch = createDispatcher({ project: () => store.project, drivers: used, log });
-  const hub = registerHub(app, { dispatch, log });
+  const faders = createFaders({ project: () => store.project, drivers: used, log });
+  app.addHook('onClose', () => faders.close());
+  const hub = registerHub(app, { dispatch, log, faders });
   registerTestSend(app, { project: () => store.project, dispatch });
   app.addHook('onClose', () => Promise.all(Object.values(used).map((d) => d.close())));
 
