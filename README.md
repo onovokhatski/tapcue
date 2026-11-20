@@ -11,7 +11,7 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.2.0: hotspots with their own frost, image and text ([changelog](CHANGELOG.md),
+> **Status:** v0.3.0: faders that send a value while they are dragged ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
@@ -73,6 +73,8 @@ the commands.
   a page, sends a command, or both. "Send test" fires a command from the editor.
 - **Hotspot content:** a frosted-glass backdrop, a translucent fill, an image and a text label,
   so button labels change in the editor without new artwork.
+- **Faders:** a hotspot can be a vertical or horizontal fader that sends its value while it is
+  dragged, over OSC, UDP or HTTP; every tablet shows the same position.
 - **Targets:** where commands go — OSC over UDP, UDP or HTTP — with a log of every command sent.
 - **Stations:** an entry point per tablet with its own start page and idle return, opened by
   scanning its QR code.
