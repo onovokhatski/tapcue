@@ -1,6 +1,6 @@
 # Tapcue — Roadmap
 
-Status: **draft** · Last updated: 2026-11-16 · Requirements: [spec.md](spec.md)
+Status: **draft** · Last updated: 2026-11-19 · Requirements: [spec.md](spec.md)
 
 ## 1. Phases
 
@@ -134,6 +134,16 @@ instead of the design tool. Also: number fields that change by dragging their la
 - **Done when:** a stand's buttons can be labelled and styled in the editor without re-exporting the
   artwork, and the player shows them identically on an iPad, also over a video background, without
   stutter.
+
+### v0.3 — Faders
+
+Besides buttons, a hotspot can be a fader that sends a value while it is dragged
+([ADR 0020](adr/0020-faders.md)). The value is held by the Tapcue server and shared by every
+tablet; feedback from media servers stays out of scope.
+
+- **Requirements:** FD-1 to FD-7
+- **Done when:** a fader on an iPad changes a Resolume layer's opacity smoothly over OSC, two
+  tablets show the same position, and the editor sets a fader up without code.
 
 ## 6. After MVP
 

@@ -1,6 +1,6 @@
 # Tapcue — MVP Specification
 
-Status: **draft** · Last updated: 2026-11-16
+Status: **draft** · Last updated: 2026-11-19
 
 ## 1. Overview
 
@@ -110,6 +110,23 @@ drawn bottom to top as backdrop blur, fill, image, text, border, all clipped to 
   (cropped at the edges).
 - **HS-10** Text: a label with its size, weight, colour, horizontal and vertical alignment and
   padding, in the system sans-serif font.
+
+Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instead of a button:
+
+- **FD-1** A fader is a hotspot with an orientation (vertical or horizontal), a range (min, max,
+  step) and a start value. It keeps the hotspot's box, shape, style and content.
+- **FD-2** Dragging a fader, or touching its track, sets its value, snapped to the step, and sends
+  the fader's command with that value. A fader does not change the page.
+- **FD-3** While a fader is dragged, at most about 25 commands a second are sent for it; the value
+  where the finger stops is always sent.
+- **FD-4** The server remembers each fader's last value and every player shows it: two tablets on
+  the same page show the same position, and a reloaded tablet shows it again. After a server
+  restart faders are back at their start values.
+- **FD-5** Offline, a player keeps the fader where the finger left it and sends that value once the
+  connection is back.
+- **FD-6** Returning to the start page after the idle timeout does not change a fader's value.
+- **FD-7** A fader shows the last value Tapcue sent, not the media server's actual level: a change
+  made on the media server itself is not seen (no feedback, §3).
 
 ### 5.5 Actions
 
