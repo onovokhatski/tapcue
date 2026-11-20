@@ -1,5 +1,8 @@
-import type { Command, Target } from '@tapcue/shared';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { Command, Project, Target } from '@tapcue/shared';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../app';
 import { DEFAULT_PROJECT_DIR } from '../config';
 import { loadProjectStore, type ProjectStore } from '../project/store';
@@ -100,5 +103,73 @@ describe('POST /api/test-send (spec ACT-4)', () => {
     expect(answer.statusCode).toBe(409);
     expect(answer.json()).toEqual({ error: 'The hotspot sends no command' });
     expect(sent).toHaveLength(0);
+  });
+});
+
+describe('POST /api/test-send for a fader (spec FD-2, ADR 0020)', () => {
+  let dir: string;
+  let faderStore: ProjectStore;
+
+  // A copy of the demo stand whose "Call our team" is a fader sending OSC to Resolume.
+  beforeAll(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'tapcue-fader-'));
+    await cp(DEFAULT_PROJECT_DIR, dir, { recursive: true });
+    const file = join(dir, 'project.json');
+    const project = JSON.parse(await readFile(file, 'utf8')) as Project;
+    const call = project.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!;
+    call.kind = 'fader';
+    call.fader = {
+      orientation: 'horizontal',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      start: 0.5,
+      value: { at: 0, as: 'f' },
+    };
+    call.pressEffect = 'none';
+    call.action = {
+      goTo: null,
+      command: { type: 'osc-udp', targetId: 't_resolm', address: '/layer/1/opacity', args: [] },
+    };
+    await writeFile(file, JSON.stringify(project));
+    faderStore = await loadProjectStore(dir);
+  });
+  afterAll(() => rm(dir, { recursive: true, force: true }));
+
+  function send(payload: object) {
+    const fake = fakeDrivers();
+    const app = buildApp({ store: faderStore, drivers: fake.drivers });
+    return { response: app.inject({ method: 'POST', url: '/api/test-send', payload }), ...fake };
+  }
+
+  it('sends the fader command with the chosen value, snapped, from the source "test"', async () => {
+    const { response, sent } = send({ pageId: 'p_home00', hotspotId: 'h_call00', value: 0.333 });
+    const answer = await response;
+    expect(answer.statusCode).toBe(200);
+    expect(sent.map((s) => s.command)).toEqual([
+      {
+        type: 'osc-udp',
+        targetId: 't_resolm',
+        address: '/layer/1/opacity',
+        args: [{ type: 'f', value: 0.33 }],
+      },
+    ]);
+    expect(answer.json()).toMatchObject({ entry: { status: 'sent', source: { type: 'test' } } });
+  });
+
+  it('answers 400 without a value', async () => {
+    const { response, sent } = send({ pageId: 'p_home00', hotspotId: 'h_call00' });
+    const answer = await response;
+    expect(answer.statusCode).toBe(400);
+    expect(answer.json()).toEqual({ error: 'Expected a value to send for a fader' });
+    expect(sent).toEqual([]);
+  });
+
+  it('answers a value outside the range with the ignored entry and its reason', async () => {
+    const { response, sent } = send({ pageId: 'p_home00', hotspotId: 'h_call00', value: 2 });
+    expect((await response).json()).toMatchObject({
+      entry: { status: 'ignored', message: `Value 2 is outside "Call our team"'s range, 0 to 1` },
+    });
+    expect(sent).toEqual([]);
   });
 });

@@ -103,7 +103,7 @@ export function buildApp({
   const faders = createFaders({ project: () => store.project, drivers: used, log });
   app.addHook('onClose', () => faders.close());
   const hub = registerHub(app, { dispatch, log, faders });
-  registerTestSend(app, { project: () => store.project, dispatch });
+  registerTestSend(app, { project: () => store.project, dispatch, faders });
   app.addHook('onClose', () => Promise.all(Object.values(used).map((d) => d.close())));
 
   // The editor saves the whole project (ADR 0011). An invalid one is refused with its field errors;

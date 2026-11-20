@@ -44,6 +44,13 @@ describe('stepValue', () => {
     expect(stepValue('62', 70, 0, 100)).toBe(100);
   });
 
+  it('steps by a fraction, snapped to it and read without float noise', () => {
+    expect(stepValue('0.5', 3, 0, 1, 0.01)).toBe(0.53);
+    expect(stepValue('0.1', 2, 0, 1, 0.1)).toBe(0.3);
+    expect(stepValue('0.123', 0, 0, 1, 0.01)).toBe(0.12);
+    expect(stepValue('0.99', 5, 0, 1, 0.01)).toBe(1);
+  });
+
   it('gives nothing for text that is not a number', () => {
     expect(stepValue('', 1)).toBeNull();
     expect(stepValue('–', 1)).toBeNull();

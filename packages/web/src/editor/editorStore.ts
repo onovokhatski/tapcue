@@ -69,7 +69,7 @@ export interface EditorActions {
    */
   saveNow: () => Promise<boolean>;
   /** Saves what is waiting, then sends the hotspot's command from the source "test" (ACT-4). */
-  testSend: (pageId: PageId, hotspotId: HotspotId) => Promise<TestSent>;
+  testSend: (pageId: PageId, hotspotId: HotspotId, value?: number) => Promise<TestSent>;
   /** The server says the project was saved, by this editor or another one. */
   projectUpdated: (revision: number) => void;
   /**
@@ -219,13 +219,16 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         return get().save.state === 'saved';
       },
 
-      async testSend(pageId, hotspotId) {
+      async testSend(pageId, hotspotId, value) {
         // The server sends the command it has, so a change still waiting is saved first.
         if (!(await get().saveNow())) {
           return { ok: false, reason: 'Not sent: the latest changes are not saved yet.' };
         }
         try {
-          return await api.testSend(pageId, hotspotId);
+          // A button's test sends no value; only a fader's does (spec FD-2).
+          return value === undefined
+            ? await api.testSend(pageId, hotspotId)
+            : await api.testSend(pageId, hotspotId, value);
         } catch {
           return { ok: false, reason: 'Cannot reach the server.' };
         }

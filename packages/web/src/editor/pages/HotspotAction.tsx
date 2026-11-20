@@ -41,18 +41,23 @@ export function OnTapFields({ project, pageId, hotspot }: Props) {
   const target = command ? project.targets.find((t) => t.id === command.targetId) : undefined;
   const save = (next: Command) => change((p) => setCommand(p, pageId, hotspot.id, next));
 
+  const fader = hotspot.kind === 'fader' ? hotspot.fader : undefined;
+
   return (
     <>
-      <Select
-        label="Go to page"
-        size="s"
-        placeholder="Stay on this page"
-        value={goTo}
-        options={project.pages
-          .filter((p) => p.id !== pageId)
-          .map((p) => ({ value: p.id, label: p.name }))}
-        onChange={(value) => change((p) => setGoTo(p, pageId, hotspot.id, value))}
-      />
+      {/* A fader changes no page (ADR 0020). */}
+      {!fader && (
+        <Select
+          label="Go to page"
+          size="s"
+          placeholder="Stay on this page"
+          value={goTo}
+          options={project.pages
+            .filter((p) => p.id !== pageId)
+            .map((p) => ({ value: p.id, label: p.name }))}
+          onChange={(value) => change((p) => setGoTo(p, pageId, hotspot.id, value))}
+        />
+      )}
       <Select
         label="Send command to"
         size="s"
@@ -78,7 +83,13 @@ export function OnTapFields({ project, pageId, hotspot }: Props) {
             target={target}
             onChange={save}
           />
-          <SendTest key={`test-${hotspot.id}`} pageId={pageId} hotspotId={hotspot.id} />
+          <SendTest
+            // A new start value is the new value to test with.
+            key={`test-${hotspot.id}-${fader?.start ?? ''}`}
+            pageId={pageId}
+            hotspotId={hotspot.id}
+            fader={fader}
+          />
         </>
       )}
     </>

@@ -13,7 +13,9 @@ import {
   setPressEffect,
   setShape,
   DEFAULT_TEXT,
+  setFader,
   setHotspotImage,
+  setKind,
   setHotspotText,
   setStyle,
 } from './hotspots';
@@ -300,6 +302,49 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expectValid(glass);
       const solid = setStyle(glass, 'p_home00', 'h_carda0', { fillOpacity: 1 });
       expect(cardA(solid).style).toEqual({ fill: '#FFFFFF', border: null, opacity: 1 });
+    });
+
+    it('makes a hotspot a fader with sensible settings, and a button again (ADR 0020)', () => {
+      // Product A card: 560 × 720, taller than wide, with OSC column 2 connect (one argument).
+      const fader = setKind(demoProject(), 'p_home00', 'h_carda0', 'fader');
+      expect(cardA(fader)).toMatchObject({
+        kind: 'fader',
+        fader: {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0.01,
+          start: 0,
+          value: { at: 1, as: 'f' },
+        },
+        pressEffect: 'none',
+        action: { goTo: null, command: { type: 'osc-udp' } },
+      });
+      expectValid(fader);
+      expect(setKind(fader, 'p_home00', 'h_carda0', 'fader')).toBe(fader);
+      const button = setKind(fader, 'p_home00', 'h_carda0', 'button');
+      expect(cardA(button)).not.toHaveProperty('kind');
+      expect(cardA(button)).not.toHaveProperty('fader');
+      expect(cardA(button).pressEffect).toBe('press');
+      expectValid(button);
+    });
+
+    it('clears a command of another protocol, and goes horizontal for a wide hotspot', () => {
+      // "Call our team": 312 × 96, sending HTTP.
+      const fader = setKind(demoProject(), 'p_home00', 'h_call00', 'fader');
+      const call = home(fader).hotspots.find((h) => h.id === 'h_call00')!;
+      expect(call.action.command).toBeNull();
+      expect(call.fader).toMatchObject({ orientation: 'horizontal', value: { at: 0 } });
+      expectValid(fader);
+    });
+
+    it('changes part of a fader, and leaves a button alone', () => {
+      const fader = setKind(demoProject(), 'p_home00', 'h_carda0', 'fader');
+      const changed = setFader(fader, 'p_home00', 'h_carda0', { start: 0.4, max: 2 });
+      expect(cardA(changed).fader).toMatchObject({ start: 0.4, max: 2, min: 0 });
+      expect(setFader(changed, 'p_home00', 'h_carda0', { start: 0.4 })).toBe(changed);
+      const project = demoProject();
+      expect(setFader(project, 'p_home00', 'h_carda0', { start: 0.4 })).toBe(project);
     });
 
     it('sets the press effect', () => {

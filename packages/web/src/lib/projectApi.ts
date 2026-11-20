@@ -22,7 +22,8 @@ export type TestSent = { ok: true; entry: LogEntry } | { ok: false; reason: stri
 export interface ProjectApi {
   load(): Promise<Loaded>;
   save(project: Project): Promise<Saved>;
-  testSend(pageId: PageId, hotspotId: HotspotId): Promise<TestSent>;
+  /** For a fader, `value` is the value to send (spec FD-2). */
+  testSend(pageId: PageId, hotspotId: HotspotId, value?: number): Promise<TestSent>;
   /** Replaces the whole project with a .zip (spec PRJ-4). */
   importArchive(file: Blob): Promise<Imported>;
   /** Stops the click-to-run app; true once the server has agreed (ADR 0017). */
@@ -58,11 +59,11 @@ export const projectApi: ProjectApi = {
     return { ok: true, revision: body.revision };
   },
 
-  async testSend(pageId, hotspotId) {
+  async testSend(pageId, hotspotId, value) {
     const response = await fetch('/api/test-send', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ pageId, hotspotId }),
+      body: JSON.stringify({ pageId, hotspotId, value }),
     });
     const body = (await response.json().catch(() => ({}))) as { entry?: LogEntry; error?: string };
     if (response.ok && body.entry) return { ok: true, entry: body.entry };
