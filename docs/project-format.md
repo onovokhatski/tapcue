@@ -162,10 +162,19 @@ dragging along it and sends its command with that value.
 | `min`, `max` | number | `min` < `max`. |
 | `step` | number | More than 0 and at most `max − min`. Values snap to it, counted from `min`. |
 | `start` | number | From `min` to `max`. The value before anyone drags it, and after a server restart. |
-| `value` | `{ "at": number, "as": "f" \| "i" }` | Where the value goes in the OSC command: inserted before argument `at` (0 = first, the number of arguments = last), sent as a 32-bit float or integer. `"i"` needs a whole-number `step`. |
+| `value` | `{ "at": number, "as": "f" \| "i" }` | Where the value goes in an OSC command: inserted before argument `at` (0 = first, the number of arguments = last), sent as a 32-bit float or integer. `"i"` needs a whole-number `step`. |
 
-A fader also follows these rules: its `action.goTo` is `null`, its `pressEffect` is `"none"`, and
-its command, if any, is OSC (UDP and HTTP values come in a later version).
+A fader also follows these rules: its `action.goTo` is `null` and its `pressEffect` is `"none"`.
+Its command, if any, says where the value goes:
+
+- **OSC** — `value.at` and `value.as` above: the value is an argument of its own.
+- **UDP** — `{value}` in `text`, e.g. `"VOL {value}\r"`.
+- **HTTP** — `{value}` in `path` or `body` (at least one), e.g. `"/dimmer/{value}"` or
+  `"{ \"level\": {value} }"`.
+
+Every `{value}` is replaced by the value as text: a whole number when `step` and `min` are whole
+numbers (`128`), otherwise up to 3 decimals without trailing zeros (`0.75`, `0.333`). In a
+button's command `{value}` has no meaning and is sent as it is written.
 
 A hotspot with `fill: null`, `border: null` and no frost, image or text is **invisible** — the
 most common case when the button is drawn on the background.

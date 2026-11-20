@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { docExample } from '../test/format-doc';
 import type { Project } from './project';
+import type { Command } from './targets';
 import { formatPath, validateProject, type ValidationError } from './validate';
 
 // The complete example from the format doc: pages p_h8x2kq (Home) and p_7tn4vb (Product A),
@@ -176,7 +177,7 @@ describe('validateProject', () => {
   });
 
   describe('faders (spec FD-1, ADR 0020)', () => {
-    /** The example with an OSC target, and Home's first hotspot turned into a volume fader. */
+    /** The example with OSC and UDP targets, and Home's first hotspot turned into a volume fader. */
     function withFader(change: (p: Project) => void = () => {}): Project {
       return project((p) => {
         p.targets.push({
@@ -185,6 +186,13 @@ describe('validateProject', () => {
           protocol: 'osc-udp',
           host: '192.168.1.20',
           port: 7000,
+        });
+        p.targets.push({
+          id: 't_projec',
+          name: 'Projector',
+          protocol: 'udp',
+          host: '192.168.1.40',
+          port: 4352,
         });
         const hotspot = home(p).hotspots[0]!;
         hotspot.kind = 'fader';
@@ -233,6 +241,27 @@ describe('validateProject', () => {
         fader(p).fader!.start = 0;
       });
       expect(errorsOf(between)).toEqual([]);
+    });
+
+    it.each<[string, Command]>([
+      ['UDP text', { type: 'udp', targetId: 't_projec', text: 'VOL {value}\r' }],
+      [
+        'an HTTP path',
+        { type: 'http', targetId: 't_demo01', method: 'GET', path: '/vol/{value}', body: null },
+      ],
+      [
+        'an HTTP body',
+        {
+          type: 'http',
+          targetId: 't_demo01',
+          method: 'PUT',
+          path: '/volume',
+          body: '{"level": {value}}',
+        },
+      ],
+    ])('accepts {value} in %s (ADR 0020)', (_, command) => {
+      const withCommand = withFader((p) => (fader(p).action.command = command));
+      expect(errorsOf(withCommand)).toEqual([]);
     });
 
     it.each<[string, (p: Project) => void, ValidationError[]]>([
@@ -302,19 +331,29 @@ describe('validateProject', () => {
         [{ path: `${at}.pressEffect`, message: 'a fader has no press effect' }],
       ],
       [
-        'an HTTP command',
+        'UDP text without {value}',
+        (p) => (fader(p).action.command = { type: 'udp', targetId: 't_projec', text: 'VOL' }),
+        [
+          {
+            path: `${at}.action.command.text`,
+            message: "expected {value} where the fader's value goes",
+          },
+        ],
+      ],
+      [
+        'an HTTP command without {value} in its path or body',
         (p) =>
           (fader(p).action.command = {
             type: 'http',
             targetId: 't_demo01',
-            method: 'GET',
+            method: 'POST',
             path: '/volume',
-            body: null,
+            body: '{"level": 1}',
           }),
         [
           {
-            path: `${at}.action.command.type`,
-            message: 'a fader sends OSC for now; UDP and HTTP come later',
+            path: `${at}.action.command.path`,
+            message: "expected {value} in the path or the body, where the fader's value goes",
           },
         ],
       ],

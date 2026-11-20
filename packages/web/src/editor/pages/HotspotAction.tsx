@@ -3,21 +3,27 @@
 // ED-10; design: hotspotProps(), commandFields()).
 import {
   type Command,
+  type FaderSettings,
+  formatFaderValue,
   type Hotspot,
   HttpCommand,
   type OscArgument,
   OscUdpCommand,
   type PageId,
   type Project,
+  snapFaderValue,
   type Target,
   UdpCommand,
+  VALUE_PLACEHOLDER,
 } from '@tapcue/shared';
+import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { useDraft } from '../../ui/useDraft';
 import { setCommand, setCommandTarget, setGoTo } from '../operations/actions';
+import { withPlaceholder } from '../operations/hotspots';
 import {
   checkArgument,
   convertArgument,
@@ -81,6 +87,7 @@ export function OnTapFields({ project, pageId, hotspot }: Props) {
             key={`${hotspot.id}-${command.type}`}
             command={command}
             target={target}
+            fader={fader}
             onChange={save}
           />
           <SendTest
@@ -103,27 +110,45 @@ function address(target: Target): string {
 function CommandFields({
   command,
   target,
+  fader,
   onChange,
 }: {
   command: Command;
   target: Target;
+  fader: FaderSettings | undefined;
   onChange: (command: Command) => void;
 }) {
   switch (command.type) {
     case 'osc-udp':
       return <OscFields command={command} onChange={onChange} />;
     case 'udp':
-      return <UdpFields command={command} onChange={onChange} />;
+      return <UdpFields command={command} fader={fader} onChange={onChange} />;
     case 'http':
       return (
         <HttpFields
           command={command}
           baseUrl={target.protocol === 'http' ? target.baseUrl : ''}
+          fader={fader}
           onChange={onChange}
         />
       );
   }
 }
+
+/**
+ * For a fader's UDP or HTTP command: what {value} becomes, shown with the value halfway along
+ * the fader, written as it will be sent (ADR 0020).
+ */
+function ValueHint({ fader, where }: { fader: FaderSettings; where: string }) {
+  const example = formatFaderValue(snapFaderValue((fader.min + fader.max) / 2, fader), fader);
+  return (
+    <p className="text-body-s text-muted">
+      {`${VALUE_PLACEHOLDER} in the ${where} is replaced by the fader's value, such as ${example}.`}
+    </p>
+  );
+}
+
+const NO_PLACE = `needs ${VALUE_PLACEHOLDER}, where the fader's value goes`;
 
 /** The first problem the shared schema finds at `path` of a command, or null (spec ED-10). */
 function problem(
@@ -247,23 +272,36 @@ function ArgumentRow({
 
 type Udp = Extract<Command, { type: 'udp' }>;
 
-function UdpFields({ command, onChange }: { command: Udp; onChange: (command: Command) => void }) {
+function UdpFields({
+  command,
+  fader,
+  onChange,
+}: {
+  command: Udp;
+  fader: FaderSettings | undefined;
+  onChange: (command: Command) => void;
+}) {
   const text = useDraft(
     showControls(command.text),
-    (shown) => problem(UdpCommand, { ...command, text: readControls(shown) }, 'text'),
+    (shown) =>
+      problem(UdpCommand, { ...command, text: readControls(shown) }, 'text') ??
+      (fader && !shown.includes(VALUE_PLACEHOLDER) ? `Text ${NO_PLACE}` : null),
     (shown) => onChange({ ...command, text: readControls(shown) }),
   );
   return (
-    <TextField
-      label="Text"
-      size="s"
-      mono
-      value={text.text}
-      error={text.error}
-      helper="Sent as UTF-8. Write \r or \n for line endings."
-      onChange={text.onChange}
-      onBlur={text.onBlur}
-    />
+    <>
+      <TextField
+        label="Text"
+        size="s"
+        mono
+        value={text.text}
+        error={text.error}
+        helper="Sent as UTF-8. Write \r or \n for line endings."
+        onChange={text.onChange}
+        onBlur={text.onBlur}
+      />
+      {fader && <ValueHint fader={fader} where="text" />}
+    </>
   );
 }
 
@@ -272,18 +310,45 @@ type Http = Extract<Command, { type: 'http' }>;
 function HttpFields({
   command,
   baseUrl,
+  fader,
   onChange,
 }: {
   command: Http;
   baseUrl: string;
+  fader: FaderSettings | undefined;
   onChange: (command: Command) => void;
 }) {
-  const path = useDraft(
-    command.path,
-    (text) => problem(HttpCommand, { ...command, path: text }, 'path'),
-    (text) => onChange({ ...command, path: text }),
-  );
   const canHaveBody = command.method !== 'GET';
+  // Path and body are edited as a pair (spec ED-10): a fader's value goes in one of them, so each
+  // field is checked with the text in the other, also while that is still being edited, and a
+  // change that makes the pair valid saves both. {value} typed in the body makes a path that was
+  // waiting for it valid, and saves it too.
+  const [drafts, setDrafts] = useState<{ path?: string; body?: string }>({});
+  const text = { path: drafts.path ?? command.path, body: drafts.body ?? command.body ?? '' };
+  const pathProblem = (path: string) => problem(HttpCommand, { ...command, path }, 'path');
+  /** What would be saved: a path with its own problem stays as it was. */
+  const pairOf = ({ path, body }: typeof text) => ({
+    path: pathProblem(path) ? command.path : path,
+    body: canHaveBody && body !== '' ? body : null,
+  });
+  const noPlace = ({ path, body }: { path: string; body: string | null }) =>
+    fader && !path.includes(VALUE_PLACEHOLDER) && !(body ?? '').includes(VALUE_PLACEHOLDER)
+      ? `The path or the body ${NO_PLACE}`
+      : null;
+  const errors = {
+    path: drafts.path === undefined ? null : (pathProblem(text.path) ?? noPlace(pairOf(text))),
+    body: drafts.body === undefined ? null : noPlace(pairOf(text)),
+  };
+  const edit = (field: 'path' | 'body') => (value: string) => {
+    const next = { ...text, [field]: value };
+    setDrafts((current) => ({ ...current, [field]: value }));
+    if (field === 'path' && pathProblem(value)) return;
+    if (!noPlace(pairOf(next))) onChange({ ...command, ...pairOf(next) });
+  };
+  // A valid field goes back to showing the saved value; an invalid one keeps its text and error.
+  const leave = (field: 'path' | 'body') => () => {
+    if (!errors[field]) setDrafts(({ [field]: _, ...rest }) => rest);
+  };
   return (
     <>
       <div className="space-y-1">
@@ -297,20 +362,23 @@ function HttpFields({
           ]}
           value={command.method}
           // A GET request has no body (project format).
-          onChange={(method) =>
-            onChange({ ...command, method, body: method === 'GET' ? null : command.body })
-          }
+          onChange={(method) => {
+            setDrafts({});
+            const next = { ...command, method, body: method === 'GET' ? null : command.body };
+            // A fader whose value was only in the body gets it back in the path.
+            onChange(fader ? withPlaceholder(next) : next);
+          }}
         />
       </div>
       <TextField
         label="Path"
         size="s"
         mono
-        value={path.text}
-        error={path.error}
+        value={text.path}
+        error={errors.path}
         helper={`Appended to ${baseUrl}`}
-        onChange={path.onChange}
-        onBlur={path.onBlur}
+        onChange={edit('path')}
+        onBlur={leave('path')}
       />
       <TextField
         label="Body"
@@ -319,10 +387,13 @@ function HttpFields({
         rows={2}
         placeholder={canHaveBody ? 'Empty' : 'A GET request has no body'}
         disabled={!canHaveBody}
-        value={command.body ?? ''}
+        value={text.body}
+        error={errors.body}
         helper="Sent as-is: as JSON when it is valid JSON, as text otherwise. Times out after 2 s."
-        onChange={(body) => onChange({ ...command, body: body === '' ? null : body })}
+        onChange={edit('body')}
+        onBlur={leave('body')}
       />
+      {fader && <ValueHint fader={fader} where="path or body" />}
     </>
   );
 }

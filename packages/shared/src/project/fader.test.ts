@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { faderRatio, faderValueAt, snapFaderValue } from './fader';
+import { faderRatio, faderValueAt, fillValue, formatFaderValue, snapFaderValue } from './fader';
 import type { FaderSettings } from './pages';
 
 const settings: FaderSettings = {
@@ -66,5 +66,31 @@ describe('faderValueAt (spec FD-2)', () => {
   it('counts a point past either end as that end', () => {
     expect(faderValueAt({ x: 125, y: 900 }, box, settings)).toBe(0);
     expect(faderValueAt({ x: 125, y: 0 }, box, settings)).toBe(1);
+  });
+});
+
+describe('formatFaderValue (ADR 0020)', () => {
+  it.each([
+    [0.75, settings, '0.75'],
+    [1, settings, '1'],
+    [0, settings, '0'],
+    [1 / 3, { ...settings, step: 0.001 }, '0.333'],
+    [0.30000000000000004, settings, '0.3'],
+    [-0.5, { ...settings, min: -1 }, '-0.5'],
+    [127, { ...settings, max: 255, step: 1 }, '127'],
+    [127.6, { ...settings, max: 255, step: 1 }, '128'],
+  ])('writes %s as %s', (value, fader, text) => {
+    expect(formatFaderValue(value, fader)).toBe(text);
+  });
+
+  it('keeps decimals when the step is whole but min is not, since the values are not whole', () => {
+    expect(formatFaderValue(1.5, { ...settings, min: 0.5, max: 10.5, step: 1 })).toBe('1.5');
+  });
+});
+
+describe('fillValue', () => {
+  it('replaces every {value}, and leaves a text without one as it is', () => {
+    expect(fillValue('{"l": {value}, "r": {value}}', '0.5')).toBe('{"l": 0.5, "r": 0.5}');
+    expect(fillValue('GO', '0.5')).toBe('GO');
   });
 });

@@ -1,7 +1,9 @@
 // Fader values (spec FD-2–FD-4, ADR 0020): a value from a player → checked against the fader's
 // range and snapped to its step → held for every tablet → sent at a limited rate as the fader's
-// command with the value inserted → one log entry per drag, for the value where the finger stopped.
+// command with the value in its place → one log entry per drag, for the value where the finger
+// stopped.
 import type {
+  Command,
   FaderSettings,
   HotspotId,
   LogEntry,
@@ -10,7 +12,7 @@ import type {
   Project,
   Protocol,
 } from '@tapcue/shared';
-import { snapFaderValue } from '@tapcue/shared';
+import { fillValue, formatFaderValue, snapFaderValue } from '@tapcue/shared';
 import type { Drivers } from './dispatcher';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
@@ -47,19 +49,33 @@ export interface Faders {
   close(): void;
 }
 
-/** The fader's OSC command with the value inserted where its settings say, as f or i. */
-export function withValue<C extends { args: unknown[] }>(
-  command: C,
-  { value: place }: FaderSettings,
-  value: number,
-): C {
-  const arg =
-    place.as === 'i'
-      ? { type: 'i' as const, value: Math.round(value) }
-      : { type: 'f' as const, value };
-  const args = [...command.args];
-  args.splice(place.at, 0, arg);
-  return { ...command, args };
+/**
+ * The fader's command with the value in its place (ADR 0020): for OSC an argument inserted where
+ * the settings say, as f or i; for UDP text and an HTTP path and body, every {value} replaced by
+ * the value as text.
+ */
+export function withValue(command: Command, fader: FaderSettings, value: number): Command {
+  const text = formatFaderValue(value, fader);
+  switch (command.type) {
+    case 'osc-udp': {
+      const { at, as } = fader.value;
+      const arg =
+        as === 'i'
+          ? { type: 'i' as const, value: Math.round(value) }
+          : { type: 'f' as const, value };
+      const args = [...command.args];
+      args.splice(at, 0, arg);
+      return { ...command, args };
+    }
+    case 'udp':
+      return { ...command, text: fillValue(command.text, text) };
+    case 'http':
+      return {
+        ...command,
+        path: fillValue(command.path, text),
+        body: command.body === null ? null : fillValue(command.body, text),
+      };
+  }
 }
 
 interface Pending {
@@ -99,7 +115,7 @@ export function createFaders({
     };
     const hotspot = find(input.pageId, input.hotspotId);
     const command = hotspot?.action.command;
-    if (!hotspot?.fader || !command || command.type !== 'osc-udp') return null;
+    if (!hotspot?.fader || !command) return null;
     const current = project();
     const target = current.targets.find((t) => t.id === command.targetId);
     if (!target || target.protocol !== command.type) {

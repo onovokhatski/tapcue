@@ -1,5 +1,6 @@
 // The single entry point for checking a project (docs/project-format.md §10):
 // first the shape of every field, then the references between objects.
+import { VALUE_PLACEHOLDER } from './fader';
 import type { Hotspot } from './pages';
 import { Project } from './project';
 
@@ -103,7 +104,8 @@ function referenceErrors(project: Project): ValidationError[] {
 
 /**
  * A fader and its settings go together, its numbers fit, it changes no page and plays no press
- * effect, and its command is OSC with room for the value (spec FD-1, FD-2, ADR 0020).
+ * effect, and its command has a place for the value: an OSC argument position within the
+ * arguments, or {value} in UDP text or an HTTP path or body (spec FD-1, FD-2, ADR 0020).
  */
 function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -138,8 +140,19 @@ function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
   }
   if (hotspot.action.goTo !== null) error('.action.goTo', 'a fader does not change the page');
   if (hotspot.pressEffect !== 'none') error('.pressEffect', 'a fader has no press effect');
-  if (command && command.type !== 'osc-udp') {
-    error('.action.command.type', 'a fader sends OSC for now; UDP and HTTP come later');
+  // UDP text and HTTP have no arguments: a placeholder marks where the value goes.
+  if (command?.type === 'udp' && !command.text.includes(VALUE_PLACEHOLDER)) {
+    error('.action.command.text', `expected ${VALUE_PLACEHOLDER} where the fader's value goes`);
+  }
+  if (
+    command?.type === 'http' &&
+    !command.path.includes(VALUE_PLACEHOLDER) &&
+    !(command.body ?? '').includes(VALUE_PLACEHOLDER)
+  ) {
+    error(
+      '.action.command.path',
+      `expected ${VALUE_PLACEHOLDER} in the path or the body, where the fader's value goes`,
+    );
   }
   return errors;
 }

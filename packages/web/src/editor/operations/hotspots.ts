@@ -1,17 +1,19 @@
 // Hotspot operations: pure functions (project, args) => project, never changing their input
 // (spec HS-1, HS-2, architecture §4.2). An operation that cannot apply returns the same project.
-import type {
-  Action,
-  AssetPath,
-  FaderSettings,
-  Hotspot,
-  HotspotId,
-  HotspotText,
-  PageId,
-  PressEffect,
-  Project,
-  Shape,
-  Style,
+import {
+  type Action,
+  type AssetPath,
+  type Command,
+  type FaderSettings,
+  type Hotspot,
+  type HotspotId,
+  type HotspotText,
+  type PageId,
+  type PressEffect,
+  type Project,
+  type Shape,
+  type Style,
+  VALUE_PLACEHOLDER,
 } from '@tapcue/shared';
 import { moveRect, type Rect } from './geometry';
 import { newId } from './ids';
@@ -267,17 +269,37 @@ export function setKind(
     if (current === kind) return h;
     const { kind: _kind, fader: _fader, ...rest } = h;
     if (kind === 'button') return { ...rest, pressEffect: 'press' };
-    const command = h.action.command?.type === 'osc-udp' ? h.action.command : null;
+    const command = h.action.command && withPlaceholder(h.action.command);
     const fader: FaderSettings = {
       orientation: h.height > h.width ? 'vertical' : 'horizontal',
       min: 0,
       max: 1,
       step: 0.01,
       start: 0,
-      value: { at: command?.args.length ?? 0, as: 'f' },
+      value: { at: command?.type === 'osc-udp' ? command.args.length : 0, as: 'f' },
     };
     return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, command } };
   });
+}
+
+/**
+ * A command with a place for a fader's value (ADR 0020): UDP text or an HTTP path and body without
+ * {value} get it at the end of the text or the path. OSC needs none: the value is an argument.
+ */
+export function withPlaceholder(command: Command): Command {
+  switch (command.type) {
+    case 'osc-udp':
+      return command;
+    case 'udp':
+      return command.text.includes(VALUE_PLACEHOLDER)
+        ? command
+        : { ...command, text: `${command.text} ${VALUE_PLACEHOLDER}` };
+    case 'http':
+      return command.path.includes(VALUE_PLACEHOLDER) ||
+        (command.body ?? '').includes(VALUE_PLACEHOLDER)
+        ? command
+        : { ...command, path: `${command.path.replace(/\/$/, '')}/${VALUE_PLACEHOLDER}` };
+  }
 }
 
 /** Changes part of a fader's settings (spec FD-1); a hotspot that is not a fader is left alone. */
@@ -315,7 +337,14 @@ export function setAction(
 ): Project {
   return updateHotspot(project, pageId, hotspotId, (h) => {
     const action = update(h.action);
-    return JSON.stringify(action) === JSON.stringify(h.action) ? h : { ...h, action };
+    if (JSON.stringify(action) === JSON.stringify(h.action)) return h;
+    // A fader's value position stays within its OSC arguments, also when one is removed.
+    const command = action.command;
+    if (h.fader && command?.type === 'osc-udp' && h.fader.value.at > command.args.length) {
+      const value = { ...h.fader.value, at: command.args.length };
+      return { ...h, action, fader: { ...h.fader, value } };
+    }
+    return { ...h, action };
   });
 }
 

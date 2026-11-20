@@ -430,6 +430,69 @@ describe('HotspotPanel', () => {
       expect(cardA().fader?.value.at).toBe(0);
     });
 
+    describe('UDP and HTTP commands with {value} (ADR 0020)', () => {
+      const dragged = () => within(screen.getByRole('region', { name: 'While dragged' }));
+      const sendTo = (targetId: string) =>
+        fireEvent.change(dragged().getByRole('combobox', { name: 'Send command to' }), {
+          target: { value: targetId },
+        });
+
+      it('starts UDP text with {value}, says what it becomes, and keeps it there', async () => {
+        const { cardA } = await asFader();
+        sendTo('t_projec');
+        const text = dragged().getByRole('textbox', { name: 'Text' });
+        expect(text).toHaveValue('{value}');
+        expect(
+          screen.getByText("{value} in the text is replaced by the fader's value, such as 0.5."),
+        ).toBeInTheDocument();
+        // The value's OSC position and type are not asked for.
+        expect(screen.queryByRole('textbox', { name: 'Value position' })).toBeNull();
+        expect(screen.queryByRole('radio', { name: 'Whole' })).toBeNull();
+        fireEvent.change(text, { target: { value: 'VOL {value}\\r' } });
+        expect(cardA().action.command).toEqual({
+          type: 'udp',
+          targetId: 't_projec',
+          text: 'VOL {value}\r',
+        });
+        fireEvent.change(text, { target: { value: 'VOL 5' } });
+        expect(
+          screen.getByText("Text needs {value}, where the fader's value goes"),
+        ).toBeInTheDocument();
+        expect(cardA().action.command).toMatchObject({ text: 'VOL {value}\r' });
+      });
+
+      it('takes {value} in the HTTP path or body, and puts it back in the path for GET', async () => {
+        const { cardA } = await asFader();
+        sendTo('t_demo00');
+        const path = dragged().getByRole('textbox', { name: 'Path' });
+        const body = dragged().getByRole('textbox', { name: 'Body' });
+        expect(path).toHaveValue('/{value}');
+        fireEvent.change(path, { target: { value: '/volume' } });
+        expect(
+          screen.getByText("The path or the body needs {value}, where the fader's value goes"),
+        ).toBeInTheDocument();
+        expect(cardA().action.command).toMatchObject({ path: '/{value}' });
+        // {value} in the body makes the waiting path valid, and both are saved.
+        fireEvent.change(body, { target: { value: '{"level": {value}}' } });
+        expect(path).not.toHaveAttribute('aria-invalid');
+        expect(cardA().action.command).toMatchObject({
+          path: '/volume',
+          body: '{"level": {value}}',
+        });
+        fireEvent.change(body, { target: { value: '{"level": 1}' } });
+        expect(body).toHaveAttribute('aria-invalid', 'true');
+        expect(cardA().action.command).toMatchObject({ body: '{"level": {value}}' });
+        fireEvent.blur(body);
+        fireEvent.change(body, { target: { value: '{"level": {value}}' } });
+        fireEvent.click(dragged().getByRole('radio', { name: 'GET' }));
+        expect(cardA().action.command).toMatchObject({
+          method: 'GET',
+          path: '/volume/{value}',
+          body: null,
+        });
+      });
+    });
+
     it('sends a test with the value chosen next to the button (spec FD-2)', async () => {
       const { store } = await asFader();
       act(() => store.getState().setConnection('open'));
