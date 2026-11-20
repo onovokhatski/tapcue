@@ -1,4 +1,4 @@
-import type { FaderSettings, Hotspot, LogEntry, Project, Protocol } from '@tapcue/shared';
+import type { Command, FaderSettings, Hotspot, LogEntry, Project, Protocol } from '@tapcue/shared';
 import { validateProject } from '@tapcue/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Drivers } from './dispatcher';
@@ -116,12 +116,16 @@ describe('the test project', () => {
 });
 
 describe('withValue', () => {
-  const command = {
+  const osc = {
+    type: 'osc-udp' as const,
+    targetId: 't_resolm',
+    address: '/level',
     args: [
-      { type: 's', value: 'a' },
-      { type: 'i', value: 2 },
+      { type: 's' as const, value: 'a' },
+      { type: 'i' as const, value: 2 },
     ],
   };
+  const argsOf = (command: Command) => (command.type === 'osc-udp' ? command.args : null);
 
   it.each([
     [
@@ -148,16 +152,43 @@ describe('withValue', () => {
         { type: 'f', value: 0.5 },
       ],
     ],
-  ])('inserts the value before argument %s', (position, args) => {
-    expect(withValue(command, { ...settings, value: { at: position, as: 'f' } }, 0.5).args).toEqual(
+  ])('inserts the value before OSC argument %s', (position, args) => {
+    expect(argsOf(withValue(osc, { ...settings, value: { at: position, as: 'f' } }, 0.5))).toEqual(
       args,
     );
-    expect(command.args).toHaveLength(2); // the project's command is left as it is
+    expect(osc.args).toHaveLength(2); // the project's command is left as it is
   });
 
   it('sends a whole number as i', () => {
     const level = { ...settings, step: 1, max: 255, value: { at: 0, as: 'i' as const } };
-    expect(withValue({ args: [] }, level, 127.6).args).toEqual([{ type: 'i', value: 128 }]);
+    expect(argsOf(withValue({ ...osc, args: [] }, level, 127.6))).toEqual([
+      { type: 'i', value: 128 },
+    ]);
+  });
+
+  it('puts the value as text in place of every {value} in UDP text', () => {
+    const udp = { type: 'udp' as const, targetId: 't_projec', text: 'VOL {value} {value}\r' };
+    expect(withValue(udp, settings, 0.75)).toEqual({ ...udp, text: 'VOL 0.75 0.75\r' });
+  });
+
+  it('puts the value in an HTTP path and body, and leaves no body as none', () => {
+    const http = {
+      type: 'http' as const,
+      targetId: 't_light0',
+      method: 'PUT' as const,
+      path: '/dimmer/{value}',
+      body: '{"level": {value}}',
+    };
+    const whole = { ...settings, max: 255, step: 1 };
+    expect(withValue(http, whole, 128)).toEqual({
+      ...http,
+      path: '/dimmer/128',
+      body: '{"level": 128}',
+    });
+    expect(withValue({ ...http, method: 'GET', body: null }, whole, 128)).toMatchObject({
+      path: '/dimmer/128',
+      body: null,
+    });
   });
 });
 
@@ -174,6 +205,31 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     });
     expect(entry).toMatchObject({ status: 'sent', hotspotName: 'Volume', targetName: 'Resolume' });
     expect(entries).toHaveLength(1);
+  });
+
+  it('sends a UDP fader its text with the value, like an OSC one (ADR 0020)', async () => {
+    project = {
+      ...projectWith({
+        ...volume,
+        action: { goTo: null, command: { type: 'udp', targetId: 't_projec', text: 'VOL {value}' } },
+      }),
+    };
+    project.targets.push({
+      id: 't_projec',
+      name: 'Projector',
+      protocol: 'udp',
+      host: '127.0.0.1',
+      port: 4352,
+    });
+    expect(validateProject(project)).toMatchObject({ ok: true });
+    expect(await faders.receive(at(0.333, true))).toMatchObject({
+      status: 'sent',
+      targetName: 'Projector',
+      command: { type: 'udp', text: 'VOL 0.33' },
+    });
+    expect(sent.map(({ command }) => command)).toEqual([
+      { type: 'udp', targetId: 't_projec', text: 'VOL 0.33' },
+    ]);
   });
 
   it('logs nothing while dragging: a drag is one entry, for its final value', async () => {

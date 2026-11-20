@@ -30,3 +30,21 @@ export function faderValueAt(
   const clamped = Math.min(1, Math.max(0, ratio));
   return snapFaderValue(settings.min + clamped * (settings.max - settings.min), settings);
 }
+
+/** Where a fader's value goes in UDP text and in an HTTP path or body (ADR 0020). */
+export const VALUE_PLACEHOLDER = '{value}';
+
+/**
+ * A value as text, for UDP and HTTP: a whole number when the grid has only whole numbers (whole
+ * step and min), otherwise up to 3 decimals without trailing zeros: 1, 0.75, 0.333.
+ */
+export function formatFaderValue(value: number, { min, step }: FaderSettings): string {
+  const decimals = Number.isInteger(step) && Number.isInteger(min) ? 0 : 3;
+  // Through Number, so 0.750 reads 0.75 and -0.000 reads 0.
+  return String(Number(value.toFixed(decimals)));
+}
+
+/** Replaces every placeholder in a text with the value. */
+export function fillValue(text: string, value: string): string {
+  return text.replaceAll(VALUE_PLACEHOLDER, value);
+}

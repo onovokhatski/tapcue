@@ -13,9 +13,11 @@ import {
   setPressEffect,
   setShape,
   DEFAULT_TEXT,
+  setAction,
   setFader,
   setHotspotImage,
   setKind,
+  withPlaceholder,
   setHotspotText,
   setStyle,
 } from './hotspots';
@@ -329,13 +331,46 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expectValid(button);
     });
 
-    it('clears a command of another protocol, and goes horizontal for a wide hotspot', () => {
-      // "Call our team": 312 × 96, sending HTTP.
+    it('keeps an HTTP command, adding {value} to its path, and goes horizontal when wide', () => {
+      // "Call our team": 312 × 96, sending HTTP with a body that has no {value}.
       const fader = setKind(demoProject(), 'p_home00', 'h_call00', 'fader');
       const call = home(fader).hotspots.find((h) => h.id === 'h_call00')!;
-      expect(call.action.command).toBeNull();
+      expect(call.action.command).toMatchObject({
+        type: 'http',
+        path: '/demo/screen-3/call-staff/{value}',
+        body: '{ "stand": "B12" }',
+      });
       expect(call.fader).toMatchObject({ orientation: 'horizontal', value: { at: 0 } });
       expectValid(fader);
+    });
+
+    it('keeps a UDP command, adding {value} to its text (ADR 0020)', () => {
+      const fader = setKind(demoProject(), 'p_prodb0', 'h_bwall0', 'fader');
+      const wall = fader.pages[2]!.hotspots.find((h) => h.id === 'h_bwall0')!;
+      expect(wall.action.command).toMatchObject({ type: 'udp', text: '%1INPT 31\r {value}' });
+      expectValid(fader);
+    });
+
+    it.each([
+      ['UDP text', { type: 'udp', targetId: 't_projec', text: 'VOL {value}' }],
+      [
+        'an HTTP body',
+        { type: 'http', targetId: 't_demo00', method: 'PUT', path: '/v', body: '{value}' },
+      ],
+    ] as const)('leaves {value} already in %s where it is', (_, command) => {
+      expect(withPlaceholder(command)).toBe(command);
+    });
+
+    it("keeps a fader's value position within its OSC arguments when one is removed", () => {
+      // Product A's fader has one argument, so its value goes after it: position 1.
+      const fader = setKind(demoProject(), 'p_home00', 'h_carda0', 'fader');
+      const command = cardA(fader).action.command!;
+      const fewer = setAction(fader, 'p_home00', 'h_carda0', (action) => ({
+        ...action,
+        command: command.type === 'osc-udp' ? { ...command, args: [] } : command,
+      }));
+      expect(cardA(fewer).fader?.value).toEqual({ at: 0, as: 'f' });
+      expectValid(fewer);
     });
 
     it('changes part of a fader, and leaves a button alone', () => {

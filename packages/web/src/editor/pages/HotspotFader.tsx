@@ -1,5 +1,6 @@
 // "Type" in a hotspot's properties panel (ADR 0020): a button or a fader, and for a fader its
-// direction, range, step, start value and where the value goes in its OSC command (spec FD-1).
+// direction, range, step, start value and, for OSC, where the value goes among the arguments
+// (spec FD-1).
 // Every field applies only a value that fits the others (spec ED-10): the editor never saves a
 // fader the server would refuse.
 import type { FaderSettings, Hotspot, PageId } from '@tapcue/shared';
@@ -168,44 +169,55 @@ function FaderFields({ pageId, hotspot, fader }: Props & { fader: FaderSettings 
           />
         </Field>
       </div>
-      <Row label="Value sent as">
-        <Segmented
-          label="Value sent as"
-          options={[
-            { value: 'f', label: 'Float' },
-            { value: 'i', label: 'Whole' },
-          ]}
-          value={fader.value.as}
-          onChange={(as) => {
-            // A whole-number value needs a whole step, or most positions could not be sent.
-            if (as === 'i' && !Number.isInteger(fader.step)) {
-              setAsError('Whole needs a whole-number step: change the step first.');
-              return;
-            }
-            setAsError(null);
-            update({ value: { ...fader.value, as } });
-          }}
-        />
-      </Row>
-      <Field label="Value position in the OSC arguments">
-        <div className="w-[120px]">
-          <NumberField
-            prefix="#"
-            ariaLabel="Value position"
-            min={0}
-            max={argCount}
-            value={at.text}
-            error={at.error !== null}
-            onChange={at.onChange}
-            onBlur={at.onBlur}
-          />
-        </div>
-      </Field>
-      <p className="text-body-s text-muted">
-        {argCount === 0
-          ? 'The value is the command’s only argument.'
-          : `0 puts it first, ${argCount} after the last of the ${argCount} argument${argCount === 1 ? '' : 's'} below.`}
-      </p>
+      {/* The value's place and type are OSC's; UDP and HTTP put it in place of {value}. */}
+      {command?.type === 'osc-udp' ? (
+        <>
+          <Row label="Value sent as">
+            <Segmented
+              label="Value sent as"
+              options={[
+                { value: 'f', label: 'Float' },
+                { value: 'i', label: 'Whole' },
+              ]}
+              value={fader.value.as}
+              onChange={(as) => {
+                // A whole-number value needs a whole step, or most positions could not be sent.
+                if (as === 'i' && !Number.isInteger(fader.step)) {
+                  setAsError('Whole needs a whole-number step: change the step first.');
+                  return;
+                }
+                setAsError(null);
+                update({ value: { ...fader.value, as } });
+              }}
+            />
+          </Row>
+          <Field label="Value position in the OSC arguments">
+            <div className="w-[120px]">
+              <NumberField
+                prefix="#"
+                ariaLabel="Value position"
+                min={0}
+                max={argCount}
+                value={at.text}
+                error={at.error !== null}
+                onChange={at.onChange}
+                onBlur={at.onBlur}
+              />
+            </div>
+          </Field>
+          <p className="text-body-s text-muted">
+            {argCount === 0
+              ? 'The value is the command’s only argument.'
+              : `0 puts it first, ${argCount} after the last of the ${argCount} argument${argCount === 1 ? '' : 's'} below.`}
+          </p>
+        </>
+      ) : (
+        <p className="text-body-s text-muted">
+          {command
+            ? 'The value goes in place of {value} in the command, under “While dragged”.'
+            : 'The value is sent with the command chosen under “While dragged”.'}
+        </p>
+      )}
       {errors.map((error) => (
         <p key={error} className="text-body-s text-danger-fg">
           {error}

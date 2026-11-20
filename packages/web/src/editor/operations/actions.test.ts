@@ -2,6 +2,7 @@ import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
 import { emptyCommand, setCommand, setCommandTarget, setGoTo } from './actions';
+import { setKind } from './hotspots';
 
 const expectValid = (project: Project) =>
   expect(validateProject(project)).toMatchObject({ ok: true });
@@ -90,6 +91,21 @@ describe('action operations (spec ACT-1)', () => {
         }),
       ).toBe(before);
     });
+  });
+
+  it("starts a fader's UDP and HTTP commands with {value}, valid at once (ADR 0020)", () => {
+    const fader = setKind(demoProject(), 'p_home00', 'h_about0', 'fader');
+    const commandOf = (project: Project) =>
+      project.pages[0]!.hotspots.find((h) => h.id === 'h_about0')!.action.command;
+    const udp = setCommandTarget(fader, 'p_home00', 'h_about0', 't_projec');
+    expect(commandOf(udp)).toEqual({ type: 'udp', targetId: 't_projec', text: '{value}' });
+    expectValid(udp);
+    const http = setCommandTarget(fader, 'p_home00', 'h_about0', 't_demo00');
+    expect(commandOf(http)).toMatchObject({ type: 'http', path: '/{value}', body: null });
+    expectValid(http);
+    // A button starts as before.
+    const button = setCommandTarget(demoProject(), 'p_home00', 'h_about0', 't_projec');
+    expect(commandOf(button)).toMatchObject({ text: 'GO' });
   });
 
   it('starts every protocol with a valid command', () => {

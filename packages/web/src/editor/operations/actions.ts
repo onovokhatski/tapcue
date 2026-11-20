@@ -1,6 +1,14 @@
 // What a tap does: go to a page, send a command to a target, or both (spec ACT-1). Pure functions
 // (project, args) => project; an operation that cannot apply returns the same project.
-import type { Command, HotspotId, PageId, Project, Target, TargetId } from '@tapcue/shared';
+import {
+  type Command,
+  type HotspotId,
+  type PageId,
+  type Project,
+  type Target,
+  type TargetId,
+  VALUE_PLACEHOLDER,
+} from '@tapcue/shared';
 import { setAction } from './hotspots';
 
 /** A page to go to after the tap, or null to stay. A hotspot never links to its own page. */
@@ -30,12 +38,15 @@ export function setCommandTarget(
     return setAction(project, pageId, hotspotId, (action) => ({ ...action, command: null }));
   const target = project.targets.find((t) => t.id === targetId);
   if (!target) return project;
+  const fader = project.pages
+    .find((p) => p.id === pageId)
+    ?.hotspots.some((h) => h.id === hotspotId && h.kind === 'fader');
   return setAction(project, pageId, hotspotId, (action) => ({
     ...action,
     command:
       action.command?.type === target.protocol
         ? { ...action.command, targetId }
-        : emptyCommand(target),
+        : emptyCommand(target, fader),
   }));
 }
 
@@ -51,15 +62,24 @@ export function setCommand(
   return setAction(project, pageId, hotspotId, (action) => ({ ...action, command }));
 }
 
-/** The command a new choice of target starts with: valid, and doing nothing surprising. */
-export function emptyCommand(target: Target): Command {
+/**
+ * The command a new choice of target starts with: valid, and doing nothing surprising. A fader's
+ * UDP and HTTP commands start with {value}, the place of its value (ADR 0020).
+ */
+export function emptyCommand(target: Target, fader = false): Command {
   switch (target.protocol) {
     case 'osc-udp':
       return { type: 'osc-udp', targetId: target.id, address: '/', args: [] };
     case 'udp':
       // UDP text cannot be empty; "GO", the theatre word for "start the cue", until it is written.
-      return { type: 'udp', targetId: target.id, text: 'GO' };
+      return { type: 'udp', targetId: target.id, text: fader ? VALUE_PLACEHOLDER : 'GO' };
     case 'http':
-      return { type: 'http', targetId: target.id, method: 'POST', path: '/', body: null };
+      return {
+        type: 'http',
+        targetId: target.id,
+        method: 'POST',
+        path: fader ? `/${VALUE_PLACEHOLDER}` : '/',
+        body: null,
+      };
   }
 }
