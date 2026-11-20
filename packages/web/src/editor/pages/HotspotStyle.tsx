@@ -204,15 +204,18 @@ export function StyleFields({ pageId, hotspot }: Props) {
           No fill and no border: visitors see only the artwork.
         </p>
       )}
-      <Select
-        label="Press effect"
-        size="s"
-        value={hotspot.pressEffect}
-        options={EFFECTS}
-        onChange={(effect) => {
-          if (effect) change((p) => setPressEffect(p, pageId, hotspot.id, effect as PressEffect));
-        }}
-      />
+      {/* A fader is dragged, not pressed (ADR 0020). */}
+      {hotspot.kind !== 'fader' && (
+        <Select
+          label="Press effect"
+          size="s"
+          value={hotspot.pressEffect}
+          options={EFFECTS}
+          onChange={(effect) => {
+            if (effect) change((p) => setPressEffect(p, pageId, hotspot.id, effect as PressEffect));
+          }}
+        />
+      )}
     </>
   );
 }

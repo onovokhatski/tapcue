@@ -20,6 +20,7 @@ import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geomet
 import { useEditor } from '../useEditor';
 import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
+import { KindFields } from './HotspotFader';
 import { HotspotTextFields } from './HotspotText';
 
 export function HotspotPanel() {
@@ -78,8 +79,11 @@ export function HotspotPanel() {
           </Banner>
         )}
       </div>
+      <Section title="Type">
+        <KindFields key={`kind-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
+      </Section>
       {/* What a button does matters more than where it is exactly (design: "On tap" first). */}
-      <Section title="On tap">
+      <Section title={hotspot.kind === 'fader' ? 'While dragged' : 'On tap'}>
         <OnTapFields
           key={`tap-${hotspot.id}`}
           project={project}

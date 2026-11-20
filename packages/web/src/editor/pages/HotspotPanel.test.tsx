@@ -1,5 +1,5 @@
 import type { Project } from '@tapcue/shared';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
 import { placeHotspot } from '../operations/hotspots';
@@ -7,11 +7,17 @@ import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { HotspotPanel } from './HotspotPanel';
 
+const testSends: unknown[][] = [];
+
 async function renderPanel(project: Project = demoProject()) {
+  testSends.length = 0;
   const store = createEditorStore({
     load: () => Promise.resolve({ revision: 1, project }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
-    testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+    testSend: (...args: unknown[]) => {
+      testSends.push(args);
+      return Promise.resolve({ ok: false, reason: 'Recorded by the test' });
+    },
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     quitServer: () => Promise.resolve(false),
   });
@@ -347,6 +353,90 @@ describe('HotspotPanel', () => {
         verticalAlign: 'bottom',
         color: '#112233',
       });
+    });
+  });
+
+  describe('fader (spec FD-1, ADR 0020)', () => {
+    async function asFader() {
+      const panel = await renderPanel();
+      fireEvent.click(screen.getByRole('radio', { name: 'Fader' }));
+      return panel;
+    }
+    const field = (name: string) => screen.getByRole('textbox', { name });
+
+    it('turns the hotspot into a fader: no page change, no press effect', async () => {
+      const { cardA } = await asFader();
+      expect(cardA()).toMatchObject({ kind: 'fader', pressEffect: 'none' });
+      expect(screen.getByText('While dragged')).toBeInTheDocument();
+      expect(screen.queryByRole('combobox', { name: 'Go to page' })).toBeNull();
+      expect(screen.queryByRole('combobox', { name: 'Press effect' })).toBeNull();
+      fireEvent.click(screen.getByRole('radio', { name: 'Button' }));
+      expect(cardA()).not.toHaveProperty('kind');
+      expect(screen.getByRole('combobox', { name: 'Go to page' })).toBeInTheDocument();
+    });
+
+    it('sets direction, range, step and start, each only when it fits the others', async () => {
+      const { cardA } = await asFader();
+      fireEvent.click(screen.getByRole('radio', { name: 'Horizontal' }));
+      fireEvent.change(field('Fader max'), { target: { value: '100' } });
+      fireEvent.change(field('Fader step'), { target: { value: '5' } });
+      fireEvent.change(field('Fader start'), { target: { value: '50' } });
+      expect(cardA().fader).toMatchObject({
+        orientation: 'horizontal',
+        min: 0,
+        max: 100,
+        step: 5,
+        start: 50,
+      });
+      fireEvent.change(field('Fader max'), { target: { value: '40' } });
+      expect(screen.getByText('Max: at least the start value (50)')).toBeInTheDocument();
+      fireEvent.change(field('Fader min'), { target: { value: '60' } });
+      expect(screen.getByText('Min: at most the start value (50)')).toBeInTheDocument();
+      fireEvent.change(field('Fader step'), { target: { value: '0' } });
+      expect(screen.getByText('Step: more than 0')).toBeInTheDocument();
+      fireEvent.change(field('Fader start'), { target: { value: '101' } });
+      expect(screen.getByText('Start: 0 to 100')).toBeInTheDocument();
+      fireEvent.change(field('Fader start'), { target: { value: 'half' } });
+      expect(screen.getByText('Start: expected a number')).toBeInTheDocument();
+      expect(cardA().fader).toMatchObject({ min: 0, max: 100, step: 5, start: 50 });
+    });
+
+    it('sends the value as a whole number only with a whole step', async () => {
+      const { cardA } = await asFader();
+      fireEvent.click(screen.getByRole('radio', { name: 'Whole' }));
+      expect(
+        screen.getByText('Whole needs a whole-number step: change the step first.'),
+      ).toBeInTheDocument();
+      expect(cardA().fader?.value.as).toBe('f');
+      fireEvent.change(field('Fader max'), { target: { value: '255' } });
+      fireEvent.change(field('Fader step'), { target: { value: '1' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Whole' }));
+      expect(cardA().fader?.value.as).toBe('i');
+      fireEvent.change(field('Fader step'), { target: { value: '0.5' } });
+      expect(
+        screen.getByText('Step: a whole number, since the value is sent as one'),
+      ).toBeInTheDocument();
+    });
+
+    it('places the value among the OSC arguments, up to after the last one', async () => {
+      const { cardA } = await asFader(); // Product A card's command has one argument
+      expect(field('Value position')).toHaveValue('1');
+      fireEvent.change(field('Value position'), { target: { value: '0' } });
+      expect(cardA().fader?.value.at).toBe(0);
+      fireEvent.change(field('Value position'), { target: { value: '2' } });
+      expect(
+        screen.getByText('Value position: 0 to 1, the number of arguments'),
+      ).toBeInTheDocument();
+      expect(cardA().fader?.value.at).toBe(0);
+    });
+
+    it('sends a test with the value chosen next to the button (spec FD-2)', async () => {
+      const { store } = await asFader();
+      act(() => store.getState().setConnection('open'));
+      fireEvent.change(field('Test value'), { target: { value: '0.25' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send test' }));
+      // The editor saves the change to a fader first, then sends.
+      await waitFor(() => expect(testSends.at(-1)).toEqual(['p_home00', 'h_carda0', 0.25]));
     });
   });
 

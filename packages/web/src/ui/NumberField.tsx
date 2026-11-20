@@ -2,8 +2,8 @@
 // optional short prefix such as X, the value right-aligned, an optional unit, error and disabled.
 //
 // As in Figma, the prefix (or, without one, the unit) is a handle: dragging it left or right
-// changes the value by 1 per pixel, 10 with Shift. Arrow up and down in the field step it the same
-// way. Each step goes through onChange like typed text, kept within min and max, and the end of a
+// changes the value by one step per pixel (1 unless the field says otherwise, e.g. 0.01), ten
+// with Shift. Arrow up and down in the field step it the same way. Each step goes through onChange like typed text, kept within min and max, and the end of a
 // drag counts as leaving the field (onBlur).
 import { useRef } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
@@ -18,15 +18,25 @@ interface NumberFieldProps {
   /** Limits for dragging and arrow keys; typed text is checked by the caller. */
   min?: number;
   max?: number;
+  /** The size of one step for dragging and arrow keys; 1 by default. Values snap to it. */
+  step?: number;
+  /** Whole numbers only, or decimals too: sets the keyboard on a tablet. */
+  decimal?: boolean;
   onChange: (text: string) => void;
   onBlur?: () => void;
 }
 
-/** The value `steps` steps away from `text`, within the limits; null when text is not a number. */
-export function stepValue(text: string, steps: number, min = -Infinity, max = Infinity) {
+/**
+ * The value `steps` steps of `size` away from `text`, snapped to the step and within the limits;
+ * null when text is not a number.
+ */
+export function stepValue(text: string, steps: number, min = -Infinity, max = Infinity, size = 1) {
   const start = Number(text.trim());
   if (text.trim() === '' || !Number.isFinite(start)) return null;
-  return Math.min(max, Math.max(min, Math.round(start + steps)));
+  const snapped = Math.round(start / size + steps) * size;
+  // Rounded to the step's decimals, so 0.1 + 0.2 reads 0.3, not 0.30000000000000004.
+  const decimals = (String(size).split('.')[1] ?? '').length;
+  return Math.min(max, Math.max(min, Number(snapped.toFixed(decimals))));
 }
 
 export function NumberField({
@@ -38,6 +48,8 @@ export function NumberField({
   disabled = false,
   min,
   max,
+  step: size = 1,
+  decimal = false,
   onChange,
   onBlur,
 }: NumberFieldProps) {
@@ -45,7 +57,7 @@ export function NumberField({
   const drag = useRef<{ x: number; start: string } | null>(null);
 
   function step(steps: number) {
-    const next = stepValue(value, steps, min, max);
+    const next = stepValue(value, steps, min, max, size);
     if (next !== null && String(next) !== value) onChange(String(next));
   }
 
@@ -59,7 +71,7 @@ export function NumberField({
   function pointerMove(event: PointerEvent<HTMLSpanElement>) {
     if (!drag.current) return;
     const pixels = Math.round(event.clientX - drag.current.x);
-    const next = stepValue(drag.current.start, pixels * (event.shiftKey ? 10 : 1), min, max);
+    const next = stepValue(drag.current.start, pixels * (event.shiftKey ? 10 : 1), min, max, size);
     if (next !== null && String(next) !== value) onChange(String(next));
   }
 
@@ -104,7 +116,7 @@ export function NumberField({
       <input
         aria-label={ariaLabel}
         aria-invalid={error || undefined}
-        inputMode="numeric"
+        inputMode={decimal ? 'decimal' : 'numeric'}
         disabled={disabled}
         className={`w-full min-w-0 bg-transparent text-right text-body-m tabular-nums ${
           disabled ? 'text-disabled' : ''

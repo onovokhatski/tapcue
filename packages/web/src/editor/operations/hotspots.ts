@@ -3,6 +3,7 @@
 import type {
   Action,
   AssetPath,
+  FaderSettings,
   Hotspot,
   HotspotId,
   HotspotText,
@@ -246,6 +247,50 @@ export function setHotspotText(
     }
     const text = { ...(h.text ?? DEFAULT_TEXT), ...change };
     return JSON.stringify(text) === JSON.stringify(h.text) ? h : { ...h, text };
+  });
+}
+
+/**
+ * Makes the hotspot a button or a fader (ADR 0020). A new fader starts from 0 to 1 by 0.01 at 0,
+ * vertical when its box is taller than wide, with the value as the last OSC argument; it changes
+ * no page and has no press effect, and a command of another protocol is cleared, since a fader
+ * sends OSC for now. A button loses the fader settings and gets the press-in effect back.
+ */
+export function setKind(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  kind: 'button' | 'fader',
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) => {
+    const current = h.kind === 'fader' ? 'fader' : 'button';
+    if (current === kind) return h;
+    const { kind: _kind, fader: _fader, ...rest } = h;
+    if (kind === 'button') return { ...rest, pressEffect: 'press' };
+    const command = h.action.command?.type === 'osc-udp' ? h.action.command : null;
+    const fader: FaderSettings = {
+      orientation: h.height > h.width ? 'vertical' : 'horizontal',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      start: 0,
+      value: { at: command?.args.length ?? 0, as: 'f' },
+    };
+    return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, command } };
+  });
+}
+
+/** Changes part of a fader's settings (spec FD-1); a hotspot that is not a fader is left alone. */
+export function setFader(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  change: Partial<FaderSettings>,
+): Project {
+  return updateHotspot(project, pageId, hotspotId, (h) => {
+    if (h.kind !== 'fader' || !h.fader) return h;
+    const fader = { ...h.fader, ...change };
+    return JSON.stringify(fader) === JSON.stringify(h.fader) ? h : { ...h, fader };
   });
 }
 
