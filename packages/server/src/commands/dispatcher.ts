@@ -44,6 +44,9 @@ export function createDispatcher({
     if (!page) return ignore(`Page "${pageId}" does not exist`);
     const hotspot = page.hotspots.find((h) => h.id === hotspotId);
     if (!hotspot) return ignore(`Hotspot "${hotspotId}" does not exist on page "${pageId}"`);
+    // A fader sends values, not taps (ADR 0020): its command is incomplete without one.
+    if (hotspot.kind === 'fader')
+      return ignore(`Hotspot "${hotspot.name}" is a fader: taps send nothing`);
 
     const { command } = hotspot.action;
     if (!command) return null; // a hotspot that only navigates: nothing to send, nothing to log

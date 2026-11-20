@@ -174,6 +174,23 @@ describe('dispatcher', () => {
       ]);
     });
 
+    it('logs a tap on a fader as ignored: a fader sends values, not taps (ADR 0020)', async () => {
+      const [home, ...rest] = demo.pages;
+      const fader = {
+        ...home!.hotspots[0]!,
+        name: 'Volume',
+        kind: 'fader' as const,
+        pressEffect: 'none' as const,
+        action: { goTo: null, command: home!.hotspots[0]!.action.command },
+      };
+      project = { ...demo, pages: [{ ...home!, hotspots: [fader] }, ...rest] };
+      await dispatch(tap('p_home00', fader.id));
+      expect(fake.sent).toEqual([]);
+      expect(entries).toMatchObject([
+        { status: 'ignored', message: 'Hotspot "Volume" is a fader: taps send nothing' },
+      ]);
+    });
+
     it('logs a command whose target is missing as ignored', async () => {
       project = { ...demo, targets: demo.targets.filter((t) => t.id !== 't_resolm') };
       await dispatch(tap('p_home00', 'h_carda0'));

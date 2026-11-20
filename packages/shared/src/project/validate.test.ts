@@ -175,6 +175,154 @@ describe('validateProject', () => {
     });
   });
 
+  describe('faders (spec FD-1, ADR 0020)', () => {
+    /** The example with an OSC target, and Home's first hotspot turned into a volume fader. */
+    function withFader(change: (p: Project) => void = () => {}): Project {
+      return project((p) => {
+        p.targets.push({
+          id: 't_resolm',
+          name: 'Resolume',
+          protocol: 'osc-udp',
+          host: '192.168.1.20',
+          port: 7000,
+        });
+        const hotspot = home(p).hotspots[0]!;
+        hotspot.kind = 'fader';
+        hotspot.fader = {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0.01,
+          start: 0.5,
+          value: { at: 0, as: 'f' },
+        };
+        hotspot.pressEffect = 'none';
+        hotspot.action = {
+          goTo: null,
+          command: {
+            type: 'osc-udp',
+            targetId: 't_resolm',
+            address: '/composition/layers/1/video/opacity',
+            args: [],
+          },
+        };
+        change(p);
+      });
+    }
+    const fader = (p: Project) => home(p).hotspots[0]!;
+    const at = 'pages[0].hotspots[0]';
+
+    it('accepts a fader, and one that sends nothing yet', () => {
+      expect(errorsOf(withFader())).toEqual([]);
+      expect(errorsOf(withFader((p) => (fader(p).action.command = null)))).toEqual([]);
+    });
+
+    it('accepts the value between other arguments, and whole numbers with a whole step', () => {
+      const between = withFader((p) => {
+        const command = fader(p).action.command;
+        if (command?.type === 'osc-udp') {
+          command.args = [
+            { type: 's', value: 'master' },
+            { type: 'i', value: 1 },
+          ];
+        }
+        fader(p).fader!.value = { at: 2, as: 'i' };
+        fader(p).fader!.min = 0;
+        fader(p).fader!.max = 255;
+        fader(p).fader!.step = 1;
+        fader(p).fader!.start = 0;
+      });
+      expect(errorsOf(between)).toEqual([]);
+    });
+
+    it.each<[string, (p: Project) => void, ValidationError[]]>([
+      [
+        'a fader without settings',
+        (p) => delete fader(p).fader,
+        [
+          {
+            path: `${at}.fader`,
+            message: 'a fader needs its settings: orientation, min, max, step, start and value',
+          },
+        ],
+      ],
+      [
+        'settings on a button',
+        (p) => (fader(p).kind = 'button'),
+        [{ path: `${at}.fader`, message: 'only a fader has fader settings; set kind to "fader"' }],
+      ],
+      [
+        'settings without a kind',
+        (p) => delete fader(p).kind,
+        [{ path: `${at}.fader`, message: 'only a fader has fader settings; set kind to "fader"' }],
+      ],
+      [
+        'max not above min',
+        (p) => (fader(p).fader!.max = 0),
+        [{ path: `${at}.fader.max`, message: 'expected more than min (0)' }],
+      ],
+      [
+        'a step larger than the range',
+        (p) => (fader(p).fader!.step = 2),
+        [{ path: `${at}.fader.step`, message: 'expected at most the range, 1' }],
+      ],
+      [
+        'a start below the range',
+        (p) => (fader(p).fader!.start = -0.1),
+        [{ path: `${at}.fader.start`, message: 'expected 0 to 1' }],
+      ],
+      [
+        'a start above the range',
+        (p) => (fader(p).fader!.start = 1.5),
+        [{ path: `${at}.fader.start`, message: 'expected 0 to 1' }],
+      ],
+      [
+        'whole-number values with a fractional step',
+        (p) => (fader(p).fader!.value.as = 'i'),
+        [
+          {
+            path: `${at}.fader.value.as`,
+            message: 'a whole-number value needs a whole-number step',
+          },
+        ],
+      ],
+      [
+        'the value placed after the last argument',
+        (p) => (fader(p).fader!.value.at = 1),
+        [{ path: `${at}.fader.value.at`, message: 'expected 0 to 0, the number of arguments' }],
+      ],
+      [
+        'a page change',
+        (p) => (fader(p).action.goTo = 'p_7tn4vb'),
+        [{ path: `${at}.action.goTo`, message: 'a fader does not change the page' }],
+      ],
+      [
+        'a press effect',
+        (p) => (fader(p).pressEffect = 'ripple'),
+        [{ path: `${at}.pressEffect`, message: 'a fader has no press effect' }],
+      ],
+      [
+        'an HTTP command',
+        (p) =>
+          (fader(p).action.command = {
+            type: 'http',
+            targetId: 't_demo01',
+            method: 'GET',
+            path: '/volume',
+            body: null,
+          }),
+        [
+          {
+            path: `${at}.action.command.type`,
+            message: 'a fader sends OSC for now; UDP and HTTP come later',
+          },
+        ],
+      ],
+    ])('reports %s', (_, change, expected) => {
+      expect(errorsOf(withFader(change))).toEqual(expected);
+    });
+  });
+
   it('reports all reference errors at once, not only the first', () => {
     const errors = errorsOf(
       project((p) => {

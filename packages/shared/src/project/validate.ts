@@ -1,5 +1,6 @@
 // The single entry point for checking a project (docs/project-format.md §10):
 // first the shape of every field, then the references between objects.
+import type { Hotspot } from './pages';
 import { Project } from './project';
 
 /** One problem, with the exact place in project.json, e.g. `pages[2].hotspots[0].action.goTo`. */
@@ -77,6 +78,8 @@ function referenceErrors(project: Project): ValidationError[] {
         );
       }
 
+      faderErrors(hotspot, path).forEach(({ path: at, message }) => error(at, message));
+
       const { goTo, command } = hotspot.action;
       if (goTo !== null && !pageIds.has(goTo)) {
         error(`${path}.action.goTo`, `page "${goTo}" does not exist`);
@@ -95,5 +98,48 @@ function referenceErrors(project: Project): ValidationError[] {
     });
   });
 
+  return errors;
+}
+
+/**
+ * A fader and its settings go together, its numbers fit, it changes no page and plays no press
+ * effect, and its command is OSC with room for the value (spec FD-1, FD-2, ADR 0020).
+ */
+function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const error = (at: string, message: string) => errors.push({ path: `${path}${at}`, message });
+
+  if (hotspot.kind !== 'fader') {
+    if (hotspot.fader) error('.fader', 'only a fader has fader settings; set kind to "fader"');
+    return errors;
+  }
+
+  const { fader } = hotspot;
+  const { command } = hotspot.action;
+  if (!fader) {
+    error('.fader', 'a fader needs its settings: orientation, min, max, step, start and value');
+  } else {
+    if (fader.min >= fader.max) {
+      error('.fader.max', `expected more than min (${fader.min})`);
+    } else {
+      if (fader.step > fader.max - fader.min) {
+        error('.fader.step', `expected at most the range, ${fader.max - fader.min}`);
+      }
+      if (fader.start < fader.min || fader.start > fader.max) {
+        error('.fader.start', `expected ${fader.min} to ${fader.max}`);
+      }
+    }
+    if (fader.value.as === 'i' && !Number.isInteger(fader.step)) {
+      error('.fader.value.as', 'a whole-number value needs a whole-number step');
+    }
+    if (command?.type === 'osc-udp' && fader.value.at > command.args.length) {
+      error('.fader.value.at', `expected 0 to ${command.args.length}, the number of arguments`);
+    }
+  }
+  if (hotspot.action.goTo !== null) error('.action.goTo', 'a fader does not change the page');
+  if (hotspot.pressEffect !== 'none') error('.pressEffect', 'a fader has no press effect');
+  if (command && command.type !== 'osc-udp') {
+    error('.action.command.type', 'a fader sends OSC for now; UDP and HTTP come later');
+  }
   return errors;
 }

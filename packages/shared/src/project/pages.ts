@@ -69,6 +69,27 @@ export const HotspotText = z.strictObject({
 });
 export type HotspotText = z.infer<typeof HotspotText>;
 
+/**
+ * What makes a hotspot a fader (spec FD-1, ADR 0020): the direction its value grows, the range and
+ * step, and the value it starts at. Whether the numbers fit together is checked across the fields
+ * (validate.ts), so each error names the field to fix.
+ */
+export const FaderSettings = z.strictObject({
+  orientation: z.enum(['vertical', 'horizontal']),
+  min: z.number('Expected a number'),
+  max: z.number('Expected a number'),
+  step: z.number('Expected a number').positive('Expected more than 0'),
+  start: z.number('Expected a number'),
+  // Where the value goes in the fader's OSC command: inserted before argument `at` (0 = first;
+  // the number of arguments = last), sent as a float or a whole number. The command's own
+  // arguments stay plain values, so everything that shows or sends them is unchanged.
+  value: z.strictObject({
+    at: z.int('Expected a whole number').min(0, 'Expected 0 or more'),
+    as: z.enum(['f', 'i']),
+  }),
+});
+export type FaderSettings = z.infer<typeof FaderSettings>;
+
 export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple']);
 export type PressEffect = z.infer<typeof PressEffect>;
 
@@ -91,6 +112,9 @@ export const Hotspot = z.strictObject({
   style: Style,
   // Absent means no text, so projects from before v0.2 stay valid.
   text: HotspotText.optional(),
+  // A button, or a fader with its settings (ADR 0020). Absent means a button, as before v0.3.
+  kind: z.enum(['button', 'fader']).optional(),
+  fader: FaderSettings.optional(),
   pressEffect: PressEffect,
   action: Action,
 });
