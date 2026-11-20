@@ -32,10 +32,15 @@ jobs:
       - run: npm run format:check
       - run: npm test
       # End to end: the real server and web app in Chromium, WebKit (Safari's engine) and Firefox
-      # (e2e/, spec NFR-1). The browsers are fetched with their system libraries on every run;
-      # they are not cached.
-      - run: npx playwright install --with-deps chromium webkit firefox
-      - run: npm run test:e2e
+      # (e2e/, spec NFR-1). They run in Microsoft's Playwright image, which has the browsers and
+      # their system libraries installed: `playwright install --with-deps` fetched ~160 packages
+      # from the Ubuntu apt mirror and, when the mirror was slow, ran past the job's limit (#188).
+      # The image's tag is the @playwright/test version in package-lock.json, so they never drift.
+      - name: npm run test:e2e (Playwright image)
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          docker run --rm --ipc=host -e CI -v "$PWD":/work -w /work \
+            "mcr.microsoft.com/playwright:v$version-noble" npm run test:e2e
 
   # `npm start` on the platforms a stand computer runs (spec NFR-6): it builds the web app, starts
   # the server, prints the editor URL, and serves the editor on the same port.
