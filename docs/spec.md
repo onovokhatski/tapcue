@@ -149,12 +149,16 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **TGT-3** Every driver implements one common interface, so a new protocol can be added without changing the rest of the system.
 - **TGT-4** Every sent command and every delivery error is recorded in a command log visible in the editor.
   Each entry names its source: the station that tapped, or "Test" for a send from the editor (ACT-4).
+  A fader's drag is one entry, for the value where the finger stopped, with the number of values
+  the drag sent (FD-3).
 - **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
   and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
   confirm arrival. HTTP reports *error* on a non-2xx response or after a 2-second timeout.
 - **TGT-6** Every HTTP command carries `X-Tapcue-Station` (station id, or `test`; no station
   may use that id) and `X-Tapcue-Hotspot` (hotspot name; characters outside printable ASCII and
   `%` are percent-encoded as UTF-8) headers, so the receiving side can tell where it came from.
+  A fader's command also carries `X-Tapcue-Fader`: its value, min and max separated by spaces
+  (`42 0 100`), so a receiver can show the level.
 
 ### 5.7 Stations
 
@@ -214,6 +218,8 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **DEMO-1** Accepts HTTP requests on `/demo/<screen>/<content>` and shows them as a live log,
   plus one tile per screen name with the content it last received (e.g. `POST /demo/screen-1/product-a`
   → tile "screen-1" shows "product-a"). The request body is shown in the log, not on the tiles.
+  A request with `X-Tapcue-Fader` (TGT-6) also shows its value as a level on the tile, and a
+  fader's values in a row update one log row instead of adding one each.
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
 - **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
   - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;

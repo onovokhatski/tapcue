@@ -188,7 +188,13 @@ describe('POST /api/project/import (spec PRJ-4)', () => {
     });
 
     expect(response.status).toBe(200);
-    await vi.waitFor(() => expect(received).toEqual([{ type: 'project-updated', revision: 2 }]));
+    // The hello is answered with the demo stand's fader values first (spec FD-4).
+    await vi.waitFor(() =>
+      expect(received).toEqual([
+        { type: 'fader-values', values: { h_avol00: 60 } },
+        { type: 'project-updated', revision: 2 },
+      ]),
+    );
     expect(store.revision).toBe(2);
     player.close();
   });

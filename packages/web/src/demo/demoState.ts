@@ -1,5 +1,6 @@
 // What the demo receiver page shows: requests newest first, and one tile per screen with the
-// content it last received (spec DEMO-1). Pure transitions for useReducer.
+// content it last received (spec DEMO-1); a fader's values in a row update one request instead of
+// adding one each. Pure transitions for useReducer.
 import type { DemoRequest } from '@tapcue/shared';
 
 /** Enough to scroll back through a demo; older rows are dropped so a long session stays light. */
@@ -41,8 +42,14 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         ...state.screens.filter((screen) => screen.name !== action.request.screen),
         { name: action.request.screen, last: received },
       ].sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }));
+      // A drag sends about 25 values a second: they update the newest row instead of adding one each.
+      const [newest, ...older] = state.requests;
+      const requests =
+        newest && sameFader(newest.request, action.request)
+          ? [received, ...older]
+          : [received, ...state.requests];
       return {
-        requests: [received, ...state.requests].slice(0, REQUEST_LIMIT),
+        requests: requests.slice(0, REQUEST_LIMIT),
         screens,
         freshId: received.id,
         nextId: state.nextId + 1,
@@ -54,4 +61,15 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
     case 'cleared':
       return { ...initialDemoState, nextId: state.nextId };
   }
+}
+
+/** Two values from the same fader, one right after the other: the same drag, or its next one. */
+function sameFader(a: DemoRequest, b: DemoRequest): boolean {
+  return (
+    a.fader !== undefined &&
+    b.fader !== undefined &&
+    a.screen === b.screen &&
+    a.station === b.station &&
+    a.hotspot === b.hotspot
+  );
 }

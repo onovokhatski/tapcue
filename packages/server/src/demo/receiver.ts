@@ -37,6 +37,7 @@ export function registerDemoReceiver(
           body: request.body ? request.body : null,
           station: header(request.headers['x-tapcue-station']),
           hotspot: decoded(header(request.headers['x-tapcue-hotspot'])),
+          ...faderLevel(header(request.headers['x-tapcue-fader'])),
         });
         return { ok: true };
       },
@@ -51,6 +52,14 @@ export function registerDemoReceiver(
 
     done();
   });
+}
+
+/** "0.5 0 1" from X-Tapcue-Fader (spec TGT-6) as a fader's level; nothing for anything else. */
+export function faderLevel(value: string | null): { fader?: DemoRequest['fader'] } {
+  const parts = value?.trim().split(/\s+/).map(Number) ?? [];
+  if (parts.length !== 3 || !parts.every(Number.isFinite)) return {};
+  const [level, min, max] = parts as [number, number, number];
+  return min < max ? { fader: { value: level, min, max } } : {};
 }
 
 function header(value: string | string[] | undefined): string | null {

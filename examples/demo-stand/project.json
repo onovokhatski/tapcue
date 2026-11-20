@@ -152,6 +152,42 @@
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
           "action": { "goTo": "p_prodb0", "command": null }
+        },
+        {
+          "id": "h_avol00",
+          "name": "Volume",
+          "x": 880,
+          "y": 530,
+          "width": 112,
+          "height": 580,
+          "shape": { "type": "rect", "cornerRadius": 56 },
+          "style": {
+            "fill": "#FFFFFF",
+            "border": { "color": "#8FA8FF", "width": 2 },
+            "opacity": 1,
+            "fillOpacity": 0.08,
+            "backdropBlur": 12
+          },
+          "kind": "fader",
+          "fader": {
+            "orientation": "vertical",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "start": 60,
+            "value": { "at": 0, "as": "i" }
+          },
+          "pressEffect": "none",
+          "action": {
+            "goTo": null,
+            "command": {
+              "type": "http",
+              "targetId": "t_demo00",
+              "method": "PUT",
+              "path": "/demo/sound/volume",
+              "body": "{value}"
+            }
+          }
         }
       ]
     },

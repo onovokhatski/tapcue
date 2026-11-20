@@ -1,6 +1,6 @@
 // HTTP: method, path and optional body against the target's base URL (spec TGT-2, TGT-5, TGT-6).
 import type { LogSource } from '@tapcue/shared';
-import type { Driver } from './driver';
+import type { Driver, FaderLevel } from './driver';
 
 /** A target that has not answered by then counts as failed (spec TGT-5). */
 export const HTTP_TIMEOUT_MS = 2000;
@@ -20,6 +20,7 @@ export function createHttpDriver({ timeoutMs = HTTP_TIMEOUT_MS } = {}): Driver<'
           headers: {
             'X-Tapcue-Station': stationHeader(context.source),
             'X-Tapcue-Hotspot': headerText(context.hotspotName),
+            ...(context.fader && { 'X-Tapcue-Fader': faderHeader(context.fader) }),
           },
           body: command.body,
           // The timeout covers the whole answer, body included.
@@ -40,6 +41,11 @@ export function createHttpDriver({ timeoutMs = HTTP_TIMEOUT_MS } = {}): Driver<'
       return Promise.resolve();
     },
   };
+}
+
+/** "0.5 0 1": a fader's value, min and max, so a receiver can draw the level (spec TGT-6). */
+export function faderHeader({ value, min, max }: FaderLevel): string {
+  return `${value} ${min} ${max}`;
 }
 
 function stationHeader(source: LogSource): string {

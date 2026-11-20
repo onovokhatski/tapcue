@@ -103,6 +103,33 @@ describe('demo receiver page (spec DEMO-1)', () => {
     expect(tile('screen-3')).toHaveTextContent('Main catalog · Call our team');
   });
 
+  it("shows a fader's value as a level on its tile, and a drag as one row (ADR 0020)", async () => {
+    const { arrive } = await renderPage();
+    const volume = (value: number): DemoRequest => ({
+      ...playA,
+      method: 'PUT',
+      path: '/demo/screen-1/volume',
+      content: 'volume',
+      body: String(value),
+      hotspot: 'Volume',
+      fader: { value, min: 100, max: 200 },
+    });
+    arrive(volume(120));
+    arrive(volume(150));
+    const level = within(tile('screen-1')).getByRole('meter', { name: 'Level' });
+    expect(level).toHaveAttribute('aria-valuenow', '150');
+    // Halfway along 100–200.
+    expect(level.firstElementChild).toHaveStyle({ width: '50%' });
+    expect(tile('screen-1')).toHaveTextContent('volume150');
+    expect(rows()).toHaveLength(1);
+  });
+
+  it('shows no level for a tap', async () => {
+    const { arrive } = await renderPage();
+    arrive(playA);
+    expect(within(tile('screen-1')).queryByRole('meter')).toBeNull();
+  });
+
   it('shows the body in the log only, never on the tile', async () => {
     const { arrive } = await renderPage();
     arrive(callStaff);
