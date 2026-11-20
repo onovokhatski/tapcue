@@ -6,6 +6,7 @@ import { ClientMessage, parseMessage, type ServerMessage, type StationId } from 
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import type { RawData, WebSocket } from 'ws';
 import type { Dispatch } from '../commands/dispatcher';
+import type { Faders } from '../commands/faders';
 import type { CommandLog } from '../commands/log';
 
 /** A silent dead connection is noticed within PING_INTERVAL + PONG_TIMEOUT (architecture §7). */
@@ -15,6 +16,7 @@ export const PONG_TIMEOUT_MS = 5_000;
 export interface HubOptions {
   dispatch: Dispatch;
   log: CommandLog;
+  faders: Faders;
   pingIntervalMs?: number;
   pongTimeoutMs?: number;
 }
@@ -34,7 +36,13 @@ interface Connection {
 
 export function registerHub(
   app: FastifyInstance,
-  { dispatch, log, pingIntervalMs = PING_INTERVAL_MS, pongTimeoutMs = PONG_TIMEOUT_MS }: HubOptions,
+  {
+    dispatch,
+    log,
+    faders,
+    pingIntervalMs = PING_INTERVAL_MS,
+    pongTimeoutMs = PONG_TIMEOUT_MS,
+  }: HubOptions,
 ): Hub {
   const connections = new Set<Connection>();
 
@@ -53,7 +61,14 @@ export function registerHub(
   };
 
   const stopLog = log.subscribe((entry) => hub.toViewers({ type: 'log-entry', entry }));
-  app.addHook('onClose', () => stopLog());
+  // Every taken fader value goes to every tablet, so they all show the same position (spec FD-4).
+  const stopFaders = faders.subscribe((hotspotId, value) =>
+    hub.toAll({ type: 'fader-values', values: { [hotspotId]: value } }),
+  );
+  app.addHook('onClose', () => {
+    stopLog();
+    stopFaders();
+  });
 
   void app.register(websocket);
   // A route with `websocket: true` must be added after the plugin has loaded, hence its own
@@ -87,6 +102,12 @@ export function registerHub(
       switch (message.type) {
         case 'hello':
           connection.stationId = message.stationId;
+          // A tablet that (re)connects shows the faders where they are now (spec FD-4); a
+          // project without faders has nothing to say.
+          {
+            const values = faders.values();
+            if (Object.keys(values).length > 0) send(socket, { type: 'fader-values', values });
+          }
           break;
         case 'tap':
           // A tap needs a station to name as its source; a player always says hello first.
@@ -99,6 +120,20 @@ export function registerHub(
             source: { type: 'station', stationId: connection.stationId },
             pageId: message.pageId,
             hotspotId: message.hotspotId,
+          });
+          break;
+        case 'value':
+          if (connection.stationId === null) {
+            logger.warn('Ignored a fader value before hello');
+            break;
+          }
+          // Fire and forget, like a tap: receive never rejects.
+          void faders.receive({
+            source: { type: 'station', stationId: connection.stationId },
+            pageId: message.pageId,
+            hotspotId: message.hotspotId,
+            value: message.value,
+            final: message.final,
           });
           break;
         case 'ping':

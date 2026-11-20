@@ -36,6 +36,10 @@ describe('ClientMessage', () => {
   it.each([
     ['hello', { type: 'hello', stationId: 'main' }],
     ['tap', tap],
+    [
+      'a fader value',
+      { type: 'value', pageId: 'p_home00', hotspotId: 'h_vol000', value: 0.4, final: false },
+    ],
     ['ping', { type: 'ping' }],
     ['pong', { type: 'pong' }],
   ])('accepts %s', (_, message) => {
@@ -46,7 +50,7 @@ describe('ClientMessage', () => {
     [
       'an unknown type',
       { type: 'shout' },
-      "type: Invalid discriminator value. Expected 'hello' | 'tap' | 'ping' | 'pong'",
+      "type: Invalid discriminator value. Expected 'hello' | 'tap' | 'value' | 'ping' | 'pong'",
     ],
     ['hello without a station', { type: 'hello' }, 'stationId'],
     [
@@ -55,6 +59,29 @@ describe('ClientMessage', () => {
       'stationId: Expected 1–40 characters',
     ],
     ['a tap without a hotspot', { type: 'tap', pageId: 'p_home00' }, 'hotspotId'],
+    [
+      'a fader value without final',
+      { type: 'value', pageId: 'p_home00', hotspotId: 'h_vol000', value: 0.4 },
+      'final',
+    ],
+    [
+      'a fader value that is not a number',
+      { type: 'value', pageId: 'p_home00', hotspotId: 'h_vol000', value: '0.4', final: true },
+      'value: Expected a number',
+    ],
+    // ADR 0020: as with taps, a player says which fader and the value, never what to send.
+    [
+      'a fader value that carries a command',
+      {
+        type: 'value',
+        pageId: 'p_home00',
+        hotspotId: 'h_vol000',
+        value: 0.4,
+        final: true,
+        command: sent.command,
+      },
+      'Unrecognized key: "command"',
+    ],
     [
       'a tap with a page id as hotspot',
       { ...tap, hotspotId: 'p_home00' },
@@ -69,7 +96,7 @@ describe('ClientMessage', () => {
     [
       'a server message',
       { type: 'log-entry', entry: sent },
-      "type: Invalid discriminator value. Expected 'hello' | 'tap' | 'ping' | 'pong'",
+      "type: Invalid discriminator value. Expected 'hello' | 'tap' | 'value' | 'ping' | 'pong'",
     ],
   ])('rejects %s', (_, message, expected) => {
     expect(errorOf(ClientMessage, message)).toContain(expected);
@@ -149,6 +176,8 @@ describe('ServerMessage', () => {
     ['project-updated', { type: 'project-updated', revision: 2 }],
     ['log-entry', { type: 'log-entry', entry: sent }],
     ['demo-received', { type: 'demo-received', request: demoRequest }],
+    ['fader-values', { type: 'fader-values', values: { h_vol000: 0.5, h_lvl000: 127 } }],
+    ['no fader values', { type: 'fader-values', values: {} }],
     ['ping', { type: 'ping' }],
     ['pong', { type: 'pong' }],
   ])('accepts %s', (_, message) => {
@@ -159,13 +188,18 @@ describe('ServerMessage', () => {
     ['project-updated without a revision', { type: 'project-updated' }, 'revision: '],
     ['revision 0: revisions start at 1', { type: 'project-updated', revision: 0 }, 'revision: '],
     ['a fractional revision', { type: 'project-updated', revision: 1.5 }, 'revision: '],
+    [
+      'fader values keyed by something else than a hotspot id',
+      { type: 'fader-values', values: { volume: 0.5 } },
+      'values',
+    ],
   ])('rejects %s', (_, message, expected) => {
     expect(errorOf(ServerMessage, message)).toContain(expected);
   });
 
   it('rejects a client message', () => {
     expect(errorOf(ServerMessage, tap)).toBe(
-      "type: Invalid discriminator value. Expected 'project-updated' | 'log-entry' | 'demo-received' | 'ping' | 'pong'",
+      "type: Invalid discriminator value. Expected 'project-updated' | 'log-entry' | 'demo-received' | 'fader-values' | 'ping' | 'pong'",
     );
   });
 });
