@@ -62,8 +62,8 @@ Commands and network loss (spec ACT-2, PLY-2, PLY-3)
 - [ ] Wi-Fi off, tap "Call our team", wait 10 s, Wi-Fi on: the indicator goes away and that
       tap does **not** arrive: taps are kept for 5 s, so a late reconnect starts nothing.
 
-Faders (v0.3: spec FD-2, FD-4, FD-5, [ADR 0020](adr/0020-faders.md)) — a project with a fader
-whose command goes to `/demo` or a media server
+Faders (v0.3: spec FD-2, FD-4, FD-5, [ADR 0020](adr/0020-faders.md)) — the demo stand's Volume
+fader on the Product A page, with `/demo` open on the Mac
 - [ ] Dragging the fader with one finger moves the knob smoothly under it; touching the track
       jumps the knob there. The page does not scroll, zoom or bounce.
 - [ ] While one finger holds the fader, another finger taps a button: the button works and the
@@ -71,7 +71,8 @@ whose command goes to `/demo` or a media server
 - [ ] Two iPads on the same station: dragging on one moves the knob on the other.
 - [ ] Wi-Fi off, drag the fader, Wi-Fi on after a minute: the media server gets the value where
       the finger stopped.
-- [ ] The command log shows one row per drag, with the final value.
+- [ ] The command log shows one row per drag, with the final value and the number of values
+      sent; the "sound" tile on `/demo` follows the knob as a level.
 
 The stand (M5: spec PLY-4, NFR-3, [stand setup guide](stand-setup.md))
 - [ ] Section 3 of the stand setup guide works as written on this iPad: every menu path exists

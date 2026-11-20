@@ -216,6 +216,13 @@ function CommandText({ entry }: { entry: LogEntry }) {
       <span className="text-body-s text-muted">{entry.targetName}</span>{' '}
       <span className="font-mono text-mono-s text-primary">{text}</span>
       {args && <span className="font-mono text-mono-s text-muted"> {args}</span>}
+      {entry.valuesSent !== undefined && (
+        // A fader's drag is this one row, for its final value (ADR 0020).
+        <span className="text-body-s text-muted">
+          {' '}
+          · {entry.valuesSent} {entry.valuesSent === 1 ? 'value' : 'values'} sent
+        </span>
+      )}
       {entry.status === 'error' && (
         <span className="text-body-s text-danger-fg"> · {entry.message}</span>
       )}

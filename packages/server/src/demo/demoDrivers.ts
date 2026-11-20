@@ -29,6 +29,7 @@ export function createDemoDrivers(
       body,
       station: station(context.source),
       hotspot: context.hotspotName,
+      ...(context.fader && { fader: context.fader }),
     });
     return Promise.resolve();
   };

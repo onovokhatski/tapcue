@@ -54,6 +54,34 @@ describe('CommandLog (spec ED-6, ED-9)', () => {
     ]);
   });
 
+  it("shows a fader's drag as one row with the number of values it sent (ADR 0020)", async () => {
+    const drag = {
+      ...sentEntry,
+      hotspotName: 'Volume',
+      command: {
+        type: 'http',
+        targetId: 't_demo00',
+        method: 'PUT',
+        path: '/demo/screen-1/volume',
+        body: '42',
+      },
+      targetName: 'Demo receiver',
+      valuesSent: 37,
+    } as LogEntry; // sentEntry is typed as any entry; this one is a sent one
+    const { row } = await renderLog([drag]);
+    expect(within(row('sent')).getAllByRole('cell').at(-1)).toHaveTextContent(
+      'Demo receiver PUT /demo/screen-1/volume · 37 values sent',
+    );
+  });
+
+  it('says "1 value" for a single touch, and nothing for a tap', async () => {
+    const { row, unmount } = await renderLog([{ ...sentEntry, valuesSent: 1 } as LogEntry]);
+    expect(row('sent')).toHaveTextContent('· 1 value sent');
+    unmount();
+    const tap = await renderLog([sentEntry]);
+    expect(tap.row('sent')).not.toHaveTextContent('sent');
+  });
+
   it('marks a failure in red with its reason, and a test send with the Test tag', async () => {
     const { row } = await renderLog([errorEntry]);
     expect(row('error')).toHaveClass('bg-danger-bg');

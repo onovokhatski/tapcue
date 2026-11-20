@@ -116,8 +116,9 @@ Tapcue is running with "Demo stand".
 ```
 
 Open the editor on this computer, a station on a tablet (or in another browser tab), and the
-demo receiver at `/demo`: taps on "Call our team" or "Play demo" appear there. To work on your
-own stand, start Tapcue with a project folder of its own:
+demo receiver at `/demo`: taps on "Call our team" or "Play demo", and the Volume fader on the
+Product A page, appear there. To work on your own stand, start Tapcue with a project folder of its
+own:
 
 ```bash
 npm start -- --project ./my-stand

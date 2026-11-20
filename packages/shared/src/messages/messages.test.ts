@@ -114,6 +114,11 @@ describe('LogEntry', () => {
     ).toBeNull();
   });
 
+  it("accepts a fader's drag with the number of values it sent (ADR 0020)", () => {
+    expect(errorOf(LogEntry, { ...sent, valuesSent: 37 })).toBeNull();
+    expect(errorOf(LogEntry, { ...sent, valuesSent: 0 })).toContain('valuesSent: Too small');
+  });
+
   it('accepts a test send from the editor, which names no station (spec TGT-4)', () => {
     expect(errorOf(LogEntry, { ...sent, source: { type: 'test' } })).toBeNull();
   });
@@ -152,6 +157,14 @@ describe('DemoRequest', () => {
   it('accepts a request with a body, and one without', () => {
     expect(errorOf(DemoRequest, demoRequest)).toBeNull();
     expect(errorOf(DemoRequest, { ...demoRequest, body: null })).toBeNull();
+  });
+
+  it("accepts a fader's value and range, and nothing else in it (spec TGT-6)", () => {
+    const fader = { value: 0.5, min: 0, max: 1 };
+    expect(errorOf(DemoRequest, { ...demoRequest, fader })).toBeNull();
+    expect(errorOf(DemoRequest, { ...demoRequest, fader: { ...fader, step: 1 } })).toContain(
+      'Unrecognized key: "step"',
+    );
   });
 
   it('accepts a request without Tapcue headers, e.g. from curl', () => {

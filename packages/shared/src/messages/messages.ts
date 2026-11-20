@@ -28,6 +28,11 @@ const delivery = {
   hotspotName: z.string().max(100),
   targetName: Name,
   command: Command,
+  /**
+   * A fader's drag is one entry, for the value where the finger stopped (ADR 0020): how many
+   * values the drag sent, that one included. Absent for a tap.
+   */
+  valuesSent: z.int().min(1).optional(),
 };
 
 /** One line of the command log (spec TGT-4, TGT-5). */
@@ -51,6 +56,8 @@ export const DemoRequest = z.strictObject({
   /** From the X-Tapcue-Station and X-Tapcue-Hotspot headers (spec TGT-6); null when absent. */
   station: z.string().nullable(),
   hotspot: z.string().nullable(),
+  /** A fader's value and range, from the X-Tapcue-Fader header (spec TGT-6); absent for a tap. */
+  fader: z.strictObject({ value: z.number(), min: z.number(), max: z.number() }).optional(),
 });
 export type DemoRequest = z.infer<typeof DemoRequest>;
 

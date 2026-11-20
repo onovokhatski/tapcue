@@ -9,6 +9,14 @@ export type CommandOf<P extends Protocol> = Extract<Command, { type: P }>;
 export interface SendContext {
   source: LogSource;
   hotspotName: string;
+  /** For a fader: the value sent and its range, so a receiver can show a level (ADR 0020). */
+  fader?: FaderLevel;
+}
+
+export interface FaderLevel {
+  value: number;
+  min: number;
+  max: number;
 }
 
 export interface Driver<P extends Protocol> {

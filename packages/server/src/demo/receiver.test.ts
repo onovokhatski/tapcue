@@ -62,6 +62,32 @@ describe('demo receiver endpoint (spec DEMO-1)', () => {
     expect((await send('50% off')).received).toMatchObject([{ hotspot: '50% off' }]);
   });
 
+  it("reports a fader's level from X-Tapcue-Fader (spec TGT-6, ADR 0020)", async () => {
+    const { received } = await receive({
+      method: 'PUT',
+      url: '/demo/screen-1/volume',
+      headers: { 'x-tapcue-fader': '42 0 100' },
+      payload: '42',
+    });
+    expect(received[0]).toMatchObject({
+      content: 'volume',
+      fader: { value: 42, min: 0, max: 100 },
+    });
+    expect(DemoRequest.safeParse(received[0]).error).toBeUndefined();
+  });
+
+  it.each([['0.5'], ['half 0 1'], ['0.5 1 0'], ['0.5 0 1 2'], ['']])(
+    'reports no fader for a malformed header "%s"',
+    async (header) => {
+      const { received } = await receive({
+        method: 'PUT',
+        url: '/demo/screen-1/volume',
+        headers: { 'x-tapcue-fader': header },
+      });
+      expect(received[0]).not.toHaveProperty('fader');
+    },
+  );
+
   it('reports an empty body as null too', async () => {
     const { received } = await receive({
       method: 'POST',

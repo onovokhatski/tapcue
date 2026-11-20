@@ -249,8 +249,39 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     expect(sent.length).toBeLessThanOrEqual(26);
     expect(sent.length).toBeGreaterThan(20);
     expect(sentValues().at(-1)).toEqual({ type: 'f', value: 0.6 });
+    // One row for the whole drag: its final value, and how many values it sent (ADR 0020).
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ status: 'sent' });
+    expect(entries[0]).toMatchObject({ status: 'sent', valuesSent: sent.length });
+  });
+
+  it('counts each drag on its own, and a single touch as one value', async () => {
+    await faders.receive(at(0.1));
+    await vi.advanceTimersByTimeAsync(SEND_INTERVAL_MS);
+    await faders.receive(at(0.2, true));
+    await vi.advanceTimersByTimeAsync(SEND_INTERVAL_MS);
+    expect(await faders.receive(at(0.3, true))).toMatchObject({ valuesSent: 1 });
+    expect(entries.map((entry) => (entry.status === 'sent' ? entry.valuesSent : null))).toEqual([
+      2, 1,
+    ]);
+  });
+
+  it('tells the driver the value and the range, so a receiver can draw a level', async () => {
+    const contexts: unknown[] = [];
+    const drivers = {
+      'osc-udp': {
+        send: (_target: unknown, _command: unknown, context: unknown) => {
+          contexts.push(context);
+          return Promise.resolve();
+        },
+        close: () => Promise.resolve(),
+      },
+    } as unknown as Drivers;
+    const withContext = createFaders({ project: () => project, drivers, log: createCommandLog() });
+    await withContext.receive(at(0.456, true));
+    withContext.close();
+    expect(contexts).toEqual([
+      { source: main, hotspotName: 'Volume', fader: { value: 0.46, min: 0, max: 1 } },
+    ]);
   });
 
   it('sends a final value that came between two sends, after the interval', async () => {

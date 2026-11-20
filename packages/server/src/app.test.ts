@@ -112,8 +112,10 @@ describe('buildApp', () => {
         expect((await save({ ...store.project, name: 'Renamed stand' })).status).toBe(200);
 
         const updated = { type: 'project-updated', revision: 2 };
+        // A player's hello is answered with the demo stand's fader values first (spec FD-4).
+        const faderValues = { type: 'fader-values', values: { h_avol00: 60 } };
         await vi.waitFor(() => {
-          expect(received.player).toEqual([updated]);
+          expect(received.player).toEqual([faderValues, updated]);
           expect(received.editor).toEqual([updated]);
         });
         player.close();

@@ -87,6 +87,8 @@ interface FaderState {
   lastSentAt: number;
   pending: Pending | null;
   timer: NodeJS.Timeout | null;
+  /** Values sent since the last final one: the drag in progress, for its log entry. */
+  sentInDrag: number;
 }
 
 export function createFaders({
@@ -105,8 +107,23 @@ export function createFaders({
       .pages.find((p) => p.id === pageId)
       ?.hotspots.find((h) => h.id === hotspotId);
 
-  /** Sends the value as the fader's command; logs only a final value, so a drag is one entry. */
+  function stateOf(id: HotspotId): FaderState {
+    const state = states.get(id) ?? {
+      lastSentAt: -Infinity,
+      pending: null,
+      timer: null,
+      sentInDrag: 0,
+    };
+    states.set(id, state);
+    return state;
+  }
+
+  /**
+   * Sends the value as the fader's command; logs only a final value, so a drag is one entry that
+   * says how many values it sent (ADR 0020).
+   */
   async function send({ input, value }: Pending): Promise<LogEntry | null> {
+    const state = stateOf(input.hotspotId);
     const base = {
       time: now().toISOString(),
       source: input.source,
@@ -128,11 +145,21 @@ export function createFaders({
         : null;
     }
     const sent = withValue(command, hotspot.fader, value);
-    const delivery = { hotspotName: hotspot.name, targetName: target.name, command: sent };
+    state.sentInDrag += 1;
+    const delivery = {
+      hotspotName: hotspot.name,
+      targetName: target.name,
+      command: sent,
+      valuesSent: state.sentInDrag,
+    };
+    // The next value starts a new drag.
+    if (input.final) state.sentInDrag = 0;
+    const { min, max } = hotspot.fader;
+    const context = { source: input.source, hotspotName: hotspot.name, fader: { value, min, max } };
     try {
       // As in the dispatcher: the check above pairs target and command by protocol.
       const driver = drivers[target.protocol] as Driver<Protocol>;
-      await driver.send(target, sent, { source: input.source, hotspotName: hotspot.name });
+      await driver.send(target, sent, context);
       return input.final ? log.add({ ...base, ...delivery, status: 'sent' }) : null;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -146,7 +173,7 @@ export function createFaders({
    */
   function schedule(pending: Pending): Promise<LogEntry | null> {
     const id = pending.input.hotspotId;
-    const state = states.get(id) ?? { lastSentAt: -Infinity, pending: null, timer: null };
+    const state = stateOf(id);
     states.set(id, state);
     const wait = state.lastSentAt + intervalMs - Date.now();
     if (wait <= 0 && !state.timer) {
