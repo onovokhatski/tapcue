@@ -57,9 +57,12 @@ server/src/
   start.ts           load the project, build the app, listen, print the addresses
   launcher.ts        the click-to-run app: its folders, first start, browser, a second click
   packaged.ts        the click-to-run app's entry, bundled into one file (ADR 0017)
-  config.ts          port, project folder path, demo mode (from CLI args / env)
+  config.ts          port, project folder, library folder, demo mode (from CLI args / env)
   project/
-    store.ts         load, validate and atomically save project.json; keep revision
+    store.ts         load, validate and atomically save project.json; keep revision;
+                     switch to another project folder
+    library.ts       the library: list, create, delete into .trash/, remember the active one
+    libraryRoutes.ts /api/projects endpoints (ADR 0021)
     assets.ts        save uploaded files into assets/, enforce the 200 MB limit
     archive.ts       zip export / import (yazl writes, yauzl reads)
   http/
@@ -192,11 +195,15 @@ contract at runtime and get the same TypeScript types at compile time.
 | Method & path | Purpose |
 |---|---|
 | `GET /api/project` | Current project and its revision |
-| `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors |
+| `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors. The editor sends `X-Tapcue-Revision`, the revision its copy came from; a copy from before another project was opened is refused with `409` ([ADR 0021](adr/0021-project-library.md)) |
 | `POST /api/assets` | Upload one file (multipart): JPEG, PNG, WebP or MP4, up to 200 MB; answers `201 { asset, type }`, `413` over the limit, `415` for another format |
-| `GET /assets/*` | Serve project files to editor and players |
+| `GET /assets/*` | Serve the active project's files to editor and players |
 | `GET /api/project/export` | Download the project as `.zip`, named after it: `project.json` and every file in `assets/` |
 | `POST /api/project/import` | Upload a `.zip` (body `application/zip`, up to 2 GB) to replace the project; checked like a load, then swapped in and announced as a new revision. Answers `{ revision }`, `400` with the errors (only `project.json` and `assets/<file>` allowed), `413` over the limit, `415` for another body |
+| `GET /api/projects` | The library ([spec PRJ-5](spec.md#51-project)): `{ projects, active }`; each project has its `id` (folder name), `active`, `modified` and either `ok: true` with `name`, `width`, `height`, or `ok: false` with its load `errors`. `active.id` is `null` for a project opened with `--project` outside the library |
+| `POST /api/projects` | Create an empty project (`name`, `width`, `height`; PRJ-6); answers `201 { id }`, or `400` with the field errors |
+| `POST /api/projects/:id/open` | Make a project active (PRJ-7): checked like a load, remembered for the next start, announced as `project-updated`, fader values back to their start. Answers `{ revision }`, `400` with the load errors, `404` for an id the library does not list |
+| `DELETE /api/projects/:id` | Move a project into the library's `.trash/` (PRJ-8); `409` for the active project, `404` for an unknown id |
 | `GET /api/network` | Local IPv4 addresses for station URLs and QR codes, private ranges first; no port, the editor adds the one it is served on |
 | `POST /api/test-send` | Send a hotspot's command from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)); answers the log entry (sent or error), `404` for an unknown hotspot, `409` for one without a command |
 | `* /demo/<screen>/<content>` | Demo receiver endpoint (any method; the page itself is `/demo` in the web app) |
@@ -252,7 +259,9 @@ Editor                    Server                         Players
 
 ## 6. Persistence
 
-- The project folder is the only storage: `project.json` + `assets/`.
+- The project folder is the only storage: `project.json` + `assets/`. Projects live side by
+  side in a library folder, which also holds `tapcue.json` naming the active project and
+  `.trash/` for deleted ones ([ADR 0021](adr/0021-project-library.md)).
 - **Atomic save:** write to a temporary file, then rename over `project.json`. A crash
   mid-write never leaves a broken project. Saves run one at a time, so the file on disk is
   always the project in memory.

@@ -19,16 +19,20 @@ function deferred<T>() {
 /** The server's side: every load and save waits until the test answers it. */
 function fakeServer() {
   const loads: ReturnType<typeof deferred<Loaded>>[] = [];
-  const saves: { project: Project; answer: ReturnType<typeof deferred<Saved>> }[] = [];
+  const saves: {
+    project: Project;
+    basedOn: number | null;
+    answer: ReturnType<typeof deferred<Saved>>;
+  }[] = [];
   const api: ProjectApi = {
     load: () => {
       const d = deferred<Loaded>();
       loads.push(d);
       return d.promise;
     },
-    save: (project) => {
+    save: (project, basedOn) => {
       const answer = deferred<Saved>();
-      saves.push({ project, answer });
+      saves.push({ project, basedOn, answer });
       return answer.promise;
     },
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
@@ -181,6 +185,41 @@ describe('editor store', () => {
       state().change(rename('One'));
       expect(state().project).not.toBe(before);
       expect(JSON.stringify(before)).toBe(copy);
+    });
+  });
+
+  describe('when another project was opened on the server (ADR 0021)', () => {
+    it('names the revision each save is based on', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      state().change(rename('Two'));
+      await wait(SAVE_DELAY_MS);
+      expect(server.saves.map((s) => s.basedOn)).toEqual([1, 2]);
+    });
+
+    it('drops a refused stale copy and the changes made since, and shows the open project', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('Old stand edit'));
+      await wait(SAVE_DELAY_MS);
+      state().change(rename('Made during the save'));
+      server.saves[0]!.answer.resolve({
+        ok: false,
+        reason: 'Another project was opened on the server.',
+        errors: [],
+        stale: true,
+      });
+      await settle();
+      server.loads[1]!.resolve({ revision: 5, project: { ...demoProject(), name: 'Hall B' } });
+      await settle();
+
+      expect(state().project?.name).toBe('Hall B');
+      expect(state().revision).toBe(5);
+      expect(state().save).toEqual({ state: 'saved' });
+      await wait(SAVE_DELAY_MS * 2);
+      expect(server.saves).toHaveLength(1); // nothing of the old stand is sent again
     });
   });
 

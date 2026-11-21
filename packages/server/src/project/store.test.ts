@@ -215,3 +215,78 @@ describe('save', () => {
     expect(await readSaved(dir)).toMatchObject({ name: 'Three' });
   });
 });
+
+describe('open (ADR 0021)', () => {
+  it('makes another folder the active project at the next revision', async () => {
+    const first = await demoCopy();
+    const second = await demoCopy();
+    await editProject(second, (project) => {
+      project['name'] = 'Hall B';
+    });
+    const store = await loadProjectStore(first);
+
+    const result = await store.open(second);
+
+    expect(result).toMatchObject({ ok: true, revision: 2 });
+    expect(store.dir).toBe(second);
+    expect(store.project.name).toBe('Hall B');
+    expect(store.revision).toBe(2);
+    expect(store.openedAt).toBe(2);
+  });
+
+  it('refuses a folder that does not load, and keeps the project that is open', async () => {
+    const first = await demoCopy();
+    const broken = await demoCopy();
+    await writeFile(join(broken, PROJECT_FILE), '{ not json');
+    const store = await loadProjectStore(first);
+
+    const result = await store.open(broken);
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.errors[0]?.path).toBe(PROJECT_FILE);
+    expect(store.dir).toBe(first);
+    expect(store.revision).toBe(1);
+    expect(store.openedAt).toBe(1);
+  });
+
+  it('saves into the folder that is open now', async () => {
+    const first = await demoCopy();
+    const second = await demoCopy();
+    const store = await loadProjectStore(first);
+    await store.open(second);
+
+    await store.save({ ...store.project, name: 'Saved after the switch' });
+
+    const saved = JSON.parse(await readFile(join(second, PROJECT_FILE), 'utf8')) as {
+      name: string;
+    };
+    expect(saved.name).toBe('Saved after the switch');
+    const untouched = JSON.parse(await readFile(join(first, PROJECT_FILE), 'utf8')) as {
+      name: string;
+    };
+    expect(untouched.name).toBe('Demo stand');
+  });
+
+  it('refuses a save based on a copy of the project open before, and writes nothing', async () => {
+    const first = await demoCopy();
+    const second = await demoCopy();
+    const store = await loadProjectStore(first);
+    const before = await readFile(join(second, PROJECT_FILE), 'utf8');
+    await store.open(second); // revision 2
+
+    const stale = await store.save({ ...store.project, name: 'From the old editor' }, 1);
+
+    expect(stale).toEqual({ ok: false, errors: [], revision: 2, stale: true });
+    expect(await readFile(join(second, PROJECT_FILE), 'utf8')).toBe(before);
+    expect(store.revision).toBe(2);
+  });
+
+  it('takes a save based on the open project, or one that names no revision', async () => {
+    const store = await loadProjectStore(await demoCopy());
+    await store.open(await demoCopy()); // revision 2
+
+    expect(await store.save({ ...store.project, name: 'A' }, 2)).toMatchObject({ ok: true });
+    expect(await store.save({ ...store.project, name: 'B' }, 3)).toMatchObject({ ok: true });
+    expect(await store.save({ ...store.project, name: 'C' })).toMatchObject({ revision: 5 });
+  });
+});

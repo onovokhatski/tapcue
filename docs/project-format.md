@@ -21,6 +21,24 @@ my-stand/
 - `assets/` — every image and video referenced by the project. Nothing outside this folder is referenced.
 - For transfer, the folder is packed into a `.zip` with the same layout at its root.
 
+Projects live side by side in a **library** folder ([ADR 0021](adr/0021-project-library.md)),
+by default `Documents/Tapcue`:
+
+```
+Tapcue/
+  tapcue.json        { "active": "weplay-2026" }: opened again after a restart
+  demo-stand/
+  weplay-2026/       project.json + assets/, as above
+  .trash/
+    hall-b-2026-11-21T10-15-00-000Z/
+```
+
+- Each subfolder with a `project.json` is a project; its folder name is its id. Hidden folders
+  (`.trash`, an import in progress) are not projects.
+- A new project's folder is named after it: lowercase letters, digits and `-`, made unique with
+  a number (`weplay-2026-2`).
+- A deleted project is moved into `.trash/` with the time it was deleted; Tapcue never empties it.
+
 ## 2. Top level
 
 ```json
