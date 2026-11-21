@@ -6,6 +6,7 @@ import { buildApp } from './app';
 import { startBanner } from './banner';
 import { type Config, ConfigError } from './config';
 import { localAddresses } from './network';
+import { createLibrary, type Library } from './project/library';
 import { loadProjectStore, ProjectLoadError } from './project/store';
 import { hasWebBuild } from './webApp';
 
@@ -15,13 +16,15 @@ export async function startServer(
   webDir: string,
   { quittable = false } = {},
 ): Promise<FastifyInstance> {
-  const store = await loadProjectStore(config.projectDir);
+  const library = createLibrary(config.projectsDir);
+  const store = await loadProjectStore(await startDir(config, library));
   const quit = () => {
     app.log.info('Quit from the editor');
     void app.close().then(() => process.exit(0));
   };
   const app = buildApp({
     store,
+    library,
     logger: true,
     webDir,
     demo: config.demo,
@@ -29,6 +32,7 @@ export async function startServer(
   });
   await app.listen({ port: config.port, host: '0.0.0.0' });
   app.log.info(`Project "${store.project.name}" from ${store.dir}`);
+  app.log.info(`Projects library: ${library.dir}`);
   if (config.demo) app.log.info('Demo mode: nothing is saved, commands go to the demo receiver');
   // Only with the build: in development the editor is on the web app's port, not this one.
   if (hasWebBuild(webDir)) {
@@ -41,6 +45,15 @@ export async function startServer(
     console.log(`\n${lines.join('\n')}\n`);
   }
   return app;
+}
+
+/**
+ * The project to start (spec PRJ-1): the one the integrator named, else the one last opened from
+ * the library, else the default. The online demo always starts its own project (spec DEMO-3).
+ */
+export async function startDir(config: Config, library: Library): Promise<string> {
+  if (config.projectGiven || config.demo) return config.projectDir;
+  return (await library.remembered()) ?? config.projectDir;
 }
 
 /** The port another program holds, from Node's listen error; null for any other error. */

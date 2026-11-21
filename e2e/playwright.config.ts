@@ -2,7 +2,7 @@
 // Run with `npm run test:e2e`. They run on a copy of the demo project, on ports of their own
 // (e2e/stand.ts), so they never change examples/demo-stand or a server already running on 4000.
 import { defineConfig, devices } from '@playwright/test';
-import { prepareStand, SERVER_PORT, SERVER_URL, WEB_PORT, WEB_URL } from './stand';
+import { libraryOf, prepareStand, SERVER_PORT, SERVER_URL, WEB_PORT, WEB_URL } from './stand';
 
 const CI = Boolean(process.env['CI']);
 const stand = prepareStand();
@@ -27,7 +27,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `npx tsx packages/server/src/main.ts --port ${SERVER_PORT} --project "${stand}"`,
+      command: `npx tsx packages/server/src/main.ts --port ${SERVER_PORT} --project "${stand}" --projects "${libraryOf(stand)}"`,
       url: `${SERVER_URL}/api/health`,
       cwd: '..',
     },

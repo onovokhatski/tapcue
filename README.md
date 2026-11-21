@@ -119,11 +119,13 @@ Tapcue is running with "Demo stand".
 
 Open the editor on this computer, a station on a tablet (or in another browser tab), and the
 demo receiver at `/demo`: taps on "Call our team" or "Play demo", and the Volume fader on the
-Product A page, appear there. To work on your own stand, start Tapcue with a project folder of its
-own:
+Product A page, appear there. Your stands live in a project library, by default
+`Documents/Tapcue` in your home folder ([ADR 0021](docs/adr/0021-project-library.md)): the
+server lists, creates, opens and deletes them, and remembers the one last opened. To start with
+a particular project folder, or keep the library elsewhere:
 
 ```bash
-npm start -- --project ./my-stand
+npm start -- --project ./my-stand --projects ./stands
 ```
 
 Before the stand opens, follow the [stand setup guide](docs/stand-setup.md): network, the Tapcue
@@ -135,8 +137,8 @@ Tapcue also comes as an app that needs no Node.js and no terminal
 ([ADR 0017](docs/adr/0017-click-to-run-app.md)): `Tapcue.app` for macOS and `Tapcue.exe` for
 Windows, built by CI and attached to each
 [release](https://github.com/onovokhatski/tapcue/releases/latest) from v0.1.0. A click starts
-Tapcue and opens the editor in the browser; your project lives in `Documents/Tapcue`, which
-starts as a copy of the demo stand. Clicking it again while it runs just opens the editor.
+Tapcue and opens the editor in the browser; your projects live in the library `Documents/Tapcue`,
+which starts with a copy of the demo stand. Clicking it again while it runs just opens the editor.
 
 The apps are not code-signed yet, so the first start needs one extra step:
 
@@ -182,7 +184,7 @@ npm install
 
 | Command | What it does |
 |---|---|
-| `npm start` | Runs Tapcue as on a stand: builds the web app, serves everything on port 4000 and prints the editor and station URLs (`--port`, `--project <folder>`) |
+| `npm start` | Runs Tapcue as on a stand: builds the web app, serves everything on port 4000 and prints the editor and station URLs (`--port`, `--project <folder>`, `--projects <library>`) |
 | `npm run dev` | Starts the server (port 4000) and the web app (http://localhost:5173) with live reload |
 | `npm run build` | Builds the web app for production |
 | `npm run typecheck` | Type-checks every package (TypeScript, strict mode) |

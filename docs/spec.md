@@ -48,7 +48,8 @@ commands.
 
 | Term | Meaning |
 |---|---|
-| **Project** | Everything describing one stand: a folder with `project.json` and `assets/`. One server runs one project. |
+| **Project** | Everything describing one stand: a folder with `project.json` and `assets/`. |
+| **Library** | The folder whose subfolders are projects. The server runs one of them, the **active project** ([ADR 0021](adr/0021-project-library.md)). |
 | **Canvas** | The fixed design size of all pages (e.g. 2048×1536) and the scale mode used on screens. |
 | **Scale mode** | `fit` — whole canvas visible, empty bars where aspect ratios differ. `fill` — screen fully covered, canvas edges may be cropped. |
 | **Page** | One screen of the interface: a background plus hotspots. |
@@ -69,10 +70,14 @@ IDs are referenced from issues and tests.
 
 ### 5.1 Project
 
-- **PRJ-1** The server loads one project from a folder on disk at startup.
+- **PRJ-1** The server loads the active project from a folder on disk at startup: the one named at start, else the one last opened from the library, else the demo stand.
 - **PRJ-2** The project is validated against the schema on load and on every save; invalid data is rejected with a readable error.
 - **PRJ-3** The integrator can export the project as a single `.zip` file.
 - **PRJ-4** The integrator can import a project from a `.zip` file, replacing the current one after confirmation.
+- **PRJ-5** The integrator can list the projects in the library, with each one's name, canvas size and last change; a project that does not load is listed with its error.
+- **PRJ-6** The integrator can create an empty project from a name and a canvas size: one blank page and one station that starts on it.
+- **PRJ-7** The integrator can open another project from the library; every station and editor switches to it, and it stays active after a restart.
+- **PRJ-8** The integrator can delete a project other than the active one; its folder is moved into the library's `.trash/`, not removed.
 
 ### 5.2 Canvas
 
@@ -223,7 +228,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
 - **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
   - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;
-  - the server rejects saving, file uploads and project import;
+  - the server rejects saving, file uploads, project import, and creating, opening or deleting projects;
   - commands are delivered only to the demo receiver, whatever the targets say;
   - the editor shows a permanent "Demo mode — changes are not saved" notice.
 
@@ -291,7 +296,7 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 
 ## 8. Assumptions and constraints
 
-- One server runs one project. Several stands need several server instances.
+- One server runs one project at a time, chosen from its library (PRJ-7). Several stands running at once need several server instances.
 - The media server owns all show logic; Tapcue does not know what is playing.
 - Tablets and the server are on the same local network; the network is trusted. Anyone on it can open the editor — on a stand this network is typically a dedicated access point, not the venue Wi-Fi.
 - Artwork is prepared to the canvas size by a designer; button labels and pictures may instead be

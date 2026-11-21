@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ConfigError } from './config';
+import { type Config, ConfigError } from './config';
+import type { Library } from './project/library';
 import { ProjectLoadError } from './project/store';
-import { portInUse, reportStartError } from './start';
+import { portInUse, reportStartError, startDir } from './start';
 
 const busy = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE', port: 4000 });
 
@@ -48,5 +49,32 @@ describe('reportStartError', () => {
   it('leaves any other error to crash with its stack', () => {
     errors();
     expect(reportStartError(new TypeError('a bug'))).toBe(false);
+  });
+});
+
+describe('startDir (spec PRJ-1)', () => {
+  const library = (remembered: string | null) =>
+    ({ remembered: () => Promise.resolve(remembered) }) as unknown as Library;
+  const config = (overrides: Partial<Config>): Config => ({
+    port: 4000,
+    projectDir: '/default',
+    projectGiven: false,
+    projectsDir: '/library',
+    demo: false,
+    ...overrides,
+  });
+
+  it('starts the project the integrator named, whatever was opened last', async () => {
+    const named = config({ projectDir: '/named', projectGiven: true });
+    expect(await startDir(named, library('/library/last'))).toBe('/named');
+  });
+
+  it('starts the project last opened from the library, else the default', async () => {
+    expect(await startDir(config({}), library('/library/last'))).toBe('/library/last');
+    expect(await startDir(config({}), library(null))).toBe('/default');
+  });
+
+  it('always starts its own project in the online demo (spec DEMO-3)', async () => {
+    expect(await startDir(config({ demo: true }), library('/library/last'))).toBe('/default');
   });
 });

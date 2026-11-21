@@ -1,5 +1,6 @@
 // Loads the project folder (project.json + assets/), keeps the current project in memory and
-// saves the editor's changes back to disk, or replaces the whole folder with an imported one.
+// saves the editor's changes back to disk, replaces the whole folder with an imported one, or
+// switches to another project folder from the library (ADR 0021).
 import { access, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
@@ -21,27 +22,44 @@ export class ProjectLoadError extends Error {
   }
 }
 
+/** A save's outcome; `stale` when it was based on a project that is no longer open. */
+export type SaveResult = ValidationResult & { revision: number; stale?: true };
+
 export interface ProjectStore {
+  /** The active project's folder; it changes when another project is opened. */
   readonly dir: string;
   readonly project: Project;
   /** Increases with every save, so clients can tell that their copy is stale (architecture §6). */
   readonly revision: number;
-  /** Checks a whole project and, if it is valid, writes it to disk and makes it current. */
-  save(input: unknown): Promise<ValidationResult & { revision: number }>;
+  /** The revision at which the active project was opened: older copies belong to another one. */
+  readonly openedAt: number;
+  /**
+   * Checks a whole project and, if it is valid, writes it to disk and makes it current. `basedOn`
+   * is the revision the client's copy came from: a copy older than `openedAt` was made of the
+   * project that was open before, and is refused as stale rather than written into this one.
+   */
+  save(input: unknown, basedOn?: number): Promise<SaveResult>;
   /**
    * Replaces the whole project — project.json and assets/ — with a folder prepared elsewhere (an
    * import), checked like a load. The previous assets/ is moved into `source` for the caller to
    * delete.
    */
   replace(source: string): Promise<ValidationResult & { revision: number }>;
+  /** Makes another project folder the active one, checked like a load (spec PRJ-7). */
+  open(dir: string): Promise<ValidationResult & { revision: number }>;
 }
 
-export async function loadProjectStore(dir: string): Promise<ProjectStore> {
+export async function loadProjectStore(startDir: string): Promise<ProjectStore> {
+  let dir = startDir;
   let project = await loadProject(dir);
   let revision = 1;
+  let openedAt = revision;
   let queue: Promise<unknown> = Promise.resolve();
 
-  async function save(input: unknown) {
+  async function save(input: unknown, basedOn?: number): Promise<SaveResult> {
+    if (basedOn !== undefined && basedOn < openedAt) {
+      return { ok: false, errors: [], revision, stale: true };
+    }
     const result = await checkProject(dir, input);
     if (!result.ok) return { ...result, revision };
     await writeAtomically(join(dir, PROJECT_FILE), `${JSON.stringify(result.project, null, 2)}\n`);
@@ -51,8 +69,7 @@ export async function loadProjectStore(dir: string): Promise<ProjectStore> {
   }
 
   async function replace(source: string) {
-    const read = await readProjectJson(source);
-    const result = read.ok ? await checkProject(source, read.json) : read;
+    const result = await checkProjectDir(source);
     if (!result.ok) return { ...result, revision };
     const assets = join(dir, 'assets');
     const previous = join(source, 'previous-assets');
@@ -75,7 +92,17 @@ export async function loadProjectStore(dir: string): Promise<ProjectStore> {
     return { ...result, revision };
   }
 
-  /** Saves and replacements run one after another, so the disk always matches memory. */
+  async function open(next: string) {
+    const result = await checkProjectDir(next);
+    if (!result.ok) return { ...result, revision };
+    dir = next;
+    project = result.project;
+    revision += 1;
+    openedAt = revision;
+    return { ...result, revision };
+  }
+
+  /** Saves, replacements and switches run one after another, so the disk always matches memory. */
   function queued<T>(work: () => Promise<T>): Promise<T> {
     const done = queue.then(work);
     queue = done.catch(() => undefined);
@@ -83,15 +110,21 @@ export async function loadProjectStore(dir: string): Promise<ProjectStore> {
   }
 
   return {
-    dir,
+    get dir() {
+      return dir;
+    },
     get project() {
       return project;
     },
     get revision() {
       return revision;
     },
-    save: (input) => queued(() => save(input)),
+    get openedAt() {
+      return openedAt;
+    },
+    save: (input, basedOn) => queued(() => save(input, basedOn)),
     replace: (source) => queued(() => replace(source)),
+    open: (next) => queued(() => open(next)),
   };
 }
 
@@ -120,10 +153,15 @@ async function writeAtomically(file: string, text: string): Promise<void> {
 
 /** Reads and checks project.json: valid JSON, a valid project, and every referenced file present. */
 export async function loadProject(dir: string): Promise<Project> {
-  const read = await readProjectJson(dir);
-  const result = read.ok ? await checkProject(dir, read.json) : read;
+  const result = await checkProjectDir(dir);
   if (!result.ok) throw new ProjectLoadError(dir, result.errors);
   return result.project;
+}
+
+/** The checks of a load, as a result instead of an error: for listing and opening projects. */
+export async function checkProjectDir(dir: string): Promise<ValidationResult> {
+  const read = await readProjectJson(dir);
+  return read.ok ? checkProject(dir, read.json) : read;
 }
 
 async function readProjectJson(

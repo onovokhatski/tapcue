@@ -47,6 +47,8 @@ export interface Faders {
   subscribe(listener: (hotspotId: HotspotId, value: number) => void): () => void;
   /** Drops pending sends when the server stops. */
   close(): void;
+  /** Forgets every value and pending send: another project was opened (ADR 0021). */
+  reset(): void;
 }
 
 /**
@@ -201,6 +203,11 @@ export function createFaders({
     });
   }
 
+  function close() {
+    for (const state of states.values()) if (state.timer) clearTimeout(state.timer);
+    states.clear();
+  }
+
   return {
     receive(input) {
       const hotspot = find(input.pageId, input.hotspotId);
@@ -251,9 +258,10 @@ export function createFaders({
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    close() {
-      for (const state of states.values()) if (state.timer) clearTimeout(state.timer);
-      states.clear();
+    close,
+    reset() {
+      close();
+      held.clear();
     },
   };
 }

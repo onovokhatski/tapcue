@@ -123,11 +123,14 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       inFlight = true;
       pending = false;
       set({ save: { state: 'saving' } });
+      let stale = false;
       try {
-        const result = await api.save(project);
+        const result = await api.save(project, get().revision);
         if (result.ok) {
           set({ revision: result.revision });
           if (!pending) set({ save: { state: 'saved' } });
+        } else if (result.stale) {
+          stale = true;
         } else {
           set({ save: { state: 'error', reason: result.reason, errors: result.errors } });
         }
@@ -135,6 +138,16 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         set({ save: { state: 'unsaved' } });
       } finally {
         inFlight = false;
+      }
+      // Another project was opened on the server: this copy, and any change made since, belong to
+      // the one open before. They are dropped and the open project is shown (ADR 0021).
+      if (stale) {
+        pending = false;
+        clearTimeout(timer);
+        timer = undefined;
+        set({ save: { state: 'saved' } });
+        await load(false);
+        return;
       }
       // Changed during the save, and its quiet time is over: send the newest project now.
       if (pending && timer === undefined) void flush();

@@ -41,6 +41,7 @@ async function start(timing: { pingIntervalMs?: number; pongTimeoutMs?: number }
       return () => undefined;
     },
     close: () => undefined,
+    reset: () => undefined,
   };
   hub = registerHub(server, { dispatch, log, faders, ...timing });
   await server.listen({ port: 0, host: '127.0.0.1' });
