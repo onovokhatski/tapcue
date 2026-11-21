@@ -1,5 +1,6 @@
 // Dialog of the design system (components.md: Dialog; prototype dialog()). A danger dialog starts
-// with the focus on Cancel, so Enter never destroys anything by accident; Escape cancels.
+// with the focus on Cancel, so Enter never destroys anything by accident; Escape cancels. A dialog
+// with fields leaves the focus to its first field.
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from './Button';
 import { Icon } from './Icon';
@@ -9,6 +10,10 @@ interface DialogProps {
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  /** Turns the confirm button off, e.g. while the request is on its way. */
+  confirmDisabled?: boolean;
+  /** False when a field inside takes the focus itself. */
+  focusButton?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,6 +23,8 @@ export function Dialog({
   title,
   children,
   confirmLabel,
+  confirmDisabled = false,
+  focusButton = true,
   onConfirm,
   onCancel,
 }: DialogProps) {
@@ -26,8 +33,8 @@ export function Dialog({
   const confirm = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    (danger ? cancel : confirm).current?.focus();
-  }, [danger]);
+    if (focusButton) (danger ? cancel : confirm).current?.focus();
+  }, [danger, focusButton]);
 
   return (
     <div
@@ -63,6 +70,7 @@ export function Dialog({
             variant={danger ? 'danger' : 'primary'}
             icon={danger ? 'trash' : undefined}
             label={confirmLabel}
+            disabled={confirmDisabled}
             onClick={onConfirm}
           />
         </div>

@@ -238,6 +238,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 
 | Screen | Used by | Purpose |
 |---|---|---|
+| Editor — Projects | Integrator | The projects in the library: create, open on every station, delete (PRJ-5 to PRJ-8) |
 | Editor — Pages | Integrator | Page list, canvas with hotspots, properties panel |
 | Editor — Targets | Integrator | Manage command destinations |
 | Editor — Stations | Integrator | Manage stations, their URLs and QR codes |
@@ -250,7 +251,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 ### 6.2 Flows
 
 **F1. Build a stand from scratch (integrator)**
-1. Opens the editor, sets the canvas size and scale mode.
+1. Opens the editor, creates a new project on the Projects tab with the canvas size, and sets the scale mode.
 2. Adds a target, e.g. "Resolume" (OSC over UDP, IP, port).
 3. Creates pages and uploads a background for each.
 4. Adds hotspots over the drawn buttons, makes them invisible, chooses a press effect.

@@ -120,8 +120,9 @@ Tapcue is running with "Demo stand".
 Open the editor on this computer, a station on a tablet (or in another browser tab), and the
 demo receiver at `/demo`: taps on "Call our team" or "Play demo", and the Volume fader on the
 Product A page, appear there. Your stands live in a project library, by default
-`Documents/Tapcue` in your home folder ([ADR 0021](docs/adr/0021-project-library.md)): the
-server lists, creates, opens and deletes them, and remembers the one last opened. To start with
+`Documents/Tapcue` in your home folder ([ADR 0021](docs/adr/0021-project-library.md)). The
+editor's Projects tab creates, opens and deletes them; the one last opened is opened again after
+a restart, on every station. To start with
 a particular project folder, or keep the library elsewhere:
 
 ```bash
