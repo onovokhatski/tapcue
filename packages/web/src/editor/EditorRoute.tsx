@@ -14,6 +14,7 @@ import { CommandLog } from './log/CommandLog';
 import { PageList } from './pages/PageList';
 import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
+import { ProjectsTab } from './projects/ProjectsTab';
 import { SettingsTab } from './settings/SettingsTab';
 import { StationsTab } from './stations/StationsTab';
 import { TargetsTab } from './targets/TargetsTab';
@@ -23,6 +24,7 @@ import { EditorStoreContext, useEditor } from './useEditor';
 import { editorLayout, useWindowSize } from './useWindowSize';
 
 export const EDITOR_TABS = [
+  { path: 'projects', label: 'Projects' },
   { path: 'pages', label: 'Pages' },
   { path: 'targets', label: 'Targets' },
   { path: 'stations', label: 'Stations' },
@@ -88,6 +90,7 @@ function Body({ title, compact }: { title: string; compact: boolean }) {
   if (load === 'failed') {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
+  if (title === 'Projects') return <ProjectsTab />;
   if (title === 'Targets') return <TargetsTab />;
   if (title === 'Stations') return <StationsTab />;
   if (title === 'Settings') return <SettingsTab />;
@@ -125,7 +128,14 @@ function TopBar({ connection }: { connection: SocketStatus }) {
             <span className="text-body-m text-muted" aria-hidden="true">
               /
             </span>
-            <span className="text-label-m text-secondary">{name}</span>
+            {/* The open project's name leads to the others (spec PRJ-5). */}
+            <NavLink
+              to="/edit/projects"
+              title="All projects"
+              className="text-label-m text-secondary hover:text-primary hover:underline"
+            >
+              {name}
+            </NavLink>
           </>
         )}
       </div>

@@ -14,7 +14,7 @@ test.beforeEach(async ({ request }) => {
 
 test.afterEach(async ({ request }) => {
   expect((await request.post(`${SERVER_URL}/api/projects/${STAND_ID}/open`)).ok()).toBe(true);
-  await request.delete(`${SERVER_URL}/api/projects/hall-b`);
+  for (const id of ['hall-b', 'old-hall']) await request.delete(`${SERVER_URL}/api/projects/${id}`);
 });
 
 test('a project opened from the library reaches the open player and editor within a second', async ({
@@ -49,4 +49,43 @@ test('a project opened from the library reaches the open player and editor withi
   await expect(editor.getByRole('banner').getByText('Hall B')).toBeVisible({
     timeout: FOLLOW_WITHIN_MS,
   });
+});
+
+test('a project created on the Projects tab opens on the player, and another one is deleted', async ({
+  page,
+  request,
+}) => {
+  // A second stand to delete, so the one the other tests use is never touched.
+  expect(
+    (
+      await request.post(`${SERVER_URL}/api/projects`, {
+        data: { name: 'Old hall', width: 800, height: 600 },
+      })
+    ).status(),
+  ).toBe(201);
+  const player = await page.context().newPage();
+  await player.goto('/play/main');
+  await expect(player.locator('[data-layer="shown"]')).toHaveAttribute('data-page', 'p_home00');
+
+  const editor = page;
+  await editor.goto('/edit/pages');
+  await editor.getByRole('banner').getByRole('link', { name: 'Demo stand' }).click();
+  await editor.getByRole('button', { name: 'New project' }).click();
+  const dialog = editor.getByRole('dialog', { name: 'New project' });
+  await dialog.getByRole('textbox', { name: 'Name' }).fill('Hall B');
+  await dialog.getByRole('combobox', { name: 'Canvas size' }).selectOption('1920x1080');
+  await dialog.getByRole('button', { name: 'Create and open' }).click();
+
+  await expect(editor).toHaveURL(/\/edit\/pages$/);
+  await expect(editor.getByRole('banner').getByRole('link', { name: 'Hall B' })).toBeVisible();
+  await expect(player.locator('[data-layer="shown"] [data-hotspot]')).toHaveCount(0, {
+    timeout: FOLLOW_WITHIN_MS,
+  });
+  await expect(player.locator('[data-layer="shown"]')).not.toHaveAttribute('data-page', 'p_home00');
+
+  await editor.getByRole('link', { name: 'Projects' }).click();
+  await editor.getByRole('button', { name: 'Delete Old hall' }).click();
+  await editor.getByRole('alertdialog').getByRole('button', { name: 'Delete project' }).click();
+  await expect(editor.getByRole('group', { name: 'Old hall' })).toHaveCount(0);
+  await expect(editor.getByRole('group', { name: 'Hall B' })).toContainText('1920 × 1080');
 });
