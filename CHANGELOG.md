@@ -4,6 +4,46 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-11-21
+
+One Tapcue server keeps several stands and runs one of them: projects are created, opened and
+deleted from the editor ([ADR 0021](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0021-project-library.md)).
+
+### Added
+
+- **Projects library:** projects live side by side in one folder, by default `Documents/Tapcue`
+  in your home folder, one subfolder each. `--projects` or `TAPCUE_PROJECTS` puts it elsewhere.
+- **Projects tab** in the editor: every project with its canvas size and last change, the open
+  one first. A project that does not load shows why. The project name in the top bar leads there.
+- **New project:** a name and a canvas size, from common stand screens (iPad, iPad Pro 12.9″,
+  Full HD, 16:10) or typed in, give an empty project with one page and one station, "Main". It
+  opens on every station at once.
+- **Open a project:** after a confirmation, every station and editor switches to it within a
+  second. What the editor still has waiting is saved into the previous project first. Tapcue
+  opens the same project again after a restart.
+- **Delete a project:** after a confirmation, its folder moves into the library's `.trash`
+  folder, from which it can be brought back by hand. The open project cannot be deleted.
+- **API:** `GET /api/projects`, `POST /api/projects`, `POST /api/projects/:id/open` and
+  `DELETE /api/projects/:id`.
+
+### Changed
+
+- **Which project starts:** the one `--project` names, else the one last opened from the
+  library, else the demo stand as before. The click-to-run app keeps its copy of the demo stand
+  in the library.
+- **Saving:** the editor names the revision its copy came from, so a save made before another
+  project was opened is refused and the editor shows the open project instead. The change made
+  in those last moments is dropped, not written into the other stand.
+- **Fader values** start over from each fader's start when another project is opened.
+- **Online demo:** it keeps its one project; creating, opening and deleting are turned off.
+
+### Known limitations
+
+- Emptying `.trash` and renaming a project's folder are left to the file system.
+- Not yet checked on an iPad: faders (from 0.3.0), the stand setup (from 0.1.0) and the frosted
+  backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
 ## [0.3.0] - 2026-11-20
 
 Besides buttons, a hotspot can be a fader that sends a value while it is dragged: a volume, a

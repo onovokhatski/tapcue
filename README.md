@@ -11,7 +11,7 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.3.0: faders that send a value while they are dragged ([changelog](CHANGELOG.md),
+> **Status:** v0.4.0: several stands on one server, created and opened from the editor ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
@@ -80,6 +80,8 @@ the commands.
   scanning its QR code.
 - **Live editing:** every open tablet follows each change within a second, without reloading.
 - **Reliable on the stand:** tablets keep working through Wi-Fi drops and reconnect on their own.
+- **Projects:** several stands on one server, created, opened on every station and deleted from
+  the editor's Projects tab.
 - **Export and import** the whole project, backgrounds included, as one `.zip` file.
 - **Demo receiver and demo project:** try the whole flow without any hardware.
 - **Demo mode** for a public online demo: nothing is saved, and commands never leave the server.
