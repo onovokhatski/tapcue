@@ -134,6 +134,13 @@ describe('HTTP driver', () => {
       expect(received[1]?.headers).not.toHaveProperty('x-tapcue-fader');
     });
 
+    it("names a sequence's step, and no sequence header for one command (ADR 0022)", async () => {
+      await open().send(target(), post, { ...fromStation, sequence: { run: 17, step: 2, of: 3 } });
+      await open().send(target(), post, fromStation);
+      expect(received[0]?.headers['x-tapcue-sequence']).toBe('17 2 3');
+      expect(received[1]?.headers).not.toHaveProperty('x-tapcue-sequence');
+    });
+
     it('sends an empty header for a hotspot without a name', async () => {
       await open().send(target(), post, { ...fromStation, hotspotName: '' });
       expect(received[0]?.headers['x-tapcue-hotspot']).toBe('');

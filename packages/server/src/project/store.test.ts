@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PROJECT_DIR } from '../config';
-import { asVersion1 } from '../test/version1';
+import { asVersion1, singleCommands } from '../test/version1';
 import { loadProject, loadProjectStore, PROJECT_FILE, ProjectLoadError } from './store';
 
 // Each test works on its own copy of the demo stand in a temporary folder.
@@ -296,7 +296,8 @@ describe('a project from Tapcue 0.4 or older (schema version 1, ADR 0022)', () =
   it('loads it upgraded, and writes version 2 only on the next save', async () => {
     const dir = await demoCopy();
     const file = join(dir, PROJECT_FILE);
-    const current = JSON.parse(await readFile(file, 'utf8')) as unknown;
+    // Version 1 has no sequences: the demo stand's Play demo keeps its first command.
+    const current = singleCommands(JSON.parse(await readFile(file, 'utf8')) as unknown);
     await writeFile(file, JSON.stringify(asVersion1(current)));
 
     const store = await loadProjectStore(dir);

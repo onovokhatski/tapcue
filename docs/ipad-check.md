@@ -74,6 +74,12 @@ fader on the Product A page, with `/demo` open on the Mac
 - [ ] The command log shows one row per drag, with the final value and the number of values
       sent; the "sound" tile on `/demo` follows the knob as a level.
 
+Sequences (v0.5: spec ACT-5 to ACT-7, [ADR 0022](adr/0022-command-sequences.md)) — the demo
+stand's Play demo on the Product A page, with `/demo` open on the Mac
+- [ ] One tap: `/demo` shows screen-1, then the lights about 1.5 s later ("step 2 of 2 · +1.5 s").
+- [ ] Tap, then go back to Home at once: the second step still arrives.
+- [ ] Tap twice within a second: the lights arrive once, about 1.5 s after the second tap.
+
 The stand (M5: spec PLY-4, NFR-3, [stand setup guide](stand-setup.md))
 - [ ] Section 3 of the stand setup guide works as written on this iPad: every menu path exists
       and does what the guide says.

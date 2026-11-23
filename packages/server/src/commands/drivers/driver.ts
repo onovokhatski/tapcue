@@ -11,6 +11,14 @@ export interface SendContext {
   hotspotName: string;
   /** For a fader: the value sent and its range, so a receiver can show a level (ADR 0020). */
   fader?: FaderLevel;
+  /** For a step of a sequence: which tap and which step, so a receiver can tell them apart (ADR 0022). */
+  sequence?: SequencePlace;
+}
+
+export interface SequencePlace {
+  run: number;
+  step: number;
+  of: number;
 }
 
 export interface FaderLevel {

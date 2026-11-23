@@ -10,7 +10,7 @@ import yauzl from 'yauzl';
 import yazl from 'yazl';
 import { buildApp } from '../app';
 import { DEFAULT_PROJECT_DIR } from '../config';
-import { asVersion1 } from '../test/version1';
+import { asVersion1, singleCommands } from '../test/version1';
 import { archiveName } from './archive';
 import { loadProjectStore } from './store';
 
@@ -171,9 +171,10 @@ describe('POST /api/project/import (spec PRJ-4)', () => {
     const response = await importZip(target.app, zip);
 
     expect(response.statusCode).toBe(200);
-    expect(target.store.project).toEqual(source.store.project);
+    // Version 1 has no sequences: each hotspot keeps its first command.
+    expect(target.store.project).toEqual(singleCommands(source.store.project));
     const onDisk = JSON.parse(await readFile(join(target.dir, 'project.json'), 'utf8')) as unknown;
-    expect(onDisk).toEqual(source.store.project);
+    expect(onDisk).toEqual(singleCommands(source.store.project));
   });
 
   it('accepts an archive with a folder entry for assets/, as Finder and zip tools write', async () => {

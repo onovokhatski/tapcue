@@ -88,6 +88,27 @@ describe('demo drivers (spec DEMO-3)', () => {
     });
   });
 
+  it("passes a sequence's step on, and adds none for one command (ADR 0022)", async () => {
+    const { received, http } = drivers();
+    const target = {
+      id: 't_demo00',
+      name: 'Demo receiver',
+      protocol: 'http' as const,
+      baseUrl: 'http://example.com',
+    };
+    const command = {
+      type: 'http' as const,
+      targetId: 't_demo00',
+      method: 'POST' as const,
+      path: '/demo/lights/product-a',
+      body: null,
+    };
+    await http.send(target, command, { ...fromMain, sequence: { run: 4, step: 2, of: 2 } });
+    await http.send(target, command, fromMain);
+    expect(received[0]).toMatchObject({ sequence: { run: 4, step: 2, of: 2 } });
+    expect(received[1]).not.toHaveProperty('sequence');
+  });
+
   it("passes a fader's level on, and adds none for a tap (ADR 0020)", async () => {
     const { received, http } = drivers();
     const target = {

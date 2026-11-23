@@ -30,6 +30,7 @@ export function createDemoDrivers(
       station: station(context.source),
       hotspot: context.hotspotName,
       ...(context.fader && { fader: context.fader }),
+      ...(context.sequence && { sequence: context.sequence }),
     });
     return Promise.resolve();
   };

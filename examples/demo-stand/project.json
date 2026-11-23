@@ -157,6 +157,16 @@
                   "path": "/demo/screen-1/product-a",
                   "body": null
                 }
+              },
+              {
+                "delayMs": 1500,
+                "command": {
+                  "type": "http",
+                  "targetId": "t_demo00",
+                  "method": "POST",
+                  "path": "/demo/lights/product-a",
+                  "body": null
+                }
               }
             ]
           }

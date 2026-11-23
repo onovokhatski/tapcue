@@ -174,7 +174,9 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   may use that id) and `X-Tapcue-Hotspot` (hotspot name; characters outside printable ASCII and
   `%` are percent-encoded as UTF-8) headers, so the receiving side can tell where it came from.
   A fader's command also carries `X-Tapcue-Fader`: its value, min and max separated by spaces
-  (`42 0 100`), so a receiver can show the level.
+  (`42 0 100`), so a receiver can show the level. A step of a sequence (ACT-5) carries
+  `X-Tapcue-Sequence`: the tap's run number, the step and how many steps, separated by spaces
+  (`17 2 3`), so a receiver can tell the steps of one tap apart.
 
 ### 5.7 Stations
 
@@ -235,7 +237,9 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   plus one tile per screen name with the content it last received (e.g. `POST /demo/screen-1/product-a`
   → tile "screen-1" shows "product-a"). The request body is shown in the log, not on the tiles.
   A request with `X-Tapcue-Fader` (TGT-6) also shows its value as a level on the tile, and a
-  fader's values in a row update one log row instead of adding one each.
+  fader's values in a row update one log row instead of adding one each. A request with
+  `X-Tapcue-Sequence` shows its step ("step 2 of 3") and the time since the step before it of
+  the same tap ("+1.5 s").
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
 - **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
   - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;

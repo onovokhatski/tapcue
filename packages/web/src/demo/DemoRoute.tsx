@@ -294,7 +294,8 @@ function RequestTable({
           Requests <span className="text-body-s text-muted">newest first</span>
         </h2>
         <span className="text-body-s text-muted">
-          Station and hotspot come from the X-Tapcue-Station and X-Tapcue-Hotspot headers
+          Station, hotspot and step come from the X-Tapcue-Station, X-Tapcue-Hotspot and
+          X-Tapcue-Sequence headers
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -325,7 +326,7 @@ function RequestTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[color:var(--color-border-default)]">
-            {requests.map(({ id, request }) => {
+            {requests.map(({ id, request, sinceMs }) => {
               const fresh = id === freshId;
               return (
                 <tr
@@ -341,7 +342,17 @@ function RequestTable({
                   <td className={`${cell} text-body-s text-secondary`}>
                     {stationName(request) ?? '—'}
                   </td>
-                  <td className={`${cell} text-body-s`}>{request.hotspot ?? '—'}</td>
+                  <td className={`${cell} text-body-s`}>
+                    {request.hotspot ?? '—'}
+                    {request.sequence && request.sequence.of > 1 && (
+                      // Which step of the tap's sequence, and how long after the one before (ADR 0022).
+                      <span className="text-muted">
+                        {' '}
+                        · step {request.sequence.step} of {request.sequence.of}
+                        {sinceMs !== undefined && ` · +${(sinceMs / 1000).toFixed(1)} s`}
+                      </span>
+                    )}
+                  </td>
                   <td className={`${cell} font-mono text-mono-s`}>{request.method}</td>
                   <td className={`${cell} font-mono text-mono-s`}>
                     <span className="text-muted">/demo/</span>
