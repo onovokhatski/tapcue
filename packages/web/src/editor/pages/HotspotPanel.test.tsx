@@ -56,6 +56,45 @@ describe('HotspotPanel', () => {
     expect(cardA().name).toBe('Card A');
   });
 
+  describe('unique names (spec ED-14)', () => {
+    const HINT = 'Already used on this page by another hotspot';
+
+    it('refuses a name another hotspot on the page has, keeping the text with a hint', async () => {
+      const { field, cardA } = await renderPanel();
+      fireEvent.change(field('Name'), { target: { value: 'product b card ' } });
+      expect(field('Name')).toHaveAccessibleDescription(HINT);
+      expect(field('Name')).toHaveAttribute('aria-invalid', 'true');
+      fireEvent.blur(field('Name'));
+      expect(cardA().name).toBe('Product A card');
+      expect(field('Name')).toHaveValue('product b card ');
+      fireEvent.change(field('Name'), { target: { value: 'Product A' } });
+      expect(field('Name')).not.toHaveAccessibleDescription(HINT);
+      fireEvent.keyDown(field('Name'), { key: 'Enter' });
+      expect(cardA().name).toBe('Product A');
+    });
+
+    it('leaves a duplicate from an older project alone until it is edited', async () => {
+      const project = demoProject();
+      project.pages[0]!.hotspots[1]!.name = 'Product A card';
+      const { field, cardA } = await renderPanel(project);
+      expect(field('Name')).toHaveValue('Product A card');
+      expect(field('Name')).not.toHaveAttribute('aria-invalid', 'true');
+      fireEvent.blur(field('Name'));
+      expect(cardA().name).toBe('Product A card');
+    });
+
+    it('shows the new name when a new kind renames the hotspot', async () => {
+      const project = demoProject();
+      project.pages[0]!.hotspots[0]!.name = 'Button 1';
+      const { field, cardA } = await renderPanel(project);
+      fireEvent.click(screen.getByRole('radio', { name: 'Fader' }));
+      expect(cardA().name).toBe('Fader 1');
+      expect(field('Name')).toHaveValue('Fader 1');
+      fireEvent.blur(field('Name'));
+      expect(cardA().name).toBe('Fader 1');
+    });
+  });
+
   describe('position and size (spec HS-2, ED-10)', () => {
     it('moves and resizes as a valid value is typed', async () => {
       const { field, cardA } = await renderPanel();
@@ -133,7 +172,7 @@ describe('HotspotPanel', () => {
     const { hotspots, state } = await renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Duplicate hotspot' }));
     const copy = hotspots()[1]!;
-    expect(copy).toMatchObject({ name: 'Product A card', x: 164, y: 520 });
+    expect(copy).toMatchObject({ name: 'Product A card 2', x: 164, y: 520 });
     expect(state().selection.hotspotId).toBe(copy.id);
   });
 
