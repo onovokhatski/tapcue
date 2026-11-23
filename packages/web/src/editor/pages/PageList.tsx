@@ -1,6 +1,7 @@
-// The page list on the left of the Pages tab: select, add, rename, reorder and delete pages. In a
-// 1280–1439 px window it folds into a rail of thumbnails that opens the full list as a drawer
-// (spec PG-1, ED-12; design: pagesPanel(), pagesRail(), pageListItem()).
+// The page list on the left of the Pages tab: select, add, rename, reorder and delete pages. At any
+// width the integrator can fold it into a rail of thumbnails, remembered in this browser; in a
+// 1280–1439 px window it is always the rail, which opens the full list as a drawer
+// (spec PG-1, ED-12, ED-13; design: pagesPanel(), pagesRail(), pageListItem()).
 import type { Page, PageId, Project } from '@tapcue/shared';
 import { type DragEvent, useEffect, useState } from 'react';
 import { Button } from '../../ui/Button';
@@ -10,12 +11,51 @@ import { assetUrl } from '../../stage/assetUrl';
 import { addPage, deletePage, movePage, pageUsage, renamePage } from '../operations/pages';
 import { useEditor } from '../useEditor';
 
-export function PageList({ compact = false }: { compact?: boolean }) {
-  return compact ? <PageRail /> : <PageListPanel />;
+const LIST_KEY = 'tapcue.pageList';
+
+/** The integrator's own choice if they made one in this browser; the list starts open. */
+function initiallyCollapsed(): boolean {
+  try {
+    return localStorage.getItem(LIST_KEY) === 'collapsed';
+  } catch {
+    return false; // Storage off: open.
+  }
 }
 
-/** The full list, 264 px wide; in the drawer, picking a page closes it (`onPicked`). */
-function PageListPanel({ onPicked }: { onPicked?: () => void }) {
+export function PageList({ compact = false }: { compact?: boolean }) {
+  const [collapsed, setCollapsedState] = useState(initiallyCollapsed);
+  /** After a fold or unfold the focus goes to the button that undoes it, not to the page body. */
+  const [toggled, setToggled] = useState(false);
+  const setCollapsed = (next: boolean) => {
+    setCollapsedState(next);
+    setToggled(true);
+    try {
+      localStorage.setItem(LIST_KEY, next ? 'collapsed' : 'expanded');
+    } catch {
+      // Not remembered (storage off); the choice holds until the page reloads.
+    }
+  };
+  if (compact) return <PageRail />;
+  return collapsed ? (
+    <PageRail onExpand={() => setCollapsed(false)} focusToggle={toggled} />
+  ) : (
+    <PageListPanel onCollapse={() => setCollapsed(true)} focusToggle={toggled} />
+  );
+}
+
+/**
+ * The full list, 264 px wide. Beside the canvas it can fold away (`onCollapse`); in the drawer,
+ * picking a page closes it (`onPicked`).
+ */
+function PageListPanel({
+  onPicked,
+  onCollapse,
+  focusToggle = false,
+}: {
+  onPicked?: () => void;
+  onCollapse?: () => void;
+  focusToggle?: boolean;
+}) {
   const project = useEditor((state) => state.project);
   const selectedId = useEditor((state) => state.selection.pageId);
   const change = useEditor((state) => state.change);
@@ -69,7 +109,20 @@ function PageListPanel({ onPicked }: { onPicked?: () => void }) {
         <h2 className="text-label-m">
           Pages <span className="text-body-s text-muted">{pages.length}</span>
         </h2>
-        <Button variant="ghost" size="s" icon="plus" label="Add page" onClick={add} />
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="s" icon="plus" label="Add page" onClick={add} />
+          {onCollapse && (
+            <Button
+              variant="ghost"
+              size="s"
+              icon="panel-left"
+              ariaLabel="Collapse page list"
+              title="Collapse page list"
+              autoFocus={focusToggle}
+              onClick={onCollapse}
+            />
+          )}
+        </div>
       </div>
       <ul
         className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2"
@@ -125,8 +178,14 @@ function PageListPanel({ onPicked }: { onPicked?: () => void }) {
   );
 }
 
-/** 72 px of thumbnails; the toggle opens the full list over the canvas, without resizing it. */
-function PageRail() {
+/**
+ * 72 px of thumbnails. Folded by the integrator, its button opens the list beside the canvas again
+ * (`onExpand`); in a compact window it opens the full list over the canvas, without resizing it.
+ */
+function PageRail({
+  onExpand,
+  focusToggle = false,
+}: { onExpand?: () => void; focusToggle?: boolean } = {}) {
   const project = useEditor((state) => state.project);
   const selectedId = useEditor((state) => state.selection.pageId);
   const select = useEditor((state) => state.select);
@@ -150,14 +209,26 @@ function PageRail() {
         className="flex w-[72px] flex-none flex-col items-center border-r border-default bg-surface"
       >
         <div className="flex h-11 w-full flex-none items-center justify-center border-b border-default">
-          <Button
-            variant="ghost"
-            size="s"
-            icon="panel-left"
-            ariaLabel={open ? 'Hide page list' : 'Show page list'}
-            pressed={open}
-            onClick={() => setOpen(!open)}
-          />
+          {onExpand ? (
+            <Button
+              variant="ghost"
+              size="s"
+              icon="panel-left"
+              ariaLabel="Expand page list"
+              title="Expand page list"
+              autoFocus={focusToggle}
+              onClick={onExpand}
+            />
+          ) : (
+            <Button
+              variant="ghost"
+              size="s"
+              icon="panel-left"
+              ariaLabel={open ? 'Hide page list' : 'Show page list'}
+              pressed={open}
+              onClick={() => setOpen(!open)}
+            />
+          )}
         </div>
         <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto py-2">
           {project.pages.map((page) => {
