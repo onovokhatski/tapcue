@@ -2,7 +2,7 @@ import { cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { ProjectList } from '@tapcue/shared';
+import type { Project, ProjectList } from '@tapcue/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BASED_ON_HEADER, buildApp } from '../app';
 import { DEFAULT_PROJECT_DIR } from '../config';
@@ -219,6 +219,50 @@ describe('POST /api/projects/:id/open (PRJ-7)', () => {
       ]),
     );
     player.close();
+  });
+});
+
+describe('a sequence running when another project opens (ADR 0022)', () => {
+  it('cancels its steps not yet sent, and says so in the log', async () => {
+    await app.close();
+    // Alpha's Product A card sends a second command a minute after the first.
+    const file = join(root, 'alpha', 'project.json');
+    const alpha = JSON.parse(await readFile(file, 'utf8')) as Project;
+    const card = alpha.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+    card.action.commands.push({
+      delayMs: 60_000,
+      command: { ...card.action.commands[0]!.command },
+    });
+    await writeFile(file, JSON.stringify(alpha));
+    store = await loadProjectStore(join(root, 'alpha'));
+    const quiet = { send: () => Promise.resolve(), close: () => Promise.resolve() };
+    app = buildApp({
+      store,
+      library: createLibrary(root),
+      drivers: { 'osc-udp': quiet, udp: quiet, http: quiet },
+    });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    const port = (app.server.address() as AddressInfo).port;
+    const editor = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    const received: { type: string; entry?: { status: string; message?: string } }[] = [];
+    editor.addEventListener('message', (event) =>
+      received.push(JSON.parse(String(event.data)) as (typeof received)[number]),
+    );
+    await new Promise((resolve) => editor.addEventListener('open', resolve));
+
+    await inject('POST', '/api/test-send', { pageId: 'p_home00', hotspotId: 'h_carda0' });
+    await inject('POST', '/api/projects/beta/open');
+
+    await vi.waitFor(() =>
+      expect(received.filter((m) => m.type === 'log-entry').map((m) => m.entry)).toEqual([
+        expect.objectContaining({ status: 'sent' }),
+        expect.objectContaining({
+          status: 'ignored',
+          message: '1 step cancelled: another project was opened',
+        }),
+      ]),
+    );
+    editor.close();
   });
 });
 

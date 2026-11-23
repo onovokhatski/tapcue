@@ -87,6 +87,11 @@ describe('projectApi', () => {
       });
     });
 
+    it('passes on a null entry: the first command of a sequence waits (ADR 0022)', async () => {
+      respond(200, { entry: null });
+      expect(await projectApi.testSend('p_home00', 'h_carda0')).toEqual({ ok: true, entry: null });
+    });
+
     it("returns the server's reason for a refusal", async () => {
       respond(409, { error: 'The hotspot sends no command' });
       expect(await projectApi.testSend('p_home00', 'h_about0')).toEqual({

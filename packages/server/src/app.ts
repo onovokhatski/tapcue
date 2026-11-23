@@ -118,7 +118,10 @@ export function buildApp({
   const used = demo
     ? createDemoDrivers((request) => hub.toViewers({ type: 'demo-received', request }))
     : (drivers ?? realDrivers());
-  const dispatch = createDispatcher({ project: () => store.project, drivers: used, log });
+  const dispatcher = createDispatcher({ project: () => store.project, drivers: used, log });
+  const { dispatch } = dispatcher;
+  // Steps still waiting in a sequence are dropped when the server stops (ADR 0022).
+  app.addHook('onClose', () => dispatcher.close());
   const faders = createFaders({ project: () => store.project, drivers: used, log });
   app.addHook('onClose', () => faders.close());
   const hub = registerHub(app, { dispatch, log, faders });
@@ -150,13 +153,15 @@ export function buildApp({
     onImported: (revision) => hub.toAll({ type: 'project-updated', revision }),
   });
 
-  // Projects in the library; opening one switches every station and editor to it. Fader values
-  // start over from each fader's start, as on a fresh start (ADR 0021).
+  // Projects in the library; opening one switches every station and editor to it. Steps still
+  // waiting in a sequence are cancelled (ADR 0022), and fader values start over from each fader's
+  // start, as on a fresh start (ADR 0021).
   if (library) {
     registerLibraryRoutes(app, {
       library,
       store,
       onOpened: (revision) => {
+        dispatcher.cancelAll('another project was opened');
         faders.reset();
         hub.toAll({ type: 'project-updated', revision });
         const values = faders.values();

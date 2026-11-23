@@ -51,6 +51,15 @@ describe('Send test (spec ACT-4)', () => {
     );
   });
 
+  it('says a sequence started when its first command waits for its delay (ADR 0022)', async () => {
+    const { press } = await renderButton(() => Promise.resolve({ ok: true, entry: null }));
+    await press();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Started: the first command waits for its delay. See the command log.',
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('shows a delivery error with its reason', async () => {
     const { press } = await renderButton(() => Promise.resolve({ ok: true, entry: errorEntry }));
     await press();
