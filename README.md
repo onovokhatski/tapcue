@@ -11,7 +11,7 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.4.0: several stands on one server, created and opened from the editor ([changelog](CHANGELOG.md),
+> **Status:** v0.5.0: one tap sends several commands in order, each after its own pause ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
