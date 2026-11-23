@@ -13,7 +13,7 @@ const hotspot: Hotspot = {
   shape: { type: 'rect', cornerRadius: 24 },
   style: { fill: null, border: null, opacity: 1 },
   pressEffect: 'highlight',
-  action: { goTo: null, command: null },
+  action: { goTo: null, commands: [] },
 };
 
 function renderHotspot(pressEffect: PressEffect = 'highlight') {

@@ -4,6 +4,7 @@
 import {
   type Command,
   type FaderSettings,
+  firstCommand,
   formatFaderValue,
   type Hotspot,
   HttpCommand,
@@ -43,7 +44,9 @@ interface Props {
 
 export function OnTapFields({ project, pageId, hotspot }: Props) {
   const change = useEditor((state) => state.change);
-  const { goTo, command } = hotspot.action;
+  const { goTo } = hotspot.action;
+  // The first command of a sequence for now; the whole list comes with #203 (ADR 0022).
+  const command = firstCommand(hotspot.action);
   const target = command ? project.targets.find((t) => t.id === command.targetId) : undefined;
   const save = (next: Command) => change((p) => setCommand(p, pageId, hotspot.id, next));
 

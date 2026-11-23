@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PROJECT_DIR } from '../config';
+import { asVersion1 } from '../test/version1';
 import { loadProject, loadProjectStore, PROJECT_FILE, ProjectLoadError } from './store';
 
 // Each test works on its own copy of the demo stand in a temporary folder.
@@ -288,5 +289,23 @@ describe('open (ADR 0021)', () => {
     expect(await store.save({ ...store.project, name: 'A' }, 2)).toMatchObject({ ok: true });
     expect(await store.save({ ...store.project, name: 'B' }, 3)).toMatchObject({ ok: true });
     expect(await store.save({ ...store.project, name: 'C' })).toMatchObject({ revision: 5 });
+  });
+});
+
+describe('a project from Tapcue 0.4 or older (schema version 1, ADR 0022)', () => {
+  it('loads it upgraded, and writes version 2 only on the next save', async () => {
+    const dir = await demoCopy();
+    const file = join(dir, PROJECT_FILE);
+    const current = JSON.parse(await readFile(file, 'utf8')) as unknown;
+    await writeFile(file, JSON.stringify(asVersion1(current)));
+
+    const store = await loadProjectStore(dir);
+
+    expect(store.project).toEqual(current);
+    expect(
+      (JSON.parse(await readFile(file, 'utf8')) as { schemaVersion: number }).schemaVersion,
+    ).toBe(1);
+    await store.save(store.project);
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(current);
   });
 });

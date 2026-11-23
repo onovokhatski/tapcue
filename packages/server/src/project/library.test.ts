@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { validateProject } from '@tapcue/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PROJECT_DIR } from '../config';
+import { asVersion1 } from '../test/version1';
 import {
   ACTIVE_FILE,
   createLibrary,
@@ -56,7 +57,7 @@ describe('emptyProject', () => {
     const project = emptyProject({ name: 'Hall B', width: 1920, height: 1080 }, 'p_abc123');
     expect(validateProject(project).ok).toBe(true);
     expect(project).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       name: 'Hall B',
       canvas: { width: 1920, height: 1080, scaleMode: 'fit', backgroundColor: '#000000' },
       pages: [{ id: 'p_abc123', name: 'Page 1', background: null, hotspots: [] }],
@@ -116,6 +117,16 @@ describe('createLibrary', () => {
         height: 1536,
       },
     ]);
+  });
+
+  it('lists a project from Tapcue 0.4 or older as it loads, upgraded (ADR 0022)', async () => {
+    await demoCopy('old');
+    const file = join(root, 'old', 'project.json');
+    await writeFile(file, JSON.stringify(asVersion1(JSON.parse(await readFile(file, 'utf8')))));
+
+    const [entry] = await library.list(root);
+
+    expect(entry).toMatchObject({ id: 'old', ok: true, name: 'Demo stand' });
   });
 
   it('lists a project that does not load with its errors', async () => {

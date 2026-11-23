@@ -1,7 +1,12 @@
-// What a tap does: go to a page, send a command to a target, or both (spec ACT-1). Pure functions
+// What a tap does: go to a page, send commands to targets, or both (spec ACT-1). Pure functions
 // (project, args) => project; an operation that cannot apply returns the same project.
+//
+// The editor edits the first command of a sequence for now and keeps the others as they are; the
+// whole list with its delays comes with #203 (ADR 0022).
 import {
+  type Action,
   type Command,
+  firstCommand,
   type HotspotId,
   type PageId,
   type Project,
@@ -34,20 +39,21 @@ export function setCommandTarget(
   hotspotId: HotspotId,
   targetId: TargetId | null,
 ): Project {
-  if (targetId === null)
-    return setAction(project, pageId, hotspotId, (action) => ({ ...action, command: null }));
+  if (targetId === null) {
+    return setAction(project, pageId, hotspotId, (action) => withFirstCommand(action, null));
+  }
   const target = project.targets.find((t) => t.id === targetId);
   if (!target) return project;
   const fader = project.pages
     .find((p) => p.id === pageId)
     ?.hotspots.some((h) => h.id === hotspotId && h.kind === 'fader');
-  return setAction(project, pageId, hotspotId, (action) => ({
-    ...action,
-    command:
-      action.command?.type === target.protocol
-        ? { ...action.command, targetId }
-        : emptyCommand(target, fader),
-  }));
+  return setAction(project, pageId, hotspotId, (action) => {
+    const command = firstCommand(action);
+    return withFirstCommand(
+      action,
+      command?.type === target.protocol ? { ...command, targetId } : emptyCommand(target, fader),
+    );
+  });
 }
 
 /** Replaces the command; its type and target must stay those of its target (callers edit fields). */
@@ -59,7 +65,17 @@ export function setCommand(
 ): Project {
   const target = project.targets.find((t) => t.id === command.targetId);
   if (!target || target.protocol !== command.type) return project;
-  return setAction(project, pageId, hotspotId, (action) => ({ ...action, command }));
+  return setAction(project, pageId, hotspotId, (action) => withFirstCommand(action, command));
+}
+
+/**
+ * The action with its first command replaced, keeping that step's delay and every later step;
+ * null removes the first step.
+ */
+export function withFirstCommand(action: Action, command: Command | null): Action {
+  const [first, ...rest] = action.commands;
+  if (command === null) return { ...action, commands: rest };
+  return { ...action, commands: [{ ...first, command }, ...rest] };
 }
 
 /**

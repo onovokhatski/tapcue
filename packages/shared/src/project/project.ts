@@ -7,7 +7,8 @@ import { Station } from './stations';
 import { Target } from './targets';
 import { Name } from './values';
 
-export const SCHEMA_VERSION = 1;
+/** Version 2 since v0.5: an action's `command` became `commands` (ADR 0022, upgrade.ts). */
+export const SCHEMA_VERSION = 2;
 
 export const Project = z.strictObject({
   schemaVersion: z.literal(SCHEMA_VERSION, {

@@ -129,7 +129,11 @@ describe('POST /api/test-send for a fader (spec FD-2, ADR 0020)', () => {
     call.pressEffect = 'none';
     call.action = {
       goTo: null,
-      command: { type: 'osc-udp', targetId: 't_resolm', address: '/layer/1/opacity', args: [] },
+      commands: [
+        {
+          command: { type: 'osc-udp', targetId: 't_resolm', address: '/layer/1/opacity', args: [] },
+        },
+      ],
     };
     await writeFile(file, JSON.stringify(project));
     faderStore = await loadProjectStore(dir);

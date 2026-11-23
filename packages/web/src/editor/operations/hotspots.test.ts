@@ -41,7 +41,7 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
         shape: { type: 'rect', cornerRadius: 0 },
         style: { fill: null, border: null, opacity: 1 },
         pressEffect: 'press',
-        action: { goTo: null, command: null },
+        action: { goTo: null, commands: [] },
       });
       expectValid(project);
     });
@@ -306,6 +306,19 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expect(cardA(solid).style).toEqual({ fill: '#FFFFFF', border: null, opacity: 1 });
     });
 
+    it('keeps only the first command when a sequence becomes a fader (ADR 0022)', () => {
+      const project = demoProject();
+      const card = cardA(project);
+      const first = card.action.commands[0]!;
+      card.action = {
+        ...card.action,
+        commands: [first, { delayMs: 500, command: { ...first.command } }],
+      };
+      const fader = setKind(project, 'p_home00', 'h_carda0', 'fader');
+      expect(cardA(fader).action.commands).toEqual([{ command: first.command }]);
+      expectValid(fader);
+    });
+
     it('makes a hotspot a fader with sensible settings, and a button again (ADR 0020)', () => {
       // Product A card: 560 × 720, taller than wide, with OSC column 2 connect (one argument).
       const fader = setKind(demoProject(), 'p_home00', 'h_carda0', 'fader');
@@ -320,7 +333,7 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
           value: { at: 1, as: 'f' },
         },
         pressEffect: 'none',
-        action: { goTo: null, command: { type: 'osc-udp' } },
+        action: { goTo: null, commands: [{ command: { type: 'osc-udp' } }] },
       });
       expectValid(fader);
       expect(setKind(fader, 'p_home00', 'h_carda0', 'fader')).toBe(fader);
@@ -335,7 +348,7 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       // "Call our team": 312 × 96, sending HTTP with a body that has no {value}.
       const fader = setKind(demoProject(), 'p_home00', 'h_call00', 'fader');
       const call = home(fader).hotspots.find((h) => h.id === 'h_call00')!;
-      expect(call.action.command).toMatchObject({
+      expect(call.action.commands[0]?.command).toMatchObject({
         type: 'http',
         path: '/demo/screen-3/call-staff/{value}',
         body: '{ "stand": "B12" }',
@@ -347,7 +360,10 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
     it('keeps a UDP command, adding {value} to its text (ADR 0020)', () => {
       const fader = setKind(demoProject(), 'p_prodb0', 'h_bwall0', 'fader');
       const wall = fader.pages[2]!.hotspots.find((h) => h.id === 'h_bwall0')!;
-      expect(wall.action.command).toMatchObject({ type: 'udp', text: '%1INPT 31\r {value}' });
+      expect(wall.action.commands[0]?.command).toMatchObject({
+        type: 'udp',
+        text: '%1INPT 31\r {value}',
+      });
       expectValid(fader);
     });
 
@@ -364,10 +380,10 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
     it("keeps a fader's value position within its OSC arguments when one is removed", () => {
       // Product A's fader has one argument, so its value goes after it: position 1.
       const fader = setKind(demoProject(), 'p_home00', 'h_carda0', 'fader');
-      const command = cardA(fader).action.command!;
+      const command = cardA(fader).action.commands[0]!.command;
       const fewer = setAction(fader, 'p_home00', 'h_carda0', (action) => ({
         ...action,
-        command: command.type === 'osc-udp' ? { ...command, args: [] } : command,
+        commands: [{ command: command.type === 'osc-udp' ? { ...command, args: [] } : command }],
       }));
       expect(cardA(fewer).fader?.value).toEqual({ at: 0, as: 'f' });
       expectValid(fewer);

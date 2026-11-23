@@ -199,7 +199,7 @@ describe('StationPlayer', () => {
         value: { at: 0, as: 'f' },
       };
       call.pressEffect = 'none';
-      call.action = { goTo: null, command: call.action.command };
+      call.action = { goTo: null, commands: call.action.commands.slice(0, 1) };
       return next;
     }
 

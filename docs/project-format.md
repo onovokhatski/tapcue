@@ -1,6 +1,6 @@
 # Tapcue — Project Format
 
-Status: **draft** · Last updated: 2026-10-25 · Schema version: **1**
+Status: **draft** · Last updated: 2026-11-22 · Schema version: **2**
 
 A Tapcue project describes one stand. It is the contract between the editor, the player and
 the server: the Zod schema in `packages/shared` implements exactly what this document
@@ -43,7 +43,7 @@ Tapcue/
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Demo stand",
   "canvas": { ... },
   "pages": [ ... ],
@@ -54,7 +54,7 @@ Tapcue/
 
 | Field | Type | Rules |
 |---|---|---|
-| `schemaVersion` | integer | Always `1` for this version. The server refuses projects with a version it does not know. |
+| `schemaVersion` | integer | Always `2` for this version. A version `1` project is upgraded when it is read ([§12](#12-versioning)); a version Tapcue does not know is refused. |
 | `name` | string | 1–100 characters. Shown in the editor. |
 | `canvas` | [Canvas](#3-canvas) | |
 | `pages` | [Page](#4-page)[] | At least one. Array order is the order in the editor. |
@@ -110,8 +110,10 @@ Tapcue/
   "pressEffect": "ripple",
   "action": {
     "goTo": "p_7tn4vb",
-    "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
-                 "address": "/composition/columns/2/connect", "args": [] }
+    "commands": [
+      { "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
+                     "address": "/composition/columns/2/connect", "args": [] } }
+    ]
   }
 }
 ```
@@ -161,7 +163,8 @@ Tapcue/
 | `padding` | number | 0–500 canvas pixels between the hotspot's edge and the text. |
 
 **Fader** ([ADR 0020](adr/0020-faders.md)) — a hotspot with `kind: "fader"` sets a value by
-dragging along it and sends its command with that value.
+dragging along it and sends its command with that value. It has at most one command, sent at
+once: no sequence and no delay ([ADR 0022](adr/0022-command-sequences.md)).
 
 ```json
 "kind": "fader",
@@ -170,8 +173,10 @@ dragging along it and sends its command with that value.
   "value": { "at": 0, "as": "f" }
 },
 "pressEffect": "none",
-"action": { "goTo": null, "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
-            "address": "/composition/layers/1/video/opacity", "args": [] } }
+"action": { "goTo": null, "commands": [
+  { "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
+                 "address": "/composition/layers/1/video/opacity", "args": [] } }
+] }
 ```
 
 | Field | Type | Rules |
@@ -216,16 +221,31 @@ Common fields: `id` ([Id](#92-ids), unique among targets) and `name` (1–100 ch
 ## 7. Action
 
 ```json
-{ "goTo": "p_7tn4vb", "command": { ... } }
+{
+  "goTo": "p_7tn4vb",
+  "commands": [
+    { "command": { ... } },
+    { "delayMs": 2500, "command": { ... } }
+  ]
+}
 ```
 
 | Field | Type | Rules |
 |---|---|---|
 | `goTo` | page [Id](#92-ids) \| `null` | Must reference an existing page. `null` = stay. |
-| `command` | Command \| `null` | `null` = send nothing. |
+| `commands` | list of Steps | 0–20 steps, sent in order ([ADR 0022](adr/0022-command-sequences.md)). An empty list sends nothing. |
 
-Both may be `null` (a hotspot that only plays its press effect). When both are set, the
-command is sent first, then the page changes ([spec ACT-2](spec.md#55-actions)).
+**Step**
+
+| Field | Type | Rules |
+|---|---|---|
+| `delayMs` | integer, optional | 0–60000. Milliseconds to wait before this step is sent; absent = 0. |
+| `command` | Command | See below. Each step has its own target. |
+
+`goTo` may be `null` and `commands` empty (a hotspot that only plays its press effect). The first
+step without a delay is sent at once and the page changes right after the tap; later steps are
+sent by the server on its own timers, after the tablet has moved on
+([spec ACT-2](spec.md#55-actions), ACT-5 to ACT-8). A fader has at most one step, with no delay.
 
 **Command** — `type` must equal the `protocol` of the referenced target.
 
@@ -282,7 +302,8 @@ Validation happens in two layers:
 2. **References** — checked across the whole project:
    - all IDs are unique within their kind;
    - every `goTo` and `startPageId` points to an existing page;
-   - every `command.targetId` points to an existing target, and `command.type` matches that target's `protocol`;
+   - every step's `command.targetId` points to an existing target, and `command.type` matches that target's `protocol`;
+   - a fader has at most one step, and it has no delay;
    - every hotspot lies inside the canvas;
    - every asset path points to an existing file *(server only — the file system is not visible to the schema)*.
 
@@ -290,7 +311,7 @@ An invalid project is never saved. Errors name the exact place, e.g.
 `pages[2].hotspots[0].action.goTo: page "p_zz0000" does not exist`.
 
 Deleting a page or a target never leaves broken references: the editor operation that
-deletes it also clears every `goTo` or `command` that pointed to it. A station whose start page
+deletes it also clears every `goTo` that pointed to it and removes every step that sent to it. A station whose start page
 is deleted starts on the first remaining page, since `startPageId` cannot be empty; for the same
 reason the last page of a project cannot be deleted.
 
@@ -298,7 +319,7 @@ reason the last page of a project cannot be deleted.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Demo stand",
   "canvas": { "width": 2048, "height": 1536, "scaleMode": "fit", "backgroundColor": "#000000" },
   "pages": [
@@ -316,8 +337,13 @@ reason the last page of a project cannot be deleted.
           "pressEffect": "ripple",
           "action": {
             "goTo": "p_7tn4vb",
-            "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
-                         "path": "/demo/screen-1/product-a", "body": null }
+            "commands": [
+              { "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
+                             "path": "/demo/screen-1/product-a", "body": null } },
+              { "delayMs": 1500,
+                "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
+                             "path": "/demo/screen-2/product-a", "body": null } }
+            ]
           }
         }
       ]
@@ -334,7 +360,7 @@ reason the last page of a project cannot be deleted.
           "shape": { "type": "ellipse" },
           "style": { "fill": "#FFFFFF", "border": null, "opacity": 0.2 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_h8x2kq", "command": null }
+          "action": { "goTo": "p_h8x2kq", "commands": [] }
         }
       ]
     }
@@ -354,3 +380,13 @@ reason the last page of a project cannot be deleted.
 Adding an optional field with a default does not change it. When it changes, the server
 upgrades older projects on load with a small migration function per version, and this
 document gets a changelog section.
+
+### Changelog
+
+- **Version 2** (Tapcue 0.5, [ADR 0022](adr/0022-command-sequences.md)): `action.command` became
+  `action.commands`, a list of steps with an optional delay. A version 1 project is upgraded
+  wherever it is read (loading, import, the projects list): `"command": X` becomes
+  `"commands": [{ "command": X }]` and `"command": null` becomes `"commands": []`. The file on disk
+  keeps version 1 until the next save. Error messages name the upgraded fields, e.g.
+  `action.commands[0].command.targetId` for what the file calls `action.command.targetId`.
+  Tapcue 0.4 and older refuse a version 2 project.

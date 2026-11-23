@@ -6,6 +6,7 @@ export * from './project/fader';
 export * from './project/pages';
 export * from './project/stations';
 export * from './project/project';
+export * from './project/upgrade';
 export * from './project/validate';
 export * from './project/library';
 export * from './messages/messages';

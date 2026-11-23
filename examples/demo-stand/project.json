@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Demo stand",
   "canvas": { "width": 2048, "height": 1536, "scaleMode": "fit", "backgroundColor": "#000000" },
   "pages": [
@@ -20,12 +20,16 @@
           "pressEffect": "press",
           "action": {
             "goTo": "p_proda0",
-            "command": {
-              "type": "osc-udp",
-              "targetId": "t_resolm",
-              "address": "/composition/columns/2/connect",
-              "args": [{ "type": "i", "value": 1 }]
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "osc-udp",
+                  "targetId": "t_resolm",
+                  "address": "/composition/columns/2/connect",
+                  "args": [{ "type": "i", "value": 1 }]
+                }
+              }
+            ]
           }
         },
         {
@@ -40,12 +44,16 @@
           "pressEffect": "press",
           "action": {
             "goTo": "p_prodb0",
-            "command": {
-              "type": "osc-udp",
-              "targetId": "t_resolm",
-              "address": "/composition/columns/3/connect",
-              "args": [{ "type": "i", "value": 1 }]
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "osc-udp",
+                  "targetId": "t_resolm",
+                  "address": "/composition/columns/3/connect",
+                  "args": [{ "type": "i", "value": 1 }]
+                }
+              }
+            ]
           }
         },
         {
@@ -60,12 +68,16 @@
           "pressEffect": "ripple",
           "action": {
             "goTo": null,
-            "command": {
-              "type": "osc-udp",
-              "targetId": "t_resolm",
-              "address": "/composition/columns/4/connect",
-              "args": [{ "type": "i", "value": 1 }]
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "osc-udp",
+                  "targetId": "t_resolm",
+                  "address": "/composition/columns/4/connect",
+                  "args": [{ "type": "i", "value": 1 }]
+                }
+              }
+            ]
           }
         },
         {
@@ -78,7 +90,7 @@
           "shape": { "type": "ellipse" },
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_about0", "command": null }
+          "action": { "goTo": "p_about0", "commands": [] }
         },
         {
           "id": "h_call00",
@@ -92,13 +104,17 @@
           "pressEffect": "highlight",
           "action": {
             "goTo": null,
-            "command": {
-              "type": "http",
-              "targetId": "t_demo00",
-              "method": "POST",
-              "path": "/demo/screen-3/call-staff",
-              "body": "{ \"stand\": \"B12\" }"
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "http",
+                  "targetId": "t_demo00",
+                  "method": "POST",
+                  "path": "/demo/screen-3/call-staff",
+                  "body": "{ \"stand\": \"B12\" }"
+                }
+              }
+            ]
           }
         }
       ]
@@ -118,7 +134,7 @@
           "shape": { "type": "rect", "cornerRadius": 44 },
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_home00", "command": null }
+          "action": { "goTo": "p_home00", "commands": [] }
         },
         {
           "id": "h_aplay0",
@@ -132,13 +148,17 @@
           "pressEffect": "press",
           "action": {
             "goTo": null,
-            "command": {
-              "type": "http",
-              "targetId": "t_demo00",
-              "method": "POST",
-              "path": "/demo/screen-1/product-a",
-              "body": null
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "http",
+                  "targetId": "t_demo00",
+                  "method": "POST",
+                  "path": "/demo/screen-1/product-a",
+                  "body": null
+                }
+              }
+            ]
           }
         },
         {
@@ -151,7 +171,7 @@
           "shape": { "type": "rect", "cornerRadius": 8 },
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_prodb0", "command": null }
+          "action": { "goTo": "p_prodb0", "commands": [] }
         },
         {
           "id": "h_avol00",
@@ -180,13 +200,17 @@
           "pressEffect": "none",
           "action": {
             "goTo": null,
-            "command": {
-              "type": "http",
-              "targetId": "t_demo00",
-              "method": "PUT",
-              "path": "/demo/sound/volume",
-              "body": "{value}"
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "http",
+                  "targetId": "t_demo00",
+                  "method": "PUT",
+                  "path": "/demo/sound/volume",
+                  "body": "{value}"
+                }
+              }
+            ]
           }
         }
       ]
@@ -206,7 +230,7 @@
           "shape": { "type": "rect", "cornerRadius": 44 },
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_home00", "command": null }
+          "action": { "goTo": "p_home00", "commands": [] }
         },
         {
           "id": "h_bplay0",
@@ -220,13 +244,17 @@
           "pressEffect": "press",
           "action": {
             "goTo": null,
-            "command": {
-              "type": "http",
-              "targetId": "t_demo00",
-              "method": "POST",
-              "path": "/demo/screen-1/product-b",
-              "body": null
-            }
+            "commands": [
+              {
+                "command": {
+                  "type": "http",
+                  "targetId": "t_demo00",
+                  "method": "POST",
+                  "path": "/demo/screen-1/product-b",
+                  "body": null
+                }
+              }
+            ]
           }
         },
         {
@@ -241,7 +269,9 @@
           "pressEffect": "press",
           "action": {
             "goTo": null,
-            "command": { "type": "udp", "targetId": "t_projec", "text": "%1INPT 31\r" }
+            "commands": [
+              { "command": { "type": "udp", "targetId": "t_projec", "text": "%1INPT 31\r" } }
+            ]
           }
         }
       ]
@@ -261,7 +291,7 @@
           "shape": { "type": "rect", "cornerRadius": 44 },
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_home00", "command": null }
+          "action": { "goTo": "p_home00", "commands": [] }
         }
       ]
     }

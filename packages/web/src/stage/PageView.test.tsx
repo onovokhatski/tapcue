@@ -15,7 +15,7 @@ const hotspot: Hotspot = {
   shape: { type: 'rect', cornerRadius: 24 },
   style: { fill: null, border: null, opacity: 1 },
   pressEffect: 'none',
-  action: { goTo: null, command: null },
+  action: { goTo: null, commands: [] },
 };
 
 function page(overrides: Partial<Page> = {}): Page {

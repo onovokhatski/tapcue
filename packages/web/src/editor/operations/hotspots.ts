@@ -5,6 +5,7 @@ import {
   type AssetPath,
   type Command,
   type FaderSettings,
+  firstCommand,
   type Hotspot,
   type HotspotId,
   type HotspotText,
@@ -55,7 +56,7 @@ export function addHotspot(
     // Invisible, as most hotspots lie over a button drawn in the artwork.
     style: { fill: null, border: null, opacity: 1 },
     pressEffect: 'press',
-    action: { goTo: null, command: null },
+    action: { goTo: null, commands: [] },
   };
   return {
     project: updatePage(project, pageId, (p) => ({ ...p, hotspots: [...p.hotspots, hotspot] })),
@@ -269,7 +270,9 @@ export function setKind(
     if (current === kind) return h;
     const { kind: _kind, fader: _fader, ...rest } = h;
     if (kind === 'button') return { ...rest, pressEffect: 'press' };
-    const command = h.action.command && withPlaceholder(h.action.command);
+    // A fader sends one command, at once (ADR 0022): the first one, with a place for the value.
+    const first = firstCommand(h.action);
+    const command = first && withPlaceholder(first);
     const fader: FaderSettings = {
       orientation: h.height > h.width ? 'vertical' : 'horizontal',
       min: 0,
@@ -278,7 +281,8 @@ export function setKind(
       start: 0,
       value: { at: command?.type === 'osc-udp' ? command.args.length : 0, as: 'f' },
     };
-    return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, command } };
+    const commands = command ? [{ command }] : [];
+    return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, commands } };
   });
 }
 
@@ -339,7 +343,7 @@ export function setAction(
     const action = update(h.action);
     if (JSON.stringify(action) === JSON.stringify(h.action)) return h;
     // A fader's value position stays within its OSC arguments, also when one is removed.
-    const command = action.command;
+    const command = firstCommand(action);
     if (h.fader && command?.type === 'osc-udp' && h.fader.value.at > command.args.length) {
       const value = { ...h.fader.value, at: command.args.length };
       return { ...h, action, fader: { ...h.fader, value } };

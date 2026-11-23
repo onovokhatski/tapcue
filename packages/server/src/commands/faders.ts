@@ -12,7 +12,7 @@ import type {
   Project,
   Protocol,
 } from '@tapcue/shared';
-import { fillValue, formatFaderValue, snapFaderValue } from '@tapcue/shared';
+import { fillValue, firstCommand, formatFaderValue, snapFaderValue } from '@tapcue/shared';
 import type { Drivers } from './dispatcher';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
@@ -133,7 +133,7 @@ export function createFaders({
       hotspotId: input.hotspotId,
     };
     const hotspot = find(input.pageId, input.hotspotId);
-    const command = hotspot?.action.command;
+    const command = hotspot && firstCommand(hotspot.action);
     if (!hotspot?.fader || !command) return null;
     const current = project();
     const target = current.targets.find((t) => t.id === command.targetId);
@@ -239,7 +239,7 @@ export function createFaders({
       const value = snapFaderValue(input.value, hotspot.fader);
       held.set(input.hotspotId, value);
       for (const listener of listeners) listener(input.hotspotId, value);
-      if (!hotspot.action.command) return Promise.resolve(null); // a fader that sends nothing yet
+      if (!firstCommand(hotspot.action)) return Promise.resolve(null); // a fader that sends nothing yet
       return schedule({ input, value });
     },
     values() {

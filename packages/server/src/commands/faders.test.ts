@@ -29,12 +29,16 @@ const volume: Hotspot = {
   pressEffect: 'none',
   action: {
     goTo: null,
-    command: {
-      type: 'osc-udp',
-      targetId: 't_resolm',
-      address: '/composition/layers/1/video/opacity',
-      args: [{ type: 's', value: 'layer' }],
-    },
+    commands: [
+      {
+        command: {
+          type: 'osc-udp',
+          targetId: 't_resolm',
+          address: '/composition/layers/1/video/opacity',
+          args: [{ type: 's', value: 'layer' }],
+        },
+      },
+    ],
   },
 };
 
@@ -44,13 +48,13 @@ const button: Hotspot = {
   name: 'Play',
   kind: 'button',
   pressEffect: 'press',
-  action: { goTo: null, command: null },
+  action: { goTo: null, commands: [] },
 };
 delete (button as Partial<Hotspot>).fader;
 
 function projectWith(...hotspots: Hotspot[]): Project {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     name: 'Faders',
     canvas: { width: 2048, height: 1536, scaleMode: 'fit', backgroundColor: '#000000' },
     pages: [{ id: 'p_home00', name: 'Home', background: null, hotspots }],
@@ -197,7 +201,7 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     const entry = await faders.receive(at(0.333, true));
     expect(sent).toHaveLength(1);
     expect(sent[0]!.command).toEqual({
-      ...volume.action.command,
+      ...volume.action.commands[0]?.command,
       args: [
         { type: 's', value: 'layer' },
         { type: 'f', value: 0.33 },
@@ -211,7 +215,10 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     project = {
       ...projectWith({
         ...volume,
-        action: { goTo: null, command: { type: 'udp', targetId: 't_projec', text: 'VOL {value}' } },
+        action: {
+          goTo: null,
+          commands: [{ command: { type: 'udp', targetId: 't_projec', text: 'VOL {value}' } }],
+        },
       }),
     };
     project.targets.push({
@@ -313,7 +320,7 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
   });
 
   it('holds the value of a fader that sends nothing yet, and sends nothing', async () => {
-    project = projectWith({ ...volume, action: { goTo: null, command: null } });
+    project = projectWith({ ...volume, action: { goTo: null, commands: [] } });
     expect(await faders.receive(at(0.5, true))).toBeNull();
     expect(sent).toEqual([]);
     expect(faders.values()).toEqual({ h_vol000: 0.5 });

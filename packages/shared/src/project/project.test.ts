@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { errorOf } from '../test/errors';
 import { docExample } from '../test/format-doc';
 import { Canvas } from './canvas';
-import { Hotspot, Page } from './pages';
+import { Action, Hotspot, Page } from './pages';
 import { Project } from './project';
 import { Station } from './stations';
 import { Target } from './targets';
@@ -29,7 +29,7 @@ const hotspot = {
   shape: { type: 'rect', cornerRadius: 24 },
   style: { fill: null, border: null, opacity: 1 },
   pressEffect: 'ripple',
-  action: { goTo: 'p_7tn4vb', command: null },
+  action: { goTo: 'p_7tn4vb', commands: [] },
 };
 
 describe('Hotspot', () => {
@@ -43,7 +43,7 @@ describe('Hotspot', () => {
   });
 
   it('accepts a hotspot that does nothing but play its press effect', () => {
-    expect(errorOf(Hotspot, { ...hotspot, action: { goTo: null, command: null } })).toBeNull();
+    expect(errorOf(Hotspot, { ...hotspot, action: { goTo: null, commands: [] } })).toBeNull();
   });
 
   it('accepts a frosted backdrop from 1 to 100 px, and no field for none (spec HS-8)', () => {
@@ -410,7 +410,7 @@ describe('Hotspot', () => {
       'fader.value.as',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
-    ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],
+    ['a go-to that is not a page id', { action: { goTo: 'home', commands: [] } }, 'action.goTo'],
   ])('rejects %s', (_, change, expected) => {
     expect(errorOf(Hotspot, { ...hotspot, ...change })).toContain(expected);
   });
@@ -461,8 +461,8 @@ describe('Project', () => {
   const project = docExample('11. Complete example') as Record<string, unknown>;
 
   it('rejects a project from another schema version, saying which versions differ', () => {
-    expect(errorOf(Project, { ...project, schemaVersion: 2 })).toBe(
-      'schemaVersion: This project uses schema version 2; this version of Tapcue reads version 1',
+    expect(errorOf(Project, { ...project, schemaVersion: 3 })).toBe(
+      'schemaVersion: This project uses schema version 3; this version of Tapcue reads version 2',
     );
   });
 
@@ -481,6 +481,40 @@ describe('Project', () => {
     const canvas = { width: 2048, height: 1536, scaleMode: 'fit', backgroundColor: '#000000' };
     expect(errorOf(Project, { ...project, canvas: { ...canvas, scalemode: 'fill' } })).toBe(
       'canvas: Unrecognized key: "scalemode"',
+    );
+  });
+});
+
+describe('Action (ADR 0022)', () => {
+  const step = { command: { type: 'udp', targetId: 't_projec', text: 'GO' } };
+  const action = (commands: unknown[]) => ({ goTo: null, commands });
+
+  it('accepts up to 20 steps, each with an optional delay from 0 to 60000 ms', () => {
+    expect(errorOf(Action, action([]))).toBeNull();
+    expect(errorOf(Action, action(Array.from({ length: 20 }, () => step)))).toBeNull();
+    for (const delayMs of [0, 1, 2500, 60_000]) {
+      expect(errorOf(Action, action([{ ...step, delayMs }]))).toBeNull();
+    }
+  });
+
+  it('refuses more than 20 steps', () => {
+    expect(errorOf(Action, action(Array.from({ length: 21 }, () => step)))).toBe(
+      'commands: Expected at most 20 commands',
+    );
+  });
+
+  it.each([
+    [-1, 'Expected 0 to 60000 ms'],
+    [60_001, 'Expected 0 to 60000 ms'],
+    [2.5, 'Expected a whole number of milliseconds'],
+  ])('refuses a delay of %s ms', (delayMs, message) => {
+    expect(errorOf(Action, action([{ ...step, delayMs }]))).toBe(`commands.0.delayMs: ${message}`);
+  });
+
+  it('refuses the old single command and unknown step fields', () => {
+    expect(errorOf(Action, { goTo: null, command: step.command })).toContain('commands');
+    expect(errorOf(Action, action([{ ...step, wait: 1 }]))).toBe(
+      'commands.0: Unrecognized key: "wait"',
     );
   });
 });

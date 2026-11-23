@@ -55,7 +55,7 @@ describe('player state', () => {
       const state = startPlayer({ project, station: main });
       const broken = {
         ...hotspot('h_carda0'),
-        action: { goTo: 'p_gone00', command: null },
+        action: { goTo: 'p_gone00', commands: [] },
       };
       expect(playerReducer(state, { type: 'tap', hotspot: broken })).toBe(state);
     });

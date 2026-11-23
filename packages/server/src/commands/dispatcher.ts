@@ -1,6 +1,14 @@
 // A tap → the hotspot's command in the server's project → the target's driver → the log
 // (spec ACT-1, TGT-4, ST-5, ADR 0005, architecture §5.3).
-import type { HotspotId, LogEntry, LogSource, PageId, Project, Protocol } from '@tapcue/shared';
+import {
+  firstCommand,
+  type HotspotId,
+  type LogEntry,
+  type LogSource,
+  type PageId,
+  type Project,
+  type Protocol,
+} from '@tapcue/shared';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
 
@@ -48,7 +56,8 @@ export function createDispatcher({
     if (hotspot.kind === 'fader')
       return ignore(`Hotspot "${hotspot.name}" is a fader: taps send nothing`);
 
-    const { command } = hotspot.action;
+    // Only the first command of a sequence for now; the whole sequence with its delays is #202.
+    const command = firstCommand(hotspot.action);
     if (!command) return null; // a hotspot that only navigates: nothing to send, nothing to log
     // A validated project has the target, with the command's protocol (docs/project-format.md §10).
     const target = current.targets.find((t) => t.id === command.targetId);

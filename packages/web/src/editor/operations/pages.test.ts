@@ -101,7 +101,7 @@ describe('page operations (spec PG-1)', () => {
         expect(hotspot?.action.goTo).toBeNull();
         // The command stays: only the link is cleared.
         const original = before.pages.flatMap((p) => p.hotspots).find((h) => h.id === id);
-        expect(hotspot?.action.command).toEqual(original?.action.command);
+        expect(hotspot?.action.commands[0]?.command).toEqual(original?.action.commands[0]?.command);
       }
       expectValid(project);
     });

@@ -1,7 +1,7 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { emptyCommand, setCommand, setCommandTarget, setGoTo } from './actions';
+import { emptyCommand, setCommand, setCommandTarget, setGoTo, withFirstCommand } from './actions';
 import { setKind } from './hotspots';
 
 const expectValid = (project: Project) =>
@@ -28,15 +28,19 @@ describe('action operations (spec ACT-1)', () => {
   describe('setCommandTarget', () => {
     it('clears the command for "no command", and keeps the page link', () => {
       const project = setCommandTarget(demoProject(), 'p_home00', 'h_carda0', null);
-      expect(action(project)).toEqual({ goTo: 'p_proda0', command: null });
+      expect(action(project)).toEqual({ goTo: 'p_proda0', commands: [] });
       expectValid(project);
     });
 
     it('starts the empty command of another protocol', () => {
       const toUdp = setCommandTarget(demoProject(), 'p_home00', 'h_carda0', 't_projec');
-      expect(action(toUdp).command).toEqual({ type: 'udp', targetId: 't_projec', text: 'GO' });
+      expect(action(toUdp).commands[0]?.command).toEqual({
+        type: 'udp',
+        targetId: 't_projec',
+        text: 'GO',
+      });
       const toHttp = setCommandTarget(demoProject(), 'p_home00', 'h_carda0', 't_demo00');
-      expect(action(toHttp).command).toEqual({
+      expect(action(toHttp).commands[0]?.command).toEqual({
         type: 'http',
         targetId: 't_demo00',
         method: 'POST',
@@ -56,9 +60,9 @@ describe('action operations (spec ACT-1)', () => {
         host: '192.168.1.21',
         port: 7000,
       });
-      const original = action(before).command;
+      const original = action(before).commands[0]?.command;
       const project = setCommandTarget(before, 'p_home00', 'h_carda0', 't_resol2');
-      expect(action(project).command).toEqual({ ...original, targetId: 't_resol2' });
+      expect(action(project).commands[0]?.command).toEqual({ ...original, targetId: 't_resol2' });
       expectValid(project);
     });
 
@@ -77,7 +81,9 @@ describe('action operations (spec ACT-1)', () => {
         address: '/layer/1/clip/2/connect',
         args: [{ type: 'f', value: 0.5 }],
       });
-      expect(action(project).command).toMatchObject({ address: '/layer/1/clip/2/connect' });
+      expect(action(project).commands[0]?.command).toMatchObject({
+        address: '/layer/1/clip/2/connect',
+      });
       expectValid(project);
     });
 
@@ -96,7 +102,7 @@ describe('action operations (spec ACT-1)', () => {
   it("starts a fader's UDP and HTTP commands with {value}, valid at once (ADR 0020)", () => {
     const fader = setKind(demoProject(), 'p_home00', 'h_about0', 'fader');
     const commandOf = (project: Project) =>
-      project.pages[0]!.hotspots.find((h) => h.id === 'h_about0')!.action.command;
+      project.pages[0]!.hotspots.find((h) => h.id === 'h_about0')!.action.commands[0]?.command;
     const udp = setCommandTarget(fader, 'p_home00', 'h_about0', 't_projec');
     expect(commandOf(udp)).toEqual({ type: 'udp', targetId: 't_projec', text: '{value}' });
     expectValid(udp);
@@ -114,5 +120,37 @@ describe('action operations (spec ACT-1)', () => {
       const next = setCommand(project, 'p_home00', 'h_carda0', emptyCommand(target));
       expectValid(next);
     }
+  });
+});
+
+describe('withFirstCommand (until the editor shows the whole sequence, ADR 0022)', () => {
+  const udp = (text: string) => ({ type: 'udp' as const, targetId: 't_projec', text });
+  const sequence = {
+    goTo: null,
+    commands: [
+      { delayMs: 500, command: udp('ONE') },
+      { delayMs: 2000, command: udp('TWO') },
+    ],
+  };
+
+  it('replaces the first command, keeping its delay and the later steps', () => {
+    expect(withFirstCommand(sequence, udp('NEW'))).toEqual({
+      goTo: null,
+      commands: [{ delayMs: 500, command: udp('NEW') }, sequence.commands[1]],
+    });
+  });
+
+  it('adds a first step to an action without commands', () => {
+    expect(withFirstCommand({ goTo: null, commands: [] }, udp('NEW'))).toEqual({
+      goTo: null,
+      commands: [{ command: udp('NEW') }],
+    });
+  });
+
+  it('removes only the first step for "no command"', () => {
+    expect(withFirstCommand(sequence, null)).toEqual({
+      goTo: null,
+      commands: [sequence.commands[1]],
+    });
   });
 });

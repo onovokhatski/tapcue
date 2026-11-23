@@ -93,12 +93,38 @@ export type FaderSettings = z.infer<typeof FaderSettings>;
 export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple']);
 export type PressEffect = z.infer<typeof PressEffect>;
 
-/** What a tap does. Both null is allowed: a hotspot that only plays its press effect. */
+/** At most this many commands per tap, and this long a pause before one (ADR 0022). */
+export const MAX_STEPS = 20;
+export const MAX_DELAY_MS = 60_000;
+
+/**
+ * One command of a sequence and the pause before it is sent (spec ACT-5, ACT-6, ADR 0022). Absent
+ * `delayMs` means no pause.
+ */
+export const Step = z.strictObject({
+  delayMs: z
+    .int('Expected a whole number of milliseconds')
+    .min(0, `Expected 0 to ${MAX_DELAY_MS} ms`)
+    .max(MAX_DELAY_MS, `Expected 0 to ${MAX_DELAY_MS} ms`)
+    .optional(),
+  command: Command,
+});
+export type Step = z.infer<typeof Step>;
+
+/**
+ * What a tap does: go to a page and send commands, one after another. Neither is required: a
+ * hotspot may only play its press effect.
+ */
 export const Action = z.strictObject({
   goTo: PageId.nullable(),
-  command: Command.nullable(),
+  commands: z.array(Step).max(MAX_STEPS, `Expected at most ${MAX_STEPS} commands`),
 });
 export type Action = z.infer<typeof Action>;
+
+/** The first command, the only one a fader has (ADR 0022); null when there is none. */
+export function firstCommand(action: Action): Command | null {
+  return action.commands[0]?.command ?? null;
+}
 
 export const Hotspot = z.strictObject({
   id: HotspotId,
