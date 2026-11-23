@@ -1,6 +1,7 @@
-import type { Project } from '@tapcue/shared';
+import type { LogEntry, Project } from '@tapcue/shared';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import type { TestSent } from '../../lib/projectApi';
 import { demoProject } from '../../test/demoProject';
 import { placeHotspot } from '../operations/hotspots';
 import { createEditorStore } from '../editorStore';
@@ -9,14 +10,17 @@ import { HotspotPanel } from './HotspotPanel';
 
 const testSends: unknown[][] = [];
 
-async function renderPanel(project: Project = demoProject()) {
+async function renderPanel(
+  project: Project = demoProject(),
+  answer: TestSent = { ok: false, reason: 'Recorded by the test' },
+) {
   testSends.length = 0;
   const store = createEditorStore({
     load: () => Promise.resolve({ revision: 1, project }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: (...args: unknown[]) => {
       testSends.push(args);
-      return Promise.resolve({ ok: false, reason: 'Recorded by the test' });
+      return Promise.resolve(answer);
     },
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     quitServer: () => Promise.resolve(false),
@@ -576,7 +580,7 @@ describe('HotspotPanel', () => {
 
     it('switches to a UDP target with fresh fields; line endings are typed as \\r', async () => {
       const { state } = await renderPanel();
-      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Command 1 target' }), {
         target: { value: 't_projec' },
       });
       const text = onTap().getByRole('textbox', { name: 'Text' });
@@ -590,7 +594,7 @@ describe('HotspotPanel', () => {
 
     it('switches to an HTTP target: method, path after the base URL, and a body only for POST and PUT', async () => {
       const { state } = await renderPanel();
-      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
+      fireEvent.change(onTap().getByRole('combobox', { name: 'Command 1 target' }), {
         target: { value: 't_demo00' },
       });
       expect(onTap().getByText('Appended to http://localhost:4000')).toBeInTheDocument();
@@ -626,21 +630,230 @@ describe('HotspotPanel', () => {
     it('offers Send test under a command, and not without one', async () => {
       await renderPanel();
       expect(onTap().getByRole('button', { name: 'Send test' })).toBeInTheDocument();
-      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
-        target: { value: '' },
-      });
+      fireEvent.click(onTap().getByRole('button', { name: 'Remove command 1' }));
       expect(onTap().queryByRole('button', { name: 'Send test' })).toBeNull();
     });
 
-    it('sends nothing after "No command", and says so', async () => {
+    it('sends nothing once its last command is removed, and says so', async () => {
       const { cardA } = await renderPanel();
-      fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
-        target: { value: '' },
-      });
+      fireEvent.click(onTap().getByRole('button', { name: 'Remove command 1' }));
       expect(cardA().action.commands).toEqual([]);
+      expect(onTap().getByText('This hotspot sends no command.')).toBeInTheDocument();
+    });
+  });
+
+  describe('command sequences (spec ACT-5, ACT-6, ADR 0022)', () => {
+    const onTap = () => within(screen.getByRole('region', { name: 'On tap' }));
+    const step = (n: number) => within(onTap().getByRole('group', { name: `Command ${n}` }));
+    const udp = (text: string) => ({ type: 'udp' as const, targetId: 't_projec', text });
+    /** The demo stand with Product A's card sending these steps. */
+    function withSteps(
+      commands: Project['pages'][number]['hotspots'][number]['action']['commands'],
+    ) {
+      const project = demoProject();
+      const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+      card.action = { ...card.action, commands };
+      return project;
+    }
+    const texts = (cardA: () => { action: { commands: { command: unknown }[] } }) =>
+      cardA().action.commands.map((s) => (s.command as { text?: string }).text ?? 'osc');
+
+    it('adds a command to the same target as the last one, with no pause', async () => {
+      const { cardA } = await renderPanel();
+      fireEvent.click(onTap().getByRole('button', { name: 'Add command' }));
+      expect(cardA().action.commands[1]).toEqual({
+        command: { type: 'osc-udp', targetId: 't_resolm', address: '/', args: [] },
+      });
+      expect(step(2).getByRole('textbox', { name: 'Wait before command 2' })).toHaveValue('0');
+    });
+
+    it('sets a pause in seconds with tenths and stores milliseconds', async () => {
+      const { cardA } = await renderPanel(
+        withSteps([{ command: udp('A') }, { command: udp('B') }]),
+      );
+      const wait = step(2).getByRole('textbox', { name: 'Wait before command 2' });
+
+      fireEvent.change(wait, { target: { value: '2.5' } });
+      expect(cardA().action.commands[1]).toEqual({ delayMs: 2500, command: udp('B') });
+      expect(onTap().getByText('2 commands over 2.5 s')).toBeInTheDocument();
+
+      fireEvent.change(wait, { target: { value: '0' } });
+      expect(cardA().action.commands[1]).toEqual({ command: udp('B') });
+    });
+
+    it.each(['61', '2.55', '-1', 'soon'])(
+      'refuses a pause of %s and keeps the saved one',
+      async (text) => {
+        const { cardA } = await renderPanel(
+          withSteps([{ command: udp('A') }, { delayMs: 1000, command: udp('B') }]),
+        );
+        const wait = step(2).getByRole('textbox', { name: 'Wait before command 2' });
+        fireEvent.change(wait, { target: { value: text } });
+        expect(wait).toHaveAttribute('aria-invalid', 'true');
+        expect(step(2).getByText('Expected 0 to 60 seconds, in tenths')).toBeInTheDocument();
+        expect(cardA().action.commands[1]!.delayMs).toBe(1000);
+      },
+    );
+
+    it('shows a saved pause in seconds', async () => {
+      await renderPanel(withSteps([{ command: udp('A') }, { delayMs: 1500, command: udp('B') }]));
+      expect(step(2).getByRole('textbox', { name: 'Wait before command 2' })).toHaveValue('1.5');
+      expect(onTap().getByText('2 commands over 1.5 s')).toBeInTheDocument();
+    });
+
+    it('removes the command it belongs to', async () => {
+      const { cardA } = await renderPanel(
+        withSteps([{ command: udp('A') }, { command: udp('B') }, { command: udp('C') }]),
+      );
+      fireEvent.click(onTap().getByRole('button', { name: 'Remove command 2' }));
+      expect(texts(cardA)).toEqual(['A', 'C']);
+    });
+
+    it('edits the fields of the command it belongs to', async () => {
+      const { cardA } = await renderPanel(
+        withSteps([{ command: udp('A') }, { command: udp('B') }]),
+      );
+      fireEvent.change(step(2).getByRole('textbox', { name: 'Text' }), {
+        target: { value: 'NEW' },
+      });
+      expect(texts(cardA)).toEqual(['A', 'NEW']);
+    });
+
+    it('reorders with Alt + arrow keys on the handle, and not past the ends', async () => {
+      const { cardA } = await renderPanel(
+        withSteps([
+          { command: udp('A') },
+          { delayMs: 500, command: udp('B') },
+          { command: udp('C') },
+        ]),
+      );
+      const handle = (n: number) => onTap().getByRole('button', { name: `Reorder command ${n}` });
+
+      fireEvent.keyDown(handle(2), { key: 'ArrowUp', altKey: true });
+      expect(texts(cardA)).toEqual(['B', 'A', 'C']);
+      expect(cardA().action.commands[0]!.delayMs).toBe(500); // the pause goes with its command
+      fireEvent.keyDown(handle(3), { key: 'ArrowDown', altKey: true });
+      fireEvent.keyDown(handle(1), { key: 'ArrowUp', altKey: true });
+      fireEvent.keyDown(handle(2), { key: 'ArrowDown' }); // without Alt: nothing
+      expect(texts(cardA)).toEqual(['B', 'A', 'C']);
+    });
+
+    it('reorders by dragging a command onto another one', async () => {
+      const { cardA } = await renderPanel(
+        withSteps([{ command: udp('A') }, { command: udp('B') }, { command: udp('C') }]),
+      );
+      const card = (n: number) =>
+        onTap()
+          .getByRole('group', { name: `Command ${n}` })
+          .closest('li')!;
+      fireEvent.mouseDown(onTap().getByRole('button', { name: 'Reorder command 1' }));
+      expect(card(1)).toHaveAttribute('draggable', 'true');
+      expect(card(2)).toHaveAttribute('draggable', 'false');
+
+      fireEvent.dragStart(card(1));
+      // happy-dom has no layout, so the pointer is at the top of command 3: dropped before it.
+      fireEvent.dragOver(card(3));
+      fireEvent.drop(card(3));
+      expect(texts(cardA)).toEqual(['B', 'A', 'C']);
+    });
+
+    it('stops adding at 20 commands, and says so', async () => {
+      await renderPanel(withSteps(Array.from({ length: 20 }, () => ({ command: udp('X') }))));
+      expect(onTap().getByRole('button', { name: 'Add command' })).toBeDisabled();
+      expect(onTap().getByText('At most 20 commands per tap.')).toBeInTheDocument();
+    });
+
+    it('asks for a target first when the project has none', async () => {
+      const project = withSteps([]);
+      project.targets = [];
+      await renderPanel(project);
+      expect(onTap().getByRole('button', { name: 'Add command' })).toBeDisabled();
       expect(
-        onTap().getByText('This hotspot sends no command. Choose a target to send one.'),
+        onTap().getByText('Add a target on the Targets tab to send commands.'),
       ).toBeInTheDocument();
+    });
+
+    it('shows no summary for one command sent at once', async () => {
+      await renderPanel();
+      expect(onTap().queryByText(/commands? over/)).toBeNull();
+    });
+
+    it('shows each step of a test as the server reports it', async () => {
+      const { store } = await renderPanel(
+        withSteps([{ command: udp('A') }, { delayMs: 1000, command: udp('B') }]),
+        { ok: true, entry: null },
+      );
+      const entry = (seq: number, fields: Partial<LogEntry>) =>
+        ({
+          seq,
+          time: '2026-11-23T10:00:0' + seq + '.000Z',
+          source: { type: 'test' },
+          pageId: 'p_home00',
+          hotspotId: 'h_carda0',
+          ...fields,
+        }) as LogEntry;
+      act(() => store.getState().setConnection('open'));
+      // An entry from before the test, and one from another hotspot, are not this test's.
+      act(() => store.getState().logged(entry(0, { status: 'ignored', message: 'Old' })));
+
+      fireEvent.click(onTap().getByRole('button', { name: 'Send test' }));
+      await waitFor(() =>
+        expect(onTap().getByText('Waiting for the first command…')).toBeInTheDocument(),
+      );
+      const step1 = { run: 0, step: 1, of: 2, delayMs: 0 };
+      act(() => {
+        store.getState().logged(
+          entry(1, {
+            status: 'sent',
+            hotspotName: 'Product A card',
+            targetName: 'Projector',
+            command: udp('A'),
+            sequence: step1,
+          }),
+        );
+        store
+          .getState()
+          .logged(entry(2, { hotspotId: 'h_cardb0', status: 'ignored', message: 'Other' }));
+        store.getState().logged(
+          entry(3, {
+            status: 'error',
+            hotspotName: 'Product A card',
+            targetName: 'Projector',
+            command: udp('B'),
+            message: 'No route to host',
+            sequence: { ...step1, step: 2, delayMs: 1000 },
+          }),
+        );
+      });
+
+      const results = within(onTap().getByRole('list', { name: 'Test results' }));
+      expect(results.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+        expect.stringMatching(/^Command 1: sent at \d\d:\d\d:01$/),
+        'Command 2: No route to host',
+      ]);
+    });
+
+    it('keeps one command for a fader: no list, no pauses', async () => {
+      const project = demoProject();
+      const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+      Object.assign(card, {
+        kind: 'fader',
+        pressEffect: 'none',
+        fader: {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0.01,
+          start: 0,
+          value: { at: 1, as: 'f' },
+        },
+        action: { goTo: null, commands: card.action.commands },
+      });
+      await renderPanel(project);
+      const dragged = within(screen.getByRole('region', { name: 'While dragged' }));
+      expect(dragged.getByRole('combobox', { name: 'Send command to' })).toBeInTheDocument();
+      expect(dragged.queryByRole('button', { name: 'Add command' })).toBeNull();
+      expect(dragged.queryByRole('textbox', { name: /Wait before/ })).toBeNull();
     });
   });
 });

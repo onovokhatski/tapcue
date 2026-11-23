@@ -1,29 +1,42 @@
-// What a tap on the hotspot does — "On tap" in its properties panel: the page to go to, the target
-// to send a command to, and that command's fields for the target's protocol (spec ACT-1, TGT-2,
-// ED-10; design: hotspotProps(), commandFields()).
+// What a tap on the hotspot does — "On tap" in its properties panel: the page to go to and the
+// commands to send, one after another, each with its pause, target and fields for the target's
+// protocol (spec ACT-1, ACT-5, ACT-6, TGT-2, ED-10, ADR 0022; design: hotspotProps(),
+// commandFields()). A fader keeps one command (ADR 0020).
 import {
   type Command,
   type FaderSettings,
-  firstCommand,
   formatFaderValue,
   type Hotspot,
   HttpCommand,
+  MAX_DELAY_MS,
+  MAX_STEPS,
   type OscArgument,
   OscUdpCommand,
   type PageId,
   type Project,
   snapFaderValue,
+  type Step,
   type Target,
   UdpCommand,
   VALUE_PLACEHOLDER,
 } from '@tapcue/shared';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
+import { NumberField } from '../../ui/NumberField';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { useDraft } from '../../ui/useDraft';
-import { setCommand, setCommandTarget, setGoTo } from '../operations/actions';
+import {
+  addStep,
+  moveStep,
+  sequenceLength,
+  setCommand,
+  setCommandTarget,
+  setGoTo,
+  setStepDelay,
+} from '../operations/actions';
 import { withPlaceholder } from '../operations/hotspots';
 import {
   checkArgument,
@@ -44,14 +57,7 @@ interface Props {
 
 export function OnTapFields({ project, pageId, hotspot }: Props) {
   const change = useEditor((state) => state.change);
-  const { goTo } = hotspot.action;
-  // The first command of a sequence for now; the whole list comes with #203 (ADR 0022).
-  const command = firstCommand(hotspot.action);
-  const target = command ? project.targets.find((t) => t.id === command.targetId) : undefined;
-  const save = (next: Command) => change((p) => setCommand(p, pageId, hotspot.id, next));
-
   const fader = hotspot.kind === 'fader' ? hotspot.fader : undefined;
-
   return (
     <>
       {/* A fader changes no page (ADR 0020). */}
@@ -60,38 +66,59 @@ export function OnTapFields({ project, pageId, hotspot }: Props) {
           label="Go to page"
           size="s"
           placeholder="Stay on this page"
-          value={goTo}
+          value={hotspot.action.goTo}
           options={project.pages
             .filter((p) => p.id !== pageId)
             .map((p) => ({ value: p.id, label: p.name }))}
           onChange={(value) => change((p) => setGoTo(p, pageId, hotspot.id, value))}
         />
       )}
+      {fader ? (
+        <FaderCommand project={project} pageId={pageId} hotspot={hotspot} fader={fader} />
+      ) : (
+        <CommandSteps project={project} pageId={pageId} hotspot={hotspot} />
+      )}
+    </>
+  );
+}
+
+const targetOptions = (project: Project) =>
+  project.targets.map((t) => ({ value: t.id, label: `${t.name} · ${PROTOCOL_LABEL[t.protocol]}` }));
+
+/** A fader sends one command, at once, with its value (ADR 0020, ADR 0022). */
+function FaderCommand({
+  project,
+  pageId,
+  hotspot,
+  fader,
+}: Props & { fader: FaderSettings | undefined }) {
+  const change = useEditor((state) => state.change);
+  const command = hotspot.action.commands[0]?.command ?? null;
+  const target = command ? project.targets.find((t) => t.id === command.targetId) : undefined;
+  return (
+    <>
       <Select
         label="Send command to"
         size="s"
         placeholder="No command"
         value={command?.targetId ?? null}
-        options={project.targets.map((t) => ({
-          value: t.id,
-          label: `${t.name} · ${PROTOCOL_LABEL[t.protocol]}`,
-        }))}
+        options={targetOptions(project)}
         onChange={(value) => change((p) => setCommandTarget(p, pageId, hotspot.id, value))}
         {...(target ? { helper: address(target) } : {})}
       />
       {!command || !target ? (
         <p className="text-body-s text-muted">
-          This hotspot sends no command. Choose a target to send one.
+          This fader sends no command. Choose a target to send one.
         </p>
       ) : (
-        // Keyed by the command's type, so a new protocol starts with fresh fields.
         <>
+          {/* Keyed by the command's type, so a new protocol starts with fresh fields. */}
           <CommandFields
             key={`${hotspot.id}-${command.type}`}
             command={command}
             target={target}
             fader={fader}
-            onChange={save}
+            onChange={(next) => change((p) => setCommand(p, pageId, hotspot.id, next))}
           />
           <SendTest
             // A new start value is the new value to test with.
@@ -103,6 +130,268 @@ export function OnTapFields({ project, pageId, hotspot }: Props) {
         </>
       )}
     </>
+  );
+}
+
+/**
+ * A button's commands: a list of steps sent in order, each after its pause (spec ACT-5, ACT-6,
+ * ADR 0022). Steps are reordered by dragging their handle, or with Alt + ↑ / ↓ on it.
+ */
+function CommandSteps({ project, pageId, hotspot }: Props) {
+  const change = useEditor((state) => state.change);
+  const steps = hotspot.action.commands;
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  /** Where a dragged step would land: before the step at this index (length = at the end). */
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const total = sequenceLength(hotspot.action);
+  const move = (from: number, to: number) =>
+    change((p) => moveStep(p, pageId, hotspot.id, from, to));
+
+  function drop() {
+    if (dragFrom !== null && dropIndex !== null) {
+      move(dragFrom, dropIndex > dragFrom ? dropIndex - 1 : dropIndex);
+    }
+    setDragFrom(null);
+    setDropIndex(null);
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-label-s text-secondary">Commands</p>
+      {steps.length === 0 ? (
+        <p className="text-body-s text-muted">This hotspot sends no command.</p>
+      ) : (
+        <ol aria-label="Commands" className="space-y-2" onDragLeave={() => setDropIndex(null)}>
+          {steps.map((step, index) => (
+            <StepCard
+              // Steps have no ids: the place names them. Keyed by the type too, so fields of a new
+              // protocol start afresh.
+              key={`${hotspot.id}-${index}-${step.command.type}`}
+              project={project}
+              pageId={pageId}
+              hotspot={hotspot}
+              step={step}
+              index={index}
+              count={steps.length}
+              dragging={dragFrom === index}
+              dropBefore={dropIndex === index}
+              dropAfter={dropIndex === steps.length && index === steps.length - 1}
+              onMove={(to) => move(index, to)}
+              onDragStart={() => setDragFrom(index)}
+              onDragOver={(after) => {
+                if (dragFrom !== null) setDropIndex(after ? index + 1 : index);
+              }}
+              onDrop={drop}
+              onDragEnd={() => {
+                setDragFrom(null);
+                setDropIndex(null);
+              }}
+            />
+          ))}
+        </ol>
+      )}
+      <Button
+        variant="ghost"
+        size="s"
+        icon="plus"
+        label="Add command"
+        className="-ml-2"
+        disabled={steps.length >= MAX_STEPS || project.targets.length === 0}
+        onClick={() => change((p) => addStep(p, pageId, hotspot.id))}
+      />
+      {project.targets.length === 0 && (
+        <p className="text-body-s text-muted">Add a target on the Targets tab to send commands.</p>
+      )}
+      {steps.length >= MAX_STEPS && (
+        <p className="text-body-s text-muted">At most {MAX_STEPS} commands per tap.</p>
+      )}
+      {(steps.length > 1 || total > 0) && (
+        <p className="text-body-s text-secondary">
+          {steps.length} {steps.length === 1 ? 'command' : 'commands'} over {seconds(total)}
+        </p>
+      )}
+      {steps.length > 0 && (
+        <SendTest pageId={pageId} hotspotId={hotspot.id} sequence={steps.length > 1 || total > 0} />
+      )}
+    </div>
+  );
+}
+
+/** Milliseconds as seconds with at most one decimal: "2.5 s", "0 s". */
+export function seconds(ms: number): string {
+  return `${Number((ms / 1000).toFixed(1))} s`;
+}
+
+function StepCard({
+  project,
+  pageId,
+  hotspot,
+  step,
+  index,
+  count,
+  dragging,
+  dropBefore,
+  dropAfter,
+  onMove,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: Props & {
+  step: Step;
+  index: number;
+  count: number;
+  dragging: boolean;
+  dropBefore: boolean;
+  dropAfter: boolean;
+  onMove: (to: number) => void;
+  onDragStart: () => void;
+  onDragOver: (after: boolean) => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
+}) {
+  const change = useEditor((state) => state.change);
+  // Only the handle starts a drag, so text in the fields can still be selected with the mouse.
+  const [armed, setArmed] = useState(false);
+  const { command } = step;
+  const target = project.targets.find((t) => t.id === command.targetId);
+  const n = index + 1;
+  return (
+    <li
+      className="relative"
+      draggable={armed}
+      onDragStart={(event) => {
+        event.dataTransfer?.setData('text/plain', String(index));
+        onDragStart();
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        const box = event.currentTarget.getBoundingClientRect();
+        onDragOver(event.clientY > box.top + box.height / 2);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDrop();
+      }}
+      onDragEnd={() => {
+        setArmed(false);
+        onDragEnd();
+      }}
+    >
+      {dropBefore && <DropLine edge="top" />}
+      <div
+        role="group"
+        aria-label={`Command ${n}`}
+        className={`space-y-2 rounded border border-default p-2 ${dragging ? 'opacity-50' : ''}`}
+      >
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="cursor-grab rounded text-muted hover:text-secondary"
+            aria-label={`Reorder command ${n}`}
+            title="Drag, or Alt + ↑ / ↓"
+            onMouseDown={() => setArmed(true)}
+            onMouseUp={() => setArmed(false)}
+            onKeyDown={(event) => {
+              if (!event.altKey) return;
+              if (event.key === 'ArrowUp' && index > 0) {
+                event.preventDefault();
+                onMove(index - 1);
+              } else if (event.key === 'ArrowDown' && index < count - 1) {
+                event.preventDefault();
+                onMove(index + 1);
+              }
+            }}
+          >
+            <Icon name="grip" />
+          </button>
+          <span className="flex-1 text-label-s text-secondary">Command {n}</span>
+          <Button
+            variant="ghost"
+            size="s"
+            icon="trash"
+            ariaLabel={`Remove command ${n}`}
+            onClick={() => change((p) => setCommandTarget(p, pageId, hotspot.id, null, index))}
+          />
+        </div>
+        <DelayField
+          label={`Wait before command ${n}`}
+          delayMs={step.delayMs ?? 0}
+          onChange={(ms) => change((p) => setStepDelay(p, pageId, hotspot.id, index, ms))}
+        />
+        <Select
+          ariaLabel={`Command ${n} target`}
+          size="s"
+          value={command.targetId}
+          options={targetOptions(project)}
+          onChange={(value) => change((p) => setCommandTarget(p, pageId, hotspot.id, value, index))}
+          {...(target ? { helper: address(target) } : {})}
+        />
+        {target && (
+          <CommandFields
+            command={command}
+            target={target}
+            fader={undefined}
+            onChange={(next) => change((p) => setCommand(p, pageId, hotspot.id, next, index))}
+          />
+        )}
+      </div>
+      {dropAfter && <DropLine edge="bottom" />}
+    </li>
+  );
+}
+
+function DropLine({ edge }: { edge: 'top' | 'bottom' }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute inset-x-0 h-0.5 rounded-full bg-accent-strong ${
+        edge === 'top' ? '-top-1.5' : '-bottom-1.5'
+      }`}
+    />
+  );
+}
+
+/** The pause before a step, in seconds with tenths; stored in milliseconds (ADR 0022). */
+function DelayField({
+  label,
+  delayMs,
+  onChange,
+}: {
+  label: string;
+  delayMs: number;
+  onChange: (ms: number) => void;
+}) {
+  const draft = useDraft(
+    String(delayMs / 1000),
+    (text) =>
+      /^\d+(\.\d)?$/.test(text.trim()) && Number(text) * 1000 <= MAX_DELAY_MS
+        ? null
+        : `Expected 0 to ${MAX_DELAY_MS / 1000} seconds, in tenths`,
+    (text) => onChange(Math.round(Number(text) * 10) * 100),
+  );
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="text-body-s text-secondary">Wait</span>
+        <div className="w-[96px]">
+          <NumberField
+            ariaLabel={label}
+            suffix="s"
+            decimal
+            step={0.1}
+            min={0}
+            max={MAX_DELAY_MS / 1000}
+            value={draft.text}
+            error={draft.error !== null}
+            onChange={draft.onChange}
+            onBlur={draft.onBlur}
+          />
+        </div>
+        <span className="text-body-s text-muted">then send</span>
+      </div>
+      {draft.error && <p className="text-body-s text-danger-fg">{draft.error}</p>}
+    </div>
   );
 }
 

@@ -1,7 +1,17 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { emptyCommand, setCommand, setCommandTarget, setGoTo, withFirstCommand } from './actions';
+import {
+  addStep,
+  emptyCommand,
+  moveStep,
+  sequenceLength,
+  setCommand,
+  setCommandTarget,
+  setGoTo,
+  setStepDelay,
+  withStep,
+} from './actions';
 import { setKind } from './hotspots';
 
 const expectValid = (project: Project) =>
@@ -123,34 +133,131 @@ describe('action operations (spec ACT-1)', () => {
   });
 });
 
-describe('withFirstCommand (until the editor shows the whole sequence, ADR 0022)', () => {
+describe('sequences (spec ACT-5, ACT-6, ADR 0022)', () => {
   const udp = (text: string) => ({ type: 'udp' as const, targetId: 't_projec', text });
-  const sequence = {
-    goTo: null,
-    commands: [
-      { delayMs: 500, command: udp('ONE') },
-      { delayMs: 2000, command: udp('TWO') },
-    ],
-  };
+  const texts = (project: Project) =>
+    action(project).commands.map((s) => ('text' in s.command ? s.command.text : s.command.type));
+  /** The demo stand with Product A's card sending these steps. */
+  function withSteps(commands: Project['pages'][number]['hotspots'][number]['action']['commands']) {
+    const project = demoProject();
+    const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+    card.action = { ...card.action, commands };
+    return project;
+  }
+  const three = () =>
+    withSteps([
+      { command: udp('ONE') },
+      { delayMs: 500, command: udp('TWO') },
+      { command: udp('THREE') },
+    ]);
 
-  it('replaces the first command, keeping its delay and the later steps', () => {
-    expect(withFirstCommand(sequence, udp('NEW'))).toEqual({
+  describe('withStep', () => {
+    const sequence = {
       goTo: null,
-      commands: [{ delayMs: 500, command: udp('NEW') }, sequence.commands[1]],
+      commands: [
+        { delayMs: 500, command: udp('ONE') },
+        { delayMs: 2000, command: udp('TWO') },
+      ],
+    };
+
+    it("replaces a step's command, keeping its delay and the other steps", () => {
+      expect(withStep(sequence, 1, udp('NEW'))).toEqual({
+        goTo: null,
+        commands: [sequence.commands[0], { delayMs: 2000, command: udp('NEW') }],
+      });
+    });
+
+    it('adds a step just past the end, and removes one for null', () => {
+      expect(withStep(sequence, 2, udp('NEW')).commands).toHaveLength(3);
+      expect(withStep(sequence, 0, null)).toEqual({ goTo: null, commands: [sequence.commands[1]] });
+    });
+
+    it('changes nothing for an index that is not there, or past 20 steps', () => {
+      expect(withStep(sequence, 5, udp('NEW'))).toBe(sequence);
+      expect(withStep(sequence, -1, udp('NEW'))).toBe(sequence);
+      const full = {
+        goTo: null,
+        commands: Array.from({ length: 20 }, () => ({ command: udp('X') })),
+      };
+      expect(withStep(full, 20, udp('NEW'))).toBe(full);
     });
   });
 
-  it('adds a first step to an action without commands', () => {
-    expect(withFirstCommand({ goTo: null, commands: [] }, udp('NEW'))).toEqual({
-      goTo: null,
-      commands: [{ command: udp('NEW') }],
-    });
+  it('edits and removes the step it is given, and leaves the others', () => {
+    const project = three();
+    const changed = setCommand(project, 'p_home00', 'h_carda0', udp('EDITED'), 1);
+    expect(texts(changed)).toEqual(['ONE', 'EDITED', 'THREE']);
+    expect(action(changed).commands[1]!.delayMs).toBe(500);
+    const removed = setCommandTarget(project, 'p_home00', 'h_carda0', null, 1);
+    expect(texts(removed)).toEqual(['ONE', 'THREE']);
+    expectValid(removed);
   });
 
-  it('removes only the first step for "no command"', () => {
-    expect(withFirstCommand(sequence, null)).toEqual({
-      goTo: null,
-      commands: [sequence.commands[1]],
+  it("starts a step to another protocol with that protocol's empty command", () => {
+    const project = setCommandTarget(three(), 'p_home00', 'h_carda0', 't_resolm', 2);
+    expect(action(project).commands[2]!.command).toEqual({
+      type: 'osc-udp',
+      targetId: 't_resolm',
+      address: '/',
+      args: [],
     });
+    expect(texts(project).slice(0, 2)).toEqual(['ONE', 'TWO']);
+  });
+
+  it('adds a command to the target of the last step, or to the first target', () => {
+    const added = addStep(three(), 'p_home00', 'h_carda0');
+    expect(action(added).commands[3]).toEqual({ command: emptyCommand(target(added, 't_projec')) });
+    expectValid(added);
+
+    const none = addStep(withSteps([]), 'p_home00', 'h_carda0');
+    expect(action(none).commands).toEqual([{ command: emptyCommand(none.targets[0]!) }]);
+  });
+
+  it('adds nothing at 20 commands or without a target', () => {
+    const full = withSteps(Array.from({ length: 20 }, () => ({ command: udp('X') })));
+    expect(addStep(full, 'p_home00', 'h_carda0')).toBe(full);
+    const noTargets = { ...withSteps([]), targets: [] };
+    expect(addStep(noTargets, 'p_home00', 'h_carda0')).toBe(noTargets);
+  });
+
+  it('moves a step, delay and all, within the list', () => {
+    const project = three();
+    expect(texts(moveStep(project, 'p_home00', 'h_carda0', 0, 2))).toEqual(['TWO', 'THREE', 'ONE']);
+    const up = moveStep(project, 'p_home00', 'h_carda0', 1, 0);
+    expect(action(up).commands[0]).toEqual({ delayMs: 500, command: udp('TWO') });
+    expect(texts(moveStep(project, 'p_home00', 'h_carda0', 0, 99))).toEqual([
+      'TWO',
+      'THREE',
+      'ONE',
+    ]);
+    expect(texts(moveStep(project, 'p_home00', 'h_carda0', 2, -1))).toEqual([
+      'THREE',
+      'ONE',
+      'TWO',
+    ]);
+    expect(moveStep(project, 'p_home00', 'h_carda0', 1, 1)).toBe(project);
+    expect(moveStep(project, 'p_home00', 'h_carda0', 7, 0)).toBe(project);
+  });
+
+  it('sets a delay in whole ms from 0 to 60 s, and leaves the field out for 0', () => {
+    const project = three();
+    const later = setStepDelay(project, 'p_home00', 'h_carda0', 2, 2500);
+    expect(action(later).commands[2]).toEqual({ delayMs: 2500, command: udp('THREE') });
+    const none = setStepDelay(project, 'p_home00', 'h_carda0', 1, 0);
+    expect(action(none).commands[1]).toEqual({ command: udp('TWO') });
+    for (const bad of [-1, 60_001, 2.5]) {
+      expect(setStepDelay(project, 'p_home00', 'h_carda0', 1, bad)).toBe(project);
+    }
+    expect(setStepDelay(project, 'p_home00', 'h_carda0', 9, 100)).toBe(project);
+    expectValid(later);
+  });
+
+  it('adds up the pauses of a sequence', () => {
+    expect(sequenceLength(action(three()))).toBe(500);
+    expect(sequenceLength({ goTo: null, commands: [] })).toBe(0);
   });
 });
+
+function target(project: Project, id: string) {
+  return project.targets.find((t) => t.id === id)!;
+}
