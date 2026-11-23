@@ -33,7 +33,7 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       const added = home(project).hotspots.at(-1)!;
       expect(added).toEqual({
         id: hotspotId,
-        name: 'Hotspot 6',
+        name: 'Button 1',
         x: 819, // (2048 - 410) / 2
         y: 615, // (1536 - 307) / 2, rounded
         width: 410,
@@ -52,11 +52,13 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expect(home(project).hotspots.slice(0, -1)).toEqual(home(before).hotspots);
     });
 
-    it('takes the first free name and an id not used on any page', () => {
+    it('takes the lowest free "Button N" on the page and an id not used on any page', () => {
       const before = demoProject();
-      home(before).hotspots[0]!.name = 'Hotspot 6';
+      home(before).hotspots[0]!.name = 'button 1';
+      home(before).hotspots[1]!.name = 'Button 3';
+      before.pages[1]!.hotspots[0]!.name = 'Button 2'; // another page: no clash
       const { project, hotspotId } = addHotspot(before, 'p_home00');
-      expect(home(project).hotspots.at(-1)?.name).toBe('Hotspot 7');
+      expect(home(project).hotspots.at(-1)?.name).toBe('Button 2');
       const ids = before.pages.flatMap((p) => p.hotspots.map((h) => h.id));
       expect(ids).not.toContain(hotspotId);
     });
@@ -143,6 +145,19 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expect(renameHotspot(before, 'p_home00', 'h_carda0', 'x'.repeat(101))).toBe(before);
       expect(renameHotspot(before, 'p_home00', 'h_carda0', 'Product A card')).toBe(before);
     });
+
+    it('refuses a name another hotspot on the page has, ignoring case and spaces (spec ED-14)', () => {
+      const before = demoProject();
+      expect(renameHotspot(before, 'p_home00', 'h_carda0', ' product b CARD ')).toBe(before);
+      // The same name on another page is fine.
+      const other = renameHotspot(before, 'p_home00', 'h_carda0', 'Play demo');
+      expect(home(other).hotspots[0]?.name).toBe('Play demo');
+    });
+
+    it('lets a hotspot change the case of its own name', () => {
+      const project = renameHotspot(demoProject(), 'p_home00', 'h_carda0', 'PRODUCT A CARD');
+      expect(home(project).hotspots[0]?.name).toBe('PRODUCT A CARD');
+    });
   });
 
   describe('duplicateHotspot (spec HS-7)', () => {
@@ -152,9 +167,25 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       const original = home(before).hotspots[0]!;
       const copy = home(project).hotspots[1]!;
       expect(DUPLICATE_OFFSET).toBe(20);
-      expect(copy).toEqual({ ...original, id: hotspotId, x: 164, y: 520 });
+      expect(copy).toEqual({
+        ...original,
+        id: hotspotId,
+        name: 'Product A card 2',
+        x: 164,
+        y: 520,
+      });
       expect(ids(project)).toEqual(['h_carda0', hotspotId, ...ids(before).slice(1)]);
       expectValid(project);
+    });
+
+    it('gives each copy the next free name (spec ED-14)', () => {
+      const once = duplicateHotspot(demoProject(), 'p_home00', 'h_carda0');
+      const twice = duplicateHotspot(once.project, 'p_home00', once.hotspotId!);
+      expect(
+        home(twice.project)
+          .hotspots.slice(0, 3)
+          .map((h) => h.name),
+      ).toEqual(['Product A card', 'Product A card 2', 'Product A card 3']);
     });
 
     it('keeps the copy inside the canvas when the original is at the edge', () => {
@@ -342,6 +373,27 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expect(cardA(button)).not.toHaveProperty('fader');
       expect(cardA(button).pressEffect).toBe('press');
       expectValid(button);
+    });
+
+    it('renames "Button N" to the lowest free "Fader N" and back; a given name stays (spec ED-14)', () => {
+      const before = demoProject();
+      cardA(before).name = 'Button 3';
+      home(before).hotspots[1]!.name = 'fader 1';
+      const fader = setKind(before, 'p_home00', 'h_carda0', 'fader');
+      expect(cardA(fader).name).toBe('Fader 2');
+      const button = setKind(fader, 'p_home00', 'h_carda0', 'button');
+      expect(cardA(button).name).toBe('Button 1');
+      // A name the integrator gave is theirs.
+      expect(cardA(setKind(demoProject(), 'p_home00', 'h_carda0', 'fader')).name).toBe(
+        'Product A card',
+      );
+      const almost = demoProject();
+      cardA(almost).name = 'Button 3 big';
+      expect(cardA(setKind(almost, 'p_home00', 'h_carda0', 'fader')).name).toBe('Button 3 big');
+      cardA(almost).name = 'Big Button 3';
+      expect(cardA(setKind(almost, 'p_home00', 'h_carda0', 'fader')).name).toBe('Big Button 3');
+      cardA(almost).name = 'button 3';
+      expect(cardA(setKind(almost, 'p_home00', 'h_carda0', 'fader')).name).toBe('Fader 1');
     });
 
     it('keeps an HTTP command, adding {value} to its path, and goes horizontal when wide', () => {

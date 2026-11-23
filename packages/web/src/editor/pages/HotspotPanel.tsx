@@ -1,7 +1,7 @@
 // The properties panel of the selected hotspot: name, exact position and size, shape, style and
 // press effect, what a tap does, duplicate, delete and stacking order (spec HS-2–HS-7, ACT-1,
 // ED-10; design: hotspotProps()).
-import type { Canvas, Hotspot, PageId } from '@tapcue/shared';
+import type { Canvas, Hotspot, Page, PageId } from '@tapcue/shared';
 import { type ReactNode, useState } from 'react';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -16,6 +16,7 @@ import {
   restackHotspot,
 } from '../operations/hotspots';
 import { croppedBy } from '../canvas/safeArea';
+import { nameProblem } from '../operations/hotspotNames';
 import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geometry';
 import { useEditor } from '../useEditor';
 import { OnTapFields } from './HotspotAction';
@@ -69,7 +70,7 @@ export function HotspotPanel() {
           </div>
         </div>
         {/* Keyed, so the fields start afresh for another hotspot. */}
-        <NameField key={hotspot.id} pageId={page.id} hotspot={hotspot} />
+        <NameField key={hotspot.id} page={page} hotspot={hotspot} />
         {cropped && (
           // Shown whether or not the safe area is drawn on the canvas (spec ED-3).
           <Banner tone="warning" title="Partly outside the safe area">
@@ -142,10 +143,21 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function NameField({ pageId, hotspot }: { pageId: PageId; hotspot: Hotspot }) {
+/**
+ * A name another hotspot on the page has is refused: it stays in the field with the hint until it
+ * is changed, and the hotspot keeps its name (spec ED-10, ED-14). A name changed elsewhere (a
+ * new kind renames "Button 3" to "Fader 1") replaces the text.
+ */
+function NameField({ page, hotspot }: { page: Page; hotspot: Hotspot }) {
   const change = useEditor((state) => state.change);
   const [value, setValue] = useState(hotspot.name);
-  const commit = () => change((p) => renameHotspot(p, pageId, hotspot.id, value));
+  const [shown, setShown] = useState(hotspot.name);
+  if (hotspot.name !== shown) {
+    setShown(hotspot.name);
+    setValue(hotspot.name);
+  }
+  const error = nameProblem(page, hotspot.id, value);
+  const commit = () => change((p) => renameHotspot(p, page.id, hotspot.id, value));
   return (
     <TextField
       label="Name"
@@ -153,6 +165,7 @@ function NameField({ pageId, hotspot }: { pageId: PageId; hotspot: Hotspot }) {
       value={value}
       maxLength={100}
       placeholder="Unnamed"
+      error={error}
       onChange={setValue}
       onBlur={commit}
       onEnter={commit}

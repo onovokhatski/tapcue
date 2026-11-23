@@ -17,14 +17,15 @@ import {
   VALUE_PLACEHOLDER,
 } from '@tapcue/shared';
 import { moveRect, type Rect } from './geometry';
+import { freeName, nameProblem } from './hotspotNames';
 import { newId } from './ids';
 
 /** A new hotspot's share of the canvas: big enough to see and grab at any canvas size. */
 const DEFAULT_SHARE = 0.2;
 
 /**
- * Adds a hotspot in the centre of the page, invisible and doing nothing yet, named "Hotspot N"
- * with the first free N (spec HS-1, ADR 0012). Returns its id too.
+ * Adds a hotspot in the centre of the page: a button, invisible and doing nothing yet, named
+ * "Button N" with the lowest free N on the page (spec HS-1, ED-14, ADR 0012). Returns its id too.
  */
 export function addHotspot(
   project: Project,
@@ -39,15 +40,12 @@ export function addHotspot(
     all.map((h) => h.id),
     random,
   );
-  const names = new Set(page.hotspots.map((h) => h.name));
-  let n = page.hotspots.length + 1;
-  while (names.has(`Hotspot ${n}`)) n++;
   const { width: cw, height: ch } = project.canvas;
   const width = Math.round(cw * DEFAULT_SHARE);
   const height = Math.round(ch * DEFAULT_SHARE);
   const hotspot: Hotspot = {
     id: hotspotId,
-    name: `Hotspot ${n}`,
+    name: freeName(page, 'Button 1'),
     x: Math.round((cw - width) / 2),
     y: Math.round((ch - height) / 2),
     width,
@@ -101,7 +99,10 @@ export function nudgeHotspot(
   return placeHotspot(project, pageId, hotspotId, moveRect(hotspot, dx, dy, project.canvas));
 }
 
-/** Names are optional (the editor shows "Unnamed"), up to 100 characters after trimming. */
+/**
+ * Names are optional (the editor shows "Unnamed"), up to 100 characters after trimming, and not
+ * one another hotspot on the page already has (spec ED-14; see nameProblem).
+ */
 export function renameHotspot(
   project: Project,
   pageId: PageId,
@@ -109,8 +110,10 @@ export function renameHotspot(
   name: string,
 ): Project {
   const trimmed = name.trim();
-  const hotspot = findHotspot(project, pageId, hotspotId);
-  if (!hotspot || trimmed.length > 100 || trimmed === hotspot.name) return project;
+  const page = project.pages.find((p) => p.id === pageId);
+  const hotspot = page?.hotspots.find((h) => h.id === hotspotId);
+  if (!page || !hotspot || trimmed.length > 100 || trimmed === hotspot.name) return project;
+  if (nameProblem(page, hotspotId, trimmed)) return project;
   return updateHotspots(project, pageId, (hotspots) =>
     hotspots.map((h) => (h.id === hotspotId ? { ...h, name: trimmed } : h)),
   );
@@ -120,8 +123,9 @@ export function renameHotspot(
 export const DUPLICATE_OFFSET = 20;
 
 /**
- * A copy with a new id and the same properties, a little to the right and down but inside the
- * canvas, just above the original in the stacking order (spec HS-7). Returns its id too.
+ * A copy with a new id, a free name ("Play" → "Play 2") and the same properties, a little to the
+ * right and down but inside the canvas, just above the original in the stacking order (spec HS-7,
+ * ED-14). Returns its id too.
  */
 export function duplicateHotspot(
   project: Project,
@@ -129,8 +133,9 @@ export function duplicateHotspot(
   hotspotId: HotspotId,
   random?: () => number,
 ): { project: Project; hotspotId: HotspotId | null } {
-  const original = findHotspot(project, pageId, hotspotId);
-  if (!original) return { project, hotspotId: null };
+  const page = project.pages.find((p) => p.id === pageId);
+  const original = page?.hotspots.find((h) => h.id === hotspotId);
+  if (!page || !original) return { project, hotspotId: null };
   const id = newId(
     'h',
     project.pages.flatMap((p) => p.hotspots.map((h) => h.id)),
@@ -141,6 +146,7 @@ export function duplicateHotspot(
     ...structuredClone(original),
     ...moveRect({ x, y, width, height }, DUPLICATE_OFFSET, DUPLICATE_OFFSET, project.canvas),
     id,
+    name: freeName(page, original.name),
   };
   return {
     project: updateHotspots(project, pageId, (hotspots) => {
@@ -257,7 +263,8 @@ export function setHotspotText(
  * Makes the hotspot a button or a fader (ADR 0020). A new fader starts from 0 to 1 by 0.01 at 0,
  * vertical when its box is taller than wide, with the value as the last OSC argument; it changes
  * no page and has no press effect, and a command of another protocol is cleared, since a fader
- * sends OSC for now. A button loses the fader settings and gets the press-in effect back.
+ * sends OSC for now. A button loses the fader settings and gets the press-in effect back. A name
+ * the editor gave ("Button 3") follows the kind ("Fader 1"); one the integrator gave stays.
  */
 export function setKind(
   project: Project,
@@ -265,10 +272,12 @@ export function setKind(
   hotspotId: HotspotId,
   kind: 'button' | 'fader',
 ): Project {
+  const page = project.pages.find((p) => p.id === pageId);
   return updateHotspot(project, pageId, hotspotId, (h) => {
     const current = h.kind === 'fader' ? 'fader' : 'button';
-    if (current === kind) return h;
-    const { kind: _kind, fader: _fader, ...rest } = h;
+    if (current === kind || !page) return h;
+    const { kind: _kind, fader: _fader, ...withoutFader } = h;
+    const rest = { ...withoutFader, name: kindName(page, h, current, kind) };
     if (kind === 'button') return { ...rest, pressEffect: 'press' };
     // A fader sends one command, at once (ADR 0022): the first one, with a place for the value.
     const first = firstCommand(h.action);
@@ -284,6 +293,20 @@ export function setKind(
     const commands = command ? [{ command }] : [];
     return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, commands } };
   });
+}
+
+const KIND_NAME = { button: 'Button', fader: 'Fader' } as const;
+
+/** "Button 3" becomes the lowest free "Fader N" when the hotspot becomes a fader, and back. */
+function kindName(
+  page: Project['pages'][number],
+  hotspot: Hotspot,
+  from: 'button' | 'fader',
+  to: 'button' | 'fader',
+): string {
+  const given = new RegExp(`^${KIND_NAME[from]} \\d+$`, 'i').test(hotspot.name.trim());
+  // Its own "Button N" never clashes with a "Fader N", so the page can be searched as it is.
+  return given ? freeName(page, `${KIND_NAME[to]} 1`) : hotspot.name;
 }
 
 /**
