@@ -145,6 +145,25 @@ tablet; feedback from media servers stays out of scope.
 - **Done when:** a fader on an iPad changes a Resolume layer's opacity smoothly over OSC, two
   tablets show the same position, and the editor sets a fader up without code.
 
+### v0.4 — Project library
+
+One server keeps several stands and runs one of them; the editor's Projects tab creates, opens and
+deletes them ([ADR 0021](adr/0021-project-library.md)).
+
+- **Requirements:** PRJ-1, PRJ-5 to PRJ-8
+- **Done when:** a new stand is started, opened on every tablet and an old one deleted from the
+  editor, without touching the file system or restarting the server.
+
+### v0.5 — Command sequences
+
+A tap sends several commands one after another, each with an optional delay before it, to the
+same or different targets ([ADR 0022](adr/0022-command-sequences.md)). The server runs the
+sequence; a new tap on the same hotspot starts it over.
+
+- **Requirements:** ACT-1, ACT-4 to ACT-8, TGT-4
+- **Done when:** one button on an iPad starts a Resolume clip and, 2.5 seconds later, a QLab cue;
+  the editor sets this up in seconds without code; projects from 0.4.0 open unchanged.
+
 ## 6. After MVP
 
 In order of value; each becomes its own milestone when started.

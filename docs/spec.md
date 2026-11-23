@@ -135,14 +135,24 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 
 ### 5.5 Actions
 
-- **ACT-1** A hotspot action can navigate to a page, send a command to a target, or both.
+- **ACT-1** A hotspot action can navigate to a page, send commands to targets, or both. Since
+  v0.5 ([ADR 0022](adr/0022-command-sequences.md)) a button sends a sequence of commands (ACT-5); a
+  fader sends one command, with no delay.
 - **ACT-2** A tap fires on release (lifting the finger), so a visitor can cancel by sliding off.
   The command is sent at once; the page change starts after the short release effect (at most
   160 ms). A ripple keeps playing over the transition and never delays it.
 - **ACT-3** Navigation happens immediately on the tablet and does not wait for the command result.
-- **ACT-4** The editor has a "Send test" button for the selected hotspot's command. The server
-  sends it exactly as if the hotspot had been tapped, so commands can be checked during setup
-  without the tablet.
+- **ACT-4** The editor has a "Send test" button for the selected hotspot's commands. The server
+  sends them exactly as if the hotspot had been tapped, the whole sequence with its delays, so
+  commands can be checked during setup without the tablet.
+- **ACT-5** A button's commands are a sequence of up to 20 steps, sent in order. Each step has its
+  own target, so one tap can drive several media servers.
+- **ACT-6** Each step may wait before it is sent: 0 to 60 seconds, set in tenths of a second. The
+  server keeps the time, so a tablet that sleeps or changes page does not stop the sequence.
+- **ACT-7** Tapping a hotspot again while its sequence is still running, from any station, cancels
+  the steps not yet sent and starts the sequence over. Sequences of other hotspots keep running.
+- **ACT-8** A step that fails is logged, and the next step is still sent on time. Steps not yet
+  sent are dropped when another project is opened (PRJ-7) or the server stops.
 
 ### 5.6 Targets and drivers
 
@@ -155,7 +165,8 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **TGT-4** Every sent command and every delivery error is recorded in a command log visible in the editor.
   Each entry names its source: the station that tapped, or "Test" for a send from the editor (ACT-4).
   A fader's drag is one entry, for the value where the finger stopped, with the number of values
-  the drag sent (FD-3).
+  the drag sent (FD-3). Each step of a sequence is an entry of its own, marked with its place
+  ("step 2 of 3"); cancelled steps are noted once per sequence (ACT-7, ACT-8).
 - **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
   and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
   confirm arrival. HTTP reports *error* on a non-2xx response or after a 2-second timeout.
