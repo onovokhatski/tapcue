@@ -1,6 +1,6 @@
 import type { Project } from '@tapcue/shared';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../../test/demoProject';
 import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
@@ -222,6 +222,82 @@ describe('PageList (spec PG-1)', () => {
       fireEvent.click(toggle());
       fireEvent.keyDown(window, { key: 'Escape' });
       expect(screen.queryByTestId('page-drawer')).toBeNull();
+    });
+  });
+  describe('folded by the integrator (spec ED-13)', () => {
+    const collapse = () => screen.getByRole('button', { name: 'Collapse page list' });
+    const expand = () => screen.getByRole('button', { name: 'Expand page list' });
+    const fullList = () => screen.queryByRole('button', { name: 'Reorder Home' });
+
+    it('starts open, folds into the rail and opens again, keeping the focus on the toggle', async () => {
+      await renderList();
+      expect(fullList()).toBeInTheDocument();
+      expect(document.activeElement).toBe(document.body); // a fresh page steals no focus
+
+      fireEvent.click(collapse());
+      expect(fullList()).toBeNull();
+      expect(screen.queryByTestId('page-drawer')).toBeNull();
+      expect(expand()).toHaveFocus();
+      expect(expand()).not.toHaveAttribute('aria-pressed');
+
+      fireEvent.click(expand());
+      expect(fullList()).toBeInTheDocument();
+      expect(collapse()).toHaveFocus();
+    });
+
+    it('selects and adds pages from the rail', async () => {
+      const { state, names } = await renderList();
+      fireEvent.click(collapse());
+      fireEvent.click(screen.getByRole('button', { name: /^Product B,/ }));
+      expect(state().selection).toEqual({ pageId: 'p_prodb0', hotspotId: null });
+      fireEvent.click(screen.getByRole('button', { name: 'Add page' }));
+      expect(names().at(-1)).toBe('Page 5');
+    });
+
+    it('remembers the choice in this browser', async () => {
+      await renderList();
+      fireEvent.click(collapse());
+      expect(localStorage.getItem('tapcue.pageList')).toBe('collapsed');
+      cleanup();
+      await renderList();
+      expect(fullList()).toBeNull();
+      fireEvent.click(expand());
+      expect(localStorage.getItem('tapcue.pageList')).toBe('expanded');
+      cleanup();
+      await renderList();
+      expect(fullList()).toBeInTheDocument();
+    });
+
+    it('still folds and opens with storage off, starting open', async () => {
+      const denied = () => {
+        throw new Error('storage off');
+      };
+      vi.stubGlobal('localStorage', { getItem: denied, setItem: denied });
+      // A storage error must not escape the click handler.
+      const errors: unknown[] = [];
+      const onError = (event: ErrorEvent) => errors.push(event.error);
+      window.addEventListener('error', onError);
+      try {
+        await renderList();
+        expect(fullList()).toBeInTheDocument();
+        fireEvent.click(collapse());
+        expect(fullList()).toBeNull();
+        fireEvent.click(expand());
+        expect(fullList()).toBeInTheDocument();
+        expect(errors).toEqual([]);
+      } finally {
+        window.removeEventListener('error', onError);
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('has no fold button in a compact window, where the list is always the rail', async () => {
+      localStorage.setItem('tapcue.pageList', 'collapsed');
+      await renderList(demoProject(), true);
+      expect(screen.queryByRole('button', { name: /(Collapse|Expand) page list/ })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Show page list' }));
+      const drawer = screen.getByTestId('page-drawer');
+      expect(within(drawer).queryByRole('button', { name: 'Collapse page list' })).toBeNull();
     });
   });
 });
