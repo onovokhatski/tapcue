@@ -75,6 +75,13 @@ export const DemoRequest = z.strictObject({
   hotspot: z.string().nullable(),
   /** A fader's value and range, from the X-Tapcue-Fader header (spec TGT-6); absent for a tap. */
   fader: z.strictObject({ value: z.number(), min: z.number(), max: z.number() }).optional(),
+  /**
+   * The step of a sequence, from the X-Tapcue-Sequence header (spec TGT-6, ADR 0022): `run` is the
+   * same for every step of one tap. Absent for a tap that sends one command at once.
+   */
+  sequence: z
+    .strictObject({ run: z.int().min(0), step: z.int().min(1), of: z.int().min(1) })
+    .optional(),
 });
 export type DemoRequest = z.infer<typeof DemoRequest>;
 

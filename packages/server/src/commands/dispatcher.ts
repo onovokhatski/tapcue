@@ -150,7 +150,13 @@ export function createDispatcher({
       // The check above pairs target and command by protocol; the types cannot follow that across
       // the union, so the driver is called as a driver of any protocol.
       const driver = drivers[target.protocol] as Driver<Protocol>;
-      await driver.send(target, command, { source: tap.source, hotspotName: hotspot.name });
+      await driver.send(target, command, {
+        source: tap.source,
+        hotspotName: hotspot.name,
+        ...(sequence && {
+          sequence: { run: sequence.run, step: sequence.step, of: sequence.of },
+        }),
+      });
       return log.add({ ...entry, ...delivery, status: 'sent' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

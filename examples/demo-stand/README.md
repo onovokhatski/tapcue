@@ -6,7 +6,7 @@ It follows the design prototype: a fictional audio brand, four pages, three targ
 | Page | Background | Hotspots |
 |---|---|---|
 | Home | `home.jpg` | Product A, B and C cards (OSC to Resolume), About, Call our team (HTTP) |
-| Product A | `product-a.jpg` | Back, Play demo (HTTP to the demo receiver), Next product |
+| Product A | `product-a.jpg` | Back, Play demo (two HTTP commands to the demo receiver: screen-1, then the lights 1.5 s later), Next product, Volume fader |
 | Product B | `product-b.jpg` | Back, Play demo (HTTP), Show on the wall (UDP to the projector) |
 | About us | `about-loop.mp4` | Back |
 

@@ -62,6 +62,21 @@ const tile = (name: string) => screen.getByRole('region', { name });
 const rows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
 
 describe('demo receiver page (spec DEMO-1)', () => {
+  it("shows a sequence's step and the time since the step before (ADR 0022)", async () => {
+    const { arrive } = await renderPage();
+    arrive({ ...playA, sequence: { run: 3, step: 1, of: 2 } });
+    arrive({
+      ...playA,
+      time: '2026-10-30T14:05:10.623Z',
+      path: '/demo/lights/product-a',
+      screen: 'lights',
+      sequence: { run: 3, step: 2, of: 2 },
+    });
+    expect(rows()[0]).toHaveTextContent('Play demo · step 2 of 2 · +1.5 s');
+    expect(rows()[1]).toHaveTextContent('Play demo · step 1 of 2');
+    expect(rows()[1]).not.toHaveTextContent('+');
+  });
+
   it('listens on /ws as a viewer: it never says hello', async () => {
     await renderPage();
     expect(FakeWebSocket.last.url).toBe('ws://localhost:3000/ws');

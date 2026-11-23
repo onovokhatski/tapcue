@@ -326,10 +326,21 @@ describe('sequences (spec ACT-5 to ACT-8, ADR 0022)', () => {
     ]);
   });
 
+  it('tells the driver which step of which tap it sends, so HTTP can pass it on (TGT-6)', async () => {
+    project = withSteps([{ command: B }, { delayMs: 100, command: C }]);
+    await dispatch(tap('p_home00', 'h_carda0'));
+    await later(100);
+    expect(fake.sent.map((s) => s.context.sequence)).toEqual([
+      { run: 0, step: 1, of: 2 },
+      { run: 0, step: 2, of: 2 },
+    ]);
+  });
+
   it('logs one command sent at once as before, without a place in a sequence', async () => {
     await dispatch(tap('p_home00', 'h_carda0'));
     expect(entries).toHaveLength(1);
     expect(entries[0]).not.toHaveProperty('sequence');
+    expect(fake.sent[0]!.context).not.toHaveProperty('sequence');
   });
 
   it('waits before a first step with a delay, and answers null meanwhile', async () => {

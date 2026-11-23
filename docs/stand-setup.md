@@ -26,7 +26,12 @@ server do their part; these steps are the part only the devices can do
   Settings → Battery or Energy → prevent automatic sleeping; Windows: Settings → System → Power
   → Sleep → Never). The display may turn off; the computer must not sleep.
 - **Check the media servers** from the editor: select a hotspot with a command and press
-  "Send test". The command log shows whether it was sent.
+  "Send test". The command log shows whether it was sent; for a sequence, Send test lists each
+  command as it goes, with its pause.
+- **One button, several media servers:** a hotspot's commands run in order, each after its
+  pause. For example, a "Play" button sends `/composition/columns/2/connect` to Resolume, then
+  after 2.5 s `/cue/12/start` to QLab. Pauses are kept by the Tapcue computer, so a tablet that
+  goes to another page does not stop them; tapping the button again starts over.
 
 ## 3. Each tablet (iPad)
 

@@ -19,3 +19,21 @@ export function asVersion1(project: unknown): Record<string, unknown> {
   }
   return copy as unknown as Record<string, unknown>;
 }
+
+/**
+ * The project as version 1 could hold it: each hotspot's first command only, sent at once. A
+ * version 1 project upgraded becomes exactly this.
+ */
+export function singleCommands<P>(project: P): P {
+  const copy = JSON.parse(JSON.stringify(project)) as Loose;
+  for (const page of copy.pages) {
+    for (const hotspot of page.hotspots) {
+      const { commands } = hotspot.action as { commands: { command: unknown }[] };
+      hotspot.action = {
+        ...hotspot.action,
+        commands: commands.slice(0, 1).map(({ command }) => ({ command })),
+      };
+    }
+  }
+  return copy as unknown as P;
+}

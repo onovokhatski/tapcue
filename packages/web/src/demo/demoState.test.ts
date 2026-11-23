@@ -123,3 +123,35 @@ describe('demo receiver state', () => {
     expect(state.requests[0]?.id).toBe(1);
   });
 });
+
+describe('steps of a sequence (ADR 0022)', () => {
+  const step = (run: number, n: number, time: string): DemoRequest => ({
+    ...request('screen-1', `step-${n}`),
+    time,
+    sequence: { run, step: n, of: 3 },
+  });
+
+  it('says how long after the step before of the same tap a later step came', () => {
+    const state = receive(
+      step(4, 1, '2026-10-30T14:05:09.000Z'),
+      step(9, 1, '2026-10-30T14:05:09.500Z'), // another tap in between
+      step(4, 2, '2026-10-30T14:05:10.500Z'),
+      step(4, 3, '2026-10-30T14:05:11.000Z'),
+    );
+    expect(state.requests.map((r) => r.sinceMs)).toEqual([500, 1500, undefined, undefined]);
+  });
+
+  it('leaves out the time for a first step, even one whose run number came before', () => {
+    // Run numbers start over when the server restarts, so an old run 4 may still be on the page.
+    const state = receive(
+      step(4, 2, '2026-10-30T14:05:09.000Z'),
+      step(4, 1, '2026-10-30T14:06:00.000Z'),
+    );
+    expect(state.requests[0]).not.toHaveProperty('sinceMs');
+  });
+
+  it('leaves out the time for a first step, and when the step before is not on the page', () => {
+    const state = receive(step(4, 2, '2026-10-30T14:05:10.500Z'));
+    expect(state.requests[0]).not.toHaveProperty('sinceMs');
+  });
+});
