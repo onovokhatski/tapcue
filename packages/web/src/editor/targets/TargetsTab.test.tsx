@@ -120,7 +120,7 @@ describe('TargetsTab (spec TGT-1, ED-4)', () => {
     expect(target('t_resolm')).toMatchObject({ protocol: 'udp' });
     const commands = state()
       .project!.pages.flatMap((p) => p.hotspots)
-      .filter((h) => h.action.command?.targetId === 't_resolm');
+      .filter((h) => h.action.commands[0]?.command?.targetId === 't_resolm');
     expect(commands).toEqual([]);
   });
 

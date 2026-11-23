@@ -10,6 +10,7 @@ import yauzl from 'yauzl';
 import yazl from 'yazl';
 import { buildApp } from '../app';
 import { DEFAULT_PROJECT_DIR } from '../config';
+import { asVersion1 } from '../test/version1';
 import { archiveName } from './archive';
 import { loadProjectStore } from './store';
 
@@ -158,6 +159,21 @@ describe('POST /api/project/import (spec PRJ-4)', () => {
     ]);
     const served = await target.app.inject({ method: 'GET', url: '/assets/product-b.jpg' });
     expect(served.statusCode).toBe(200);
+  });
+
+  it('imports a project exported by Tapcue 0.4 or older, upgraded (ADR 0022)', async () => {
+    const source = await start();
+    const files = await unzip(await exportZip(source.app));
+    const v1 = JSON.stringify(asVersion1(JSON.parse(files['project.json']!.toString('utf8'))));
+    const zip = await makeZip(Object.entries({ ...files, 'project.json': Buffer.from(v1) }));
+    const target = await start();
+
+    const response = await importZip(target.app, zip);
+
+    expect(response.statusCode).toBe(200);
+    expect(target.store.project).toEqual(source.store.project);
+    const onDisk = JSON.parse(await readFile(join(target.dir, 'project.json'), 'utf8')) as unknown;
+    expect(onDisk).toEqual(source.store.project);
   });
 
   it('accepts an archive with a folder entry for assets/, as Finder and zip tools write', async () => {

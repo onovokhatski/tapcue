@@ -83,9 +83,7 @@ export function targetUsage(
   targetId: TargetId,
 ): { page: Page; hotspot: Hotspot }[] {
   return project.pages.flatMap((page) =>
-    page.hotspots
-      .filter((h) => h.action.command?.targetId === targetId)
-      .map((hotspot) => ({ page, hotspot })),
+    page.hotspots.filter((h) => sendsTo(h, targetId)).map((hotspot) => ({ page, hotspot })),
   );
 }
 
@@ -93,16 +91,27 @@ function clearCommands(project: Project, targetId: TargetId): Project {
   return {
     ...project,
     pages: project.pages.map((page) =>
-      page.hotspots.some((h) => h.action.command?.targetId === targetId)
+      page.hotspots.some((h) => sendsTo(h, targetId))
         ? {
             ...page,
             hotspots: page.hotspots.map((h) =>
-              h.action.command?.targetId === targetId
-                ? { ...h, action: { ...h.action, command: null } }
+              sendsTo(h, targetId)
+                ? {
+                    ...h,
+                    action: {
+                      ...h.action,
+                      commands: h.action.commands.filter((s) => s.command.targetId !== targetId),
+                    },
+                  }
                 : h,
             ),
           }
         : page,
     ),
   };
+}
+
+/** Whether any of the hotspot's commands goes to the target. */
+function sendsTo(hotspot: Hotspot, targetId: TargetId): boolean {
+  return hotspot.action.commands.some((step) => step.command.targetId === targetId);
 }

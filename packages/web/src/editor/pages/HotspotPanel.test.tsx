@@ -449,7 +449,7 @@ describe('HotspotPanel', () => {
         expect(screen.queryByRole('textbox', { name: 'Value position' })).toBeNull();
         expect(screen.queryByRole('radio', { name: 'Whole' })).toBeNull();
         fireEvent.change(text, { target: { value: 'VOL {value}\\r' } });
-        expect(cardA().action.command).toEqual({
+        expect(cardA().action.commands[0]?.command).toEqual({
           type: 'udp',
           targetId: 't_projec',
           text: 'VOL {value}\r',
@@ -458,7 +458,7 @@ describe('HotspotPanel', () => {
         expect(
           screen.getByText("Text needs {value}, where the fader's value goes"),
         ).toBeInTheDocument();
-        expect(cardA().action.command).toMatchObject({ text: 'VOL {value}\r' });
+        expect(cardA().action.commands[0]?.command).toMatchObject({ text: 'VOL {value}\r' });
       });
 
       it('takes {value} in the HTTP path or body, and puts it back in the path for GET', async () => {
@@ -471,21 +471,21 @@ describe('HotspotPanel', () => {
         expect(
           screen.getByText("The path or the body needs {value}, where the fader's value goes"),
         ).toBeInTheDocument();
-        expect(cardA().action.command).toMatchObject({ path: '/{value}' });
+        expect(cardA().action.commands[0]?.command).toMatchObject({ path: '/{value}' });
         // {value} in the body makes the waiting path valid, and both are saved.
         fireEvent.change(body, { target: { value: '{"level": {value}}' } });
         expect(path).not.toHaveAttribute('aria-invalid');
-        expect(cardA().action.command).toMatchObject({
+        expect(cardA().action.commands[0]?.command).toMatchObject({
           path: '/volume',
           body: '{"level": {value}}',
         });
         fireEvent.change(body, { target: { value: '{"level": 1}' } });
         expect(body).toHaveAttribute('aria-invalid', 'true');
-        expect(cardA().action.command).toMatchObject({ body: '{"level": {value}}' });
+        expect(cardA().action.commands[0]?.command).toMatchObject({ body: '{"level": {value}}' });
         fireEvent.blur(body);
         fireEvent.change(body, { target: { value: '{"level": {value}}' } });
         fireEvent.click(dragged().getByRole('radio', { name: 'GET' }));
-        expect(cardA().action.command).toMatchObject({
+        expect(cardA().action.commands[0]?.command).toMatchObject({
           method: 'GET',
           path: '/volume/{value}',
           body: null,
@@ -520,7 +520,8 @@ describe('HotspotPanel', () => {
   describe('on tap (spec ACT-1)', () => {
     const onTap = () => within(screen.getByRole('region', { name: 'On tap' }));
     const command = (state: () => { project: Project | null }) =>
-      state().project!.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.action.command;
+      state().project!.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.action.commands[0]
+        ?.command;
 
     it('links to another page, or stays; its own page is not offered', async () => {
       const { cardA } = await renderPanel();
@@ -636,7 +637,7 @@ describe('HotspotPanel', () => {
       fireEvent.change(onTap().getByRole('combobox', { name: 'Send command to' }), {
         target: { value: '' },
       });
-      expect(cardA().action.command).toBeNull();
+      expect(cardA().action.commands).toEqual([]);
       expect(
         onTap().getByText('This hotspot sends no command. Choose a target to send one.'),
       ).toBeInTheDocument();

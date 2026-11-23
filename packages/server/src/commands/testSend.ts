@@ -20,7 +20,7 @@ export function registerTestSend(
     const page = project().pages.find((p) => p.id === pageId.data);
     const hotspot = page?.hotspots.find((h) => h.id === hotspotId.data);
     if (!hotspot) return reply.code(404).send({ error: 'The hotspot is not in the saved project' });
-    if (!hotspot.action.command)
+    if (hotspot.action.commands.length === 0)
       return reply.code(409).send({ error: 'The hotspot sends no command' });
 
     // A fader's test sends a value, as a drag that stops there would (spec FD-2, ADR 0020); it is

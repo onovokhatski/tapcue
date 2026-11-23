@@ -7,7 +7,9 @@ const expectValid = (project: Project) =>
   expect(validateProject(project)).toMatchObject({ ok: true });
 const target = (project: Project, id: string) => project.targets.find((t) => t.id === id);
 const commandsTo = (project: Project, id: string) =>
-  project.pages.flatMap((p) => p.hotspots).filter((h) => h.action.command?.targetId === id);
+  project.pages
+    .flatMap((p) => p.hotspots)
+    .filter((h) => h.action.commands[0]?.command?.targetId === id);
 
 describe('target operations (spec TGT-1)', () => {
   it('adds an OSC target with a placeholder address and the next free name', () => {
@@ -114,6 +116,29 @@ describe('target operations (spec TGT-1)', () => {
       expectValid(project);
     });
 
+    it('removes only the steps that sent to it from a sequence (ADR 0022)', () => {
+      const before = demoProject();
+      const card = before.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+      const toDemo = {
+        type: 'http' as const,
+        targetId: 't_demo00',
+        method: 'POST' as const,
+        path: '/demo/screen-1/a',
+        body: null,
+      };
+      const kept = card.action.commands[0]!;
+      card.action = { ...card.action, commands: [kept, { delayMs: 1000, command: toDemo }] };
+
+      expect(targetUsage(before, 't_demo00').map(({ hotspot }) => hotspot.id)).toContain(
+        'h_carda0',
+      );
+      const project = deleteTarget(before, 't_demo00');
+
+      const after = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+      expect(after.action.commands).toEqual([kept]);
+      expectValid(project);
+    });
+
     it('keeps the project for a target that is not there', () => {
       const before = demoProject();
       expect(deleteTarget(before, 't_zzzzzz')).toBe(before);
@@ -123,9 +148,9 @@ describe('target operations (spec TGT-1)', () => {
   it('lists the hotspots that send to a target, with their page', () => {
     const usage = targetUsage(demoProject(), 't_demo00');
     expect(usage.length).toBeGreaterThan(0);
-    expect(usage.every(({ hotspot }) => hotspot.action.command?.targetId === 't_demo00')).toBe(
-      true,
-    );
+    expect(
+      usage.every(({ hotspot }) => hotspot.action.commands[0]?.command?.targetId === 't_demo00'),
+    ).toBe(true);
     expect(usage.every(({ page, hotspot }) => page.hotspots.includes(hotspot))).toBe(true);
   });
 });

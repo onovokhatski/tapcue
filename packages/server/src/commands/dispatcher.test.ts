@@ -181,7 +181,7 @@ describe('dispatcher', () => {
         name: 'Volume',
         kind: 'fader' as const,
         pressEffect: 'none' as const,
-        action: { goTo: null, command: home!.hotspots[0]!.action.command },
+        action: { goTo: null, commands: home!.hotspots[0]!.action.commands.slice(0, 1) },
       };
       project = { ...demo, pages: [{ ...home!, hotspots: [fader] }, ...rest] };
       await dispatch(tap('p_home00', fader.id));
@@ -217,6 +217,29 @@ describe('dispatcher', () => {
     await dispatch(tap('p_home00', 'h_about0'));
     expect(fake.sent).toEqual([]);
     expect(entries).toEqual([]);
+  });
+
+  it('sends the first command of a sequence for now: the whole sequence is #202', async () => {
+    const home = demo.pages.find((p) => p.id === 'p_home00')!;
+    const card = home.hotspots.find((h) => h.id === 'h_carda0')!;
+    const later = { type: 'udp' as const, targetId: 't_projec', text: 'LATER' };
+    const sequence = {
+      ...card,
+      action: {
+        ...card.action,
+        commands: [...card.action.commands, { delayMs: 0, command: later }],
+      },
+    };
+    project = {
+      ...demo,
+      pages: demo.pages.map((p) =>
+        p.id === home.id
+          ? { ...p, hotspots: p.hotspots.map((h) => (h.id === card.id ? sequence : h)) }
+          : p,
+      ),
+    };
+    await dispatch(tap('p_home00', 'h_carda0'));
+    expect(fake.sent.map((s) => s.command)).toEqual([card.action.commands[0]!.command]);
   });
 
   it('uses the project as it is at the time of the tap', async () => {

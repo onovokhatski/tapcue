@@ -78,7 +78,9 @@ try {
   await waitForServer();
   const { project } = (await (await fetch(`${BASE}/api/project`)).json()) as { project: Project };
   const sends = new Set(
-    project.pages.flatMap((p) => p.hotspots.filter((h) => h.action.command).map((h) => h.id)),
+    project.pages.flatMap((p) =>
+      p.hotspots.filter((h) => h.action.commands.length > 0).map((h) => h.id),
+    ),
   );
   // A viewer of its own counts every delivery; the demo page keeps only the latest 200.
   const viewer = new WebSocket(`ws://localhost:${PORT}/ws`);
