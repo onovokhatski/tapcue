@@ -27,6 +27,7 @@ decision gets a new ADR that supersedes the old one.
 | [0019](0019-hotspot-content.md) | Hotspot content: frosted backdrop, image and text | Accepted |
 | [0020](0020-faders.md) | Faders: a hotspot that sends a value | Accepted |
 | [0021](0021-project-library.md) | A library of projects, one of them active | Accepted |
+| [0022](0022-command-sequences.md) | Command sequences: several commands per tap, with delays | Accepted |
 
 ## Template
 
