@@ -4,6 +4,50 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-11-23
+
+One tap sends several commands in order, each after its own pause, to one media server or
+several: start a clip in Resolume, then a QLab cue 2.5 seconds later
+([ADR 0022](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0022-command-sequences.md)).
+Milestone v0.5.
+
+### Added
+
+- **Command sequences:** a button's commands are a list of up to 20 steps, each with its own
+  target and a pause before it of 0 to 60 seconds.
+- **The server keeps the time:** the first step is sent at once, each next one after its pause,
+  so a tablet that sleeps or goes to another page does not stop a sequence. A pause counts from
+  when the step before was sent, so a slow target does not push the rest back.
+- **Start over:** tapping the same button again, from any station, cancels the steps not yet
+  sent and starts the sequence from the top. Other buttons' sequences keep running.
+- **Editor:** On tap lists the commands. Each has a pause in seconds with tenths, a target and
+  its fields; Add command reuses the last target; drag a command by its handle, or press
+  Alt + ↑ / ↓ on it, to reorder. A summary says how many commands over how long. Send test runs
+  the whole sequence and shows each step's result as it arrives.
+- **Command log:** the steps of one tap are one row (Sent, Error, Cancelled or Running), opened
+  to show each step with its place and pause.
+- **`X-Tapcue-Sequence` header** on every HTTP command of a sequence: the tap's run, the step
+  and how many steps (`17 2 3`).
+- **Demo:** Play demo on the demo stand's Product A page sends a second command 1.5 s later,
+  and the demo receiver shows a step's place and the time since the step before.
+
+### Changed
+
+- **Project format, schema version 2:** `action.command` became `action.commands`, a list of
+  steps. Projects from 0.4.0 and older open and import as before and are written as version 2
+  on the next save; Tapcue 0.4.0 and older then refuse them with a message about the version.
+- **A failed step does not stop the rest:** it is logged as an error, and the next step is sent
+  on time. Steps not yet sent are cancelled when another project is opened, and dropped when the
+  server stops.
+- **A fader** still sends one command, at once, with its value.
+
+### Known limitations
+
+- There is no "stop on error" option yet: every step of a sequence is sent.
+- Not yet checked on an iPad: sequences, faders (from 0.3.0), the stand setup (from 0.1.0) and
+  the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
 ## [0.4.0] - 2026-11-21
 
 One Tapcue server keeps several stands and runs one of them: projects are created, opened and
