@@ -153,6 +153,9 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   the steps not yet sent and starts the sequence over. Sequences of other hotspots keep running.
 - **ACT-8** A step that fails is logged, and the next step is still sent on time. Steps not yet
   sent are dropped when another project is opened (PRJ-7) or the server stops.
+- **ACT-9** A step can have a name, shown in the editor and the command log, and can be switched
+  off: a step that is off is skipped with its pause, as if it were not in the sequence, and is
+  not counted in its numbering.
 
 ### 5.6 Targets and drivers
 
@@ -230,6 +233,26 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   - under 900 px tall: the command log starts collapsed; the user's choice is kept in the browser;
   - under 1280 px wide or 720 px tall: the editor shows a "needs a wider window" notice instead.
   The player and demo receiver have no minimum size.
+- **ED-13** The page list can be folded into the thumbnail rail at any window width, and opened
+  again; the choice is kept in the browser.
+- **ED-14** Hotspot names are unique on their page: a new hotspot is named after its kind
+  ("Button 3", "Fader 1"), a duplicated or pasted one gets a free name ("Play demo 2"), and a
+  rename to a name another hotspot on the page already has is refused with a hint. Names are
+  compared trimmed and ignoring case. Duplicates in older projects stay until edited.
+- **ED-15** Each command of a sequence is a card that folds into one line (its name or
+  "Command N", target, command and pause), can be renamed, and has an on/off switch (ACT-9);
+  all cards fold and unfold at once.
+- **ED-16** Several hotspots of a page can be selected (Shift- or Cmd/Ctrl-click, a rectangle
+  dragged on the empty canvas, Cmd/Ctrl+A) and moved, nudged, deleted or duplicated together;
+  Escape clears the selection.
+- **ED-17** Selected hotspots can be copied and pasted onto any page of the open project, at the
+  same positions, with new ids and free names (ED-14); pasting on the same page offsets them.
+  The shortcuts act only outside text fields.
+- **ED-18** Selected hotspots can be aligned (left, centre, right, top, middle, bottom) to their
+  common box, or one hotspot to the canvas; three or more can be distributed with equal gaps
+  horizontally or vertically; and several can be given the same width or height.
+- **ED-19** Settings several selected hotspots share (style, shape, press effect, text style)
+  can be changed for all at once; a setting whose values differ shows as "Mixed".
 
 ### 5.10 Demo receiver
 

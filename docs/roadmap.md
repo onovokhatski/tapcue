@@ -164,19 +164,35 @@ sequence; a new tap on the same hotspot starts it over.
 - **Done when:** one button on an iPad starts a Resolume clip and, 2.5 seconds later, a QLab cue;
   the editor sets this up in seconds without code; projects from 0.4.0 open unchanged.
 
+### v0.6 — Editor tidy-up
+
+The editor gets out of the way on a busy stand: the page list and command cards fold away,
+commands have names and an on/off switch, hotspots get unique names, and several hotspots are
+selected, copied to another page, aligned, distributed and edited together.
+
+- **Requirements:** ED-13 to ED-19, ACT-9
+- **Done when:** a page of 20 buttons is laid out in a grid, renamed and given a common style in
+  a minute; a set of buttons is copied to another page in two keystrokes; a sequence's steps are
+  named and switched off without deleting them.
+
 ## 6. After MVP
 
-In order of value; each becomes its own milestone when started.
+Each becomes its own milestone when started.
+
+**Next, in this order** (set on 2026-11-23):
 
 1. Undo / redo in the editor
 2. Image-based hotspot states (a "pressed" image)
-3. OSC over TCP and raw TCP drivers
-4. Command templates for QLab and Resolume
-5. Editor password
-6. Idle ("attract") animations, more press effects and transitions
-7. Polygon hotspots
-8. Import from Figma
-9. Feedback from media servers (what is currently playing)
+3. Idle ("attract") animations, more press effects and transitions
+
+**Later:**
+
+- OSC over TCP and raw TCP drivers
+- Command templates for QLab and Resolume
+- Editor password
+- Polygon hotspots
+- Import from Figma
+- Feedback from media servers (what is currently playing)
 
 ## 7. Open questions
 
