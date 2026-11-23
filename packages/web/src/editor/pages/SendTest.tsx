@@ -13,6 +13,8 @@ type Result =
   | { state: 'idle' }
   | { state: 'sending' }
   | { state: 'sent'; time: string }
+  /** The first command waits for its delay; the log shows each step as it goes (ADR 0022). */
+  | { state: 'started' }
   | { state: 'failed'; message: string };
 
 /** For a fader, the test sends a value chosen here, from its start value (spec FD-2). */
@@ -37,6 +39,7 @@ export function SendTest({
       ? await testSend(pageId, hotspotId, Number(value))
       : await testSend(pageId, hotspotId);
     if (!answer.ok) setResult({ state: 'failed', message: answer.reason });
+    else if (answer.entry === null) setResult({ state: 'started' });
     else if (answer.entry.status === 'sent') setResult({ state: 'sent', time: answer.entry.time });
     else setResult({ state: 'failed', message: answer.entry.message });
   }
@@ -72,6 +75,11 @@ export function SendTest({
           >
             <Icon name="check" className="h-3.5 w-3.5" />
             Sent at <span className="font-mono text-mono-s">{clock(result.time).slice(0, 8)}</span>
+          </span>
+        )}
+        {result.state === 'started' && (
+          <span role="status" className="text-body-s text-secondary">
+            Started: the first command waits for its delay. See the command log.
           </span>
         )}
         {result.state === 'sending' && (

@@ -13,6 +13,19 @@ export const LogSource = z.discriminatedUnion('type', [
 ]);
 export type LogSource = z.infer<typeof LogSource>;
 
+/**
+ * Where an entry sits in a tap's sequence of commands (ADR 0022): `run` is the same for every entry
+ * of one tap, `step` counts from 1 of `of`, and `delayMs` is the pause before the step. Absent for
+ * a tap that sends one command at once.
+ */
+export const SequenceStep = z.strictObject({
+  run: z.int().min(0),
+  step: z.int().min(1),
+  of: z.int().min(1),
+  delayMs: z.int().min(0),
+});
+export type SequenceStep = z.infer<typeof SequenceStep>;
+
 const logEntryBase = {
   /** Increases by one per entry, so a client can order entries and spot ones it missed. */
   seq: z.int().min(0),
@@ -21,6 +34,7 @@ const logEntryBase = {
   source: LogSource,
   pageId: PageId,
   hotspotId: HotspotId,
+  sequence: SequenceStep.optional(),
 };
 
 /** Names are copied at send time, so the log still reads right after a target or hotspot is renamed. */
@@ -40,7 +54,10 @@ export const LogEntry = z.discriminatedUnion('status', [
   /** OSC and UDP: the packet left the server. HTTP: the target answered 2xx. */
   z.strictObject({ ...logEntryBase, ...delivery, status: z.literal('sent') }),
   z.strictObject({ ...logEntryBase, ...delivery, status: z.literal('error'), message: z.string() }),
-  /** The tap named a page or hotspot the server's project does not have (ADR 0005). */
+  /**
+   * The tap named a page or hotspot the server's project does not have (ADR 0005), or steps of a
+   * sequence were not sent: `sequence.step` is the first of them (ADR 0022).
+   */
   z.strictObject({ ...logEntryBase, status: z.literal('ignored'), message: z.string() }),
 ]);
 export type LogEntry = z.infer<typeof LogEntry>;

@@ -20,8 +20,11 @@ export type Saved =
   | { ok: true; revision: number }
   | { ok: false; reason: string; errors: ValidationError[]; stale?: true };
 
-/** What the server did with a test send: its log entry, or why it could not send. */
-export type TestSent = { ok: true; entry: LogEntry } | { ok: false; reason: string };
+/**
+ * What the server did with a test send: the log entry of its first command, or null when that
+ * command waits for its delay (ADR 0022); or why it could not send.
+ */
+export type TestSent = { ok: true; entry: LogEntry | null } | { ok: false; reason: string };
 
 export interface ProjectApi {
   load(): Promise<Loaded>;
@@ -81,8 +84,11 @@ export const projectApi: ProjectApi = {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ pageId, hotspotId, value }),
     });
-    const body = (await response.json().catch(() => ({}))) as { entry?: LogEntry; error?: string };
-    if (response.ok && body.entry) return { ok: true, entry: body.entry };
+    const body = (await response.json().catch(() => ({}))) as {
+      entry?: LogEntry | null;
+      error?: string;
+    };
+    if (response.ok && body.entry !== undefined) return { ok: true, entry: body.entry };
     return { ok: false, reason: body.error ?? `The server answered ${response.status}.` };
   },
 
