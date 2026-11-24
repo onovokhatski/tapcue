@@ -872,6 +872,163 @@ describe('HotspotPanel', () => {
       ]);
     });
 
+    describe('command cards (spec ED-15, ACT-9)', () => {
+      const three = () =>
+        withSteps([
+          { command: udp('A') },
+          { delayMs: 1500, command: udp('B') },
+          { command: udp('C'), name: 'Lights up' },
+        ]);
+      const toggle = (n: number) =>
+        step(n).getByRole('button', { name: new RegExp(`^(Fold|Unfold) command ${n}$`) });
+      const isOpen = (n: number) =>
+        step(n).queryByRole('combobox', { name: `Command ${n} target` }) !== null;
+      const summary = (n: number) => step(n).queryByTestId('step-summary')?.textContent;
+
+      it('starts folded with three or more commands from the project, each one line', async () => {
+        await renderPanel(three());
+        expect([1, 2, 3].map(isOpen)).toEqual([false, false, false]);
+        expect(toggle(1)).toHaveAttribute('aria-expanded', 'false');
+        expect(summary(1)).toBe('Projector · A');
+        expect(summary(2)).toBe('Projector · B · after 1.5 s');
+        // A named step shows its name as the title.
+        expect(step(3).getByRole('button', { name: 'Rename Lights up' })).toHaveTextContent(
+          'Lights up',
+        );
+      });
+
+      it('sums up an OSC command with its arguments', async () => {
+        const project = three();
+        const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+        const osc = demoProject().pages[0]!.hotspots[0]!.action.commands[0]!;
+        card.action.commands[0] = osc;
+        await renderPanel(project);
+        expect(summary(1)).toBe('Resolume · /composition/columns/2/connect i 1');
+      });
+
+      it('starts afresh for another hotspot', async () => {
+        const project = three();
+        const cardB = project.pages[0]!.hotspots.find((h) => h.id === 'h_cardb0')!;
+        cardB.action = {
+          ...cardB.action,
+          commands: three().pages[0]!.hotspots[0]!.action.commands,
+        };
+        const { store } = await renderPanel(project);
+        fireEvent.click(onTap().getByRole('button', { name: 'Unfold all' }));
+        act(() => store.getState().select({ pageId: 'p_home00', hotspotId: 'h_cardb0' }));
+        expect([1, 2, 3].map(isOpen)).toEqual([false, false, false]);
+      });
+
+      it('starts open with fewer than three', async () => {
+        await renderPanel(withSteps([{ command: udp('A') }, { command: udp('B') }]));
+        expect([1, 2].map(isOpen)).toEqual([true, true]);
+        expect(summary(1)).toBeUndefined();
+      });
+
+      it('folds and unfolds one card, and all at once', async () => {
+        await renderPanel(three());
+        fireEvent.click(toggle(2));
+        expect([1, 2, 3].map(isOpen)).toEqual([false, true, false]);
+        expect(toggle(2)).toHaveAttribute('aria-expanded', 'true');
+        expect(toggle(2)).toHaveAccessibleName('Fold command 2');
+        fireEvent.click(onTap().getByRole('button', { name: 'Unfold all' }));
+        expect([1, 2, 3].map(isOpen)).toEqual([true, true, true]);
+        fireEvent.click(onTap().getByRole('button', { name: 'Fold all' }));
+        expect([1, 2, 3].map(isOpen)).toEqual([false, false, false]);
+        fireEvent.click(toggle(2));
+        expect(isOpen(2)).toBe(true);
+      });
+
+      it('opens a new command, keeping the others as they were', async () => {
+        await renderPanel(three());
+        fireEvent.click(onTap().getByRole('button', { name: 'Add command' }));
+        expect([1, 2, 3, 4].map(isOpen)).toEqual([false, false, false, true]);
+      });
+
+      it('keeps each fold with its command when one is removed or moved', async () => {
+        const { cardA } = await renderPanel(three());
+        fireEvent.click(toggle(3)); // C open
+        fireEvent.click(step(1).getByRole('button', { name: 'Remove command 1' }));
+        expect(texts(cardA)).toEqual(['B', 'C']);
+        expect([1, 2].map(isOpen)).toEqual([false, true]);
+        fireEvent.keyDown(step(2).getByRole('button', { name: 'Reorder command 2' }), {
+          key: 'ArrowUp',
+          altKey: true,
+        });
+        expect(texts(cardA)).toEqual(['C', 'B']);
+        expect([1, 2].map(isOpen)).toEqual([true, false]);
+      });
+
+      it('has no fold buttons for one command', async () => {
+        await renderPanel(withSteps([{ command: udp('A') }]));
+        expect(onTap().queryByRole('button', { name: 'Fold all' })).toBeNull();
+      });
+
+      it('renames a command with a click or F2; Escape keeps the old name, empty clears it', async () => {
+        const { cardA } = await renderPanel(three());
+        fireEvent.click(step(1).getByRole('button', { name: 'Rename Command 1' }));
+        const field = () => step(1).getByRole('textbox', { name: 'Command 1 name' });
+        expect(field()).toHaveFocus();
+        expect(field()).toHaveAttribute('placeholder', 'Command 1');
+        fireEvent.change(field(), { target: { value: '  Screen on ' } });
+        // The browser presses whatever has the focus with an Enter that was not stopped.
+        expect(fireEvent.keyDown(field(), { key: 'Enter' })).toBe(false);
+        expect(cardA().action.commands[0]!.name).toBe('Screen on');
+        const title = step(1).getByRole('button', { name: 'Rename Screen on' });
+        expect(title).toHaveFocus();
+
+        fireEvent.keyDown(title, { key: 'F2' });
+        expect(field()).toHaveValue('Screen on');
+        fireEvent.change(field(), { target: { value: 'Other' } });
+        expect(fireEvent.keyDown(field(), { key: 'Escape' })).toBe(false);
+        expect(cardA().action.commands[0]!.name).toBe('Screen on');
+
+        fireEvent.click(step(1).getByRole('button', { name: 'Rename Screen on' }));
+        expect(field()).toHaveValue('Screen on');
+        fireEvent.change(field(), { target: { value: '   ' } });
+        fireEvent.blur(field());
+        expect(cardA().action.commands[0]).not.toHaveProperty('name');
+        expect(step(1).getByRole('button', { name: 'Rename Command 1' })).toHaveTextContent(
+          'Command 1',
+        );
+      });
+
+      it('switches a command off and on: dimmed with "Off", and left out of the summary', async () => {
+        const { cardA } = await renderPanel(three());
+        const send = () => step(2).getByRole('button', { name: 'Send command 2' });
+        expect(send()).toHaveAttribute('aria-pressed', 'true');
+        expect(onTap().getByText('3 commands over 1.5 s')).toBeInTheDocument();
+
+        fireEvent.click(send());
+        expect(cardA().action.commands[1]!.enabled).toBe(false);
+        expect(send()).toHaveAttribute('aria-pressed', 'false');
+        expect(onTap().getByRole('group', { name: 'Command 2' })).toHaveAttribute(
+          'data-off',
+          'true',
+        );
+        expect(step(2).getByText('Off')).toBeInTheDocument();
+        // Its pause is skipped with it.
+        expect(onTap().getByText('2 of 3 commands over 0 s')).toBeInTheDocument();
+
+        fireEvent.click(send());
+        expect(cardA().action.commands[1]).not.toHaveProperty('enabled');
+        expect(onTap().getByRole('group', { name: 'Command 2' })).not.toHaveAttribute('data-off');
+        expect(step(2).queryByText('Off')).toBeNull();
+      });
+
+      it('shows test results as steps when two commands are on, not by the list length', async () => {
+        const { store } = await renderPanel(
+          withSteps([{ command: udp('A') }, { command: udp('B'), enabled: false }]),
+          { ok: true, entry: null },
+        );
+        act(() => store.getState().setConnection('open'));
+        fireEvent.click(onTap().getByRole('button', { name: 'Send test' }));
+        // One command on, sent at once: a single result, not a list of steps.
+        await waitFor(() => expect(onTap().getByText(/^Started:/)).toBeInTheDocument());
+        expect(onTap().queryByRole('list', { name: 'Test results' })).toBeNull();
+      });
+    });
+
     it('keeps one command for a fader: no list, no pauses', async () => {
       const project = demoProject();
       const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
@@ -893,6 +1050,35 @@ describe('HotspotPanel', () => {
       expect(dragged.getByRole('combobox', { name: 'Send command to' })).toBeInTheDocument();
       expect(dragged.queryByRole('button', { name: 'Add command' })).toBeNull();
       expect(dragged.queryByRole('textbox', { name: /Wait before/ })).toBeNull();
+      expect(dragged.queryByRole('button', { name: /^(Fold|Unfold)/ })).toBeNull();
+    });
+
+    it("switches a fader's command off and on (spec ACT-9)", async () => {
+      const project = demoProject();
+      const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+      Object.assign(card, {
+        kind: 'fader',
+        pressEffect: 'none',
+        fader: {
+          orientation: 'vertical',
+          min: 0,
+          max: 1,
+          step: 0.01,
+          start: 0,
+          value: { at: 1, as: 'f' },
+        },
+        action: { goTo: null, commands: card.action.commands },
+      });
+      const { cardA } = await renderPanel(project);
+      const dragged = within(screen.getByRole('region', { name: 'While dragged' }));
+      const send = () => dragged.getByRole('button', { name: 'Send this command' });
+      expect(send()).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.click(send());
+      expect(cardA().action.commands[0]!.enabled).toBe(false);
+      expect(dragged.getByText('Off: dragging the fader sends nothing.')).toBeInTheDocument();
+      fireEvent.click(send());
+      expect(cardA().action.commands[0]).not.toHaveProperty('enabled');
+      expect(dragged.queryByText(/^Off:/)).toBeNull();
     });
   });
 });

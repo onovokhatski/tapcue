@@ -1,8 +1,10 @@
 // What a tap on the hotspot does — "On tap" in its properties panel: the page to go to and the
 // commands to send, one after another, each with its pause, target and fields for the target's
-// protocol (spec ACT-1, ACT-5, ACT-6, TGT-2, ED-10, ADR 0022; design: hotspotProps(),
-// commandFields()). A fader keeps one command (ADR 0020).
+// protocol (spec ACT-1, ACT-5, ACT-6, ACT-9, TGT-2, ED-10, ED-15, ADR 0022; design: hotspotProps(),
+// commandFields()). Each command is a card that folds into one line, can be named and switched
+// off. A fader keeps one command (ADR 0020).
 import {
+  activeSteps,
   type Command,
   type FaderSettings,
   formatFaderValue,
@@ -36,7 +38,10 @@ import {
   setCommandTarget,
   setGoTo,
   setStepDelay,
+  setStepEnabled,
+  setStepName,
 } from '../operations/actions';
+import { describeCommand } from '../log/logEntries';
 import { withPlaceholder } from '../operations/hotspots';
 import {
   checkArgument,
@@ -93,19 +98,36 @@ function FaderCommand({
   fader,
 }: Props & { fader: FaderSettings | undefined }) {
   const change = useEditor((state) => state.change);
-  const command = hotspot.action.commands[0]?.command ?? null;
+  const step = hotspot.action.commands[0];
+  const command = step?.command ?? null;
   const target = command ? project.targets.find((t) => t.id === command.targetId) : undefined;
+  const on = step?.enabled !== false;
   return (
     <>
-      <Select
-        label="Send command to"
-        size="s"
-        placeholder="No command"
-        value={command?.targetId ?? null}
-        options={targetOptions(project)}
-        onChange={(value) => change((p) => setCommandTarget(p, pageId, hotspot.id, value))}
-        {...(target ? { helper: address(target) } : {})}
-      />
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <Select
+            label="Send command to"
+            size="s"
+            placeholder="No command"
+            value={command?.targetId ?? null}
+            options={targetOptions(project)}
+            onChange={(value) => change((p) => setCommandTarget(p, pageId, hotspot.id, value))}
+            {...(target ? { helper: address(target) } : {})}
+          />
+        </div>
+        {/* A fader's command can be switched off too: a drag then sends nothing (spec ACT-9). */}
+        {step && (
+          <SendSwitch
+            label="Send this command"
+            on={on}
+            onChange={(next) => change((p) => setStepEnabled(p, pageId, hotspot.id, 0, next))}
+          />
+        )}
+      </div>
+      {step && !on && (
+        <p className="text-body-s text-muted">Off: dragging the fader sends nothing.</p>
+      )}
       {!command || !target ? (
         <p className="text-body-s text-muted">
           This fader sends no command. Choose a target to send one.
@@ -135,7 +157,9 @@ function FaderCommand({
 
 /**
  * A button's commands: a list of steps sent in order, each after its pause (spec ACT-5, ACT-6,
- * ADR 0022). Steps are reordered by dragging their handle, or with Alt + ↑ / ↓ on it.
+ * ADR 0022). Steps are reordered by dragging their handle, or with Alt + ↑ / ↓ on it. Each card
+ * folds into one line; from the project, three or more start folded, and a new one is open
+ * (spec ED-15).
  */
 function CommandSteps({ project, pageId, hotspot }: Props) {
   const change = useEditor((state) => state.change);
@@ -143,9 +167,29 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   /** Where a dragged step would land: before the step at this index (length = at the end). */
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  // Which cards are open, by place. The panel mounts this afresh for each hotspot (keyed by it):
+  // from the project, three or more start folded.
+  const [stored, setOpen] = useState(() => steps.map(() => steps.length < 3));
+  // A step added here or removed elsewhere (a deleted target) keeps the rest as they were, and a
+  // new one is open.
+  let open = stored;
+  if (open.length !== steps.length) {
+    open = steps.map((_, i) => stored[i] ?? true);
+    setOpen(open);
+  }
+  const on = activeSteps(hotspot.action).length;
   const total = sequenceLength(hotspot.action);
-  const move = (from: number, to: number) =>
-    change((p) => moveStep(p, pageId, hotspot.id, from, to));
+
+  /** Moves a step and its fold with it. */
+  function move(from: number, to: number) {
+    const target = Math.max(0, Math.min(to, steps.length - 1));
+    if (target === from) return;
+    const next = [...open];
+    const [moved] = next.splice(from, 1);
+    next.splice(target, 0, moved!);
+    setOpen(next);
+    change((p) => moveStep(p, pageId, hotspot.id, from, target));
+  }
 
   function drop() {
     if (dragFrom !== null && dropIndex !== null) {
@@ -173,6 +217,12 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
               step={step}
               index={index}
               count={steps.length}
+              open={open[index] ?? true}
+              onOpen={(value) => setOpen(open.map((o, i) => (i === index ? value : o)))}
+              onRemove={() => {
+                setOpen(open.filter((_, i) => i !== index));
+                change((p) => setCommandTarget(p, pageId, hotspot.id, null, index));
+              }}
               dragging={dragFrom === index}
               dropBefore={dropIndex === index}
               dropAfter={dropIndex === steps.length && index === steps.length - 1}
@@ -190,15 +240,32 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
           ))}
         </ol>
       )}
-      <Button
-        variant="ghost"
-        size="s"
-        icon="plus"
-        label="Add command"
-        className="-ml-2"
-        disabled={steps.length >= MAX_STEPS || project.targets.length === 0}
-        onClick={() => change((p) => addStep(p, pageId, hotspot.id))}
-      />
+      <div className="-ml-2 flex flex-wrap items-center gap-1">
+        <Button
+          variant="ghost"
+          size="s"
+          icon="plus"
+          label="Add command"
+          disabled={steps.length >= MAX_STEPS || project.targets.length === 0}
+          onClick={() => change((p) => addStep(p, pageId, hotspot.id))}
+        />
+        {steps.length > 1 && (
+          <>
+            <Button
+              variant="ghost"
+              size="s"
+              label="Fold all"
+              onClick={() => setOpen(steps.map(() => false))}
+            />
+            <Button
+              variant="ghost"
+              size="s"
+              label="Unfold all"
+              onClick={() => setOpen(steps.map(() => true))}
+            />
+          </>
+        )}
+      </div>
       {project.targets.length === 0 && (
         <p className="text-body-s text-muted">Add a target on the Targets tab to send commands.</p>
       )}
@@ -207,11 +274,12 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
       )}
       {(steps.length > 1 || total > 0) && (
         <p className="text-body-s text-secondary">
-          {steps.length} {steps.length === 1 ? 'command' : 'commands'} over {seconds(total)}
+          {on < steps.length ? `${on} of ${steps.length}` : steps.length}{' '}
+          {steps.length === 1 ? 'command' : 'commands'} over {seconds(total)}
         </p>
       )}
       {steps.length > 0 && (
-        <SendTest pageId={pageId} hotspotId={hotspot.id} sequence={steps.length > 1 || total > 0} />
+        <SendTest pageId={pageId} hotspotId={hotspot.id} sequence={on > 1 || total > 0} />
       )}
     </div>
   );
@@ -222,6 +290,16 @@ export function seconds(ms: number): string {
   return `${Number((ms / 1000).toFixed(1))} s`;
 }
 
+/** "Resolume · /composition/columns/2/connect i 1 · after 1.5 s": a folded card's line. */
+function stepSummary(step: Step, target: Target | undefined): string {
+  const { text, args } = describeCommand(step.command);
+  return [
+    target?.name ?? 'Missing target',
+    args ? `${text} ${args}` : text,
+    ...(step.delayMs ? [`after ${seconds(step.delayMs)}`] : []),
+  ].join(' · ');
+}
+
 function StepCard({
   project,
   pageId,
@@ -229,6 +307,9 @@ function StepCard({
   step,
   index,
   count,
+  open,
+  onOpen,
+  onRemove,
   dragging,
   dropBefore,
   dropAfter,
@@ -241,6 +322,9 @@ function StepCard({
   step: Step;
   index: number;
   count: number;
+  open: boolean;
+  onOpen: (open: boolean) => void;
+  onRemove: () => void;
   dragging: boolean;
   dropBefore: boolean;
   dropAfter: boolean;
@@ -256,6 +340,7 @@ function StepCard({
   const { command } = step;
   const target = project.targets.find((t) => t.id === command.targetId);
   const n = index + 1;
+  const on = step.enabled !== false;
   return (
     <li
       className="relative"
@@ -282,9 +367,12 @@ function StepCard({
       <div
         role="group"
         aria-label={`Command ${n}`}
-        className={`space-y-2 rounded border border-default p-2 ${dragging ? 'opacity-50' : ''}`}
+        data-off={on ? undefined : 'true'}
+        className={`space-y-2 rounded border border-default p-2 ${on ? '' : 'bg-subtle'} ${
+          dragging ? 'opacity-50' : ''
+        }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             className="cursor-grab rounded text-muted hover:text-secondary"
@@ -305,39 +393,170 @@ function StepCard({
           >
             <Icon name="grip" />
           </button>
-          <span className="flex-1 text-label-s text-secondary">Command {n}</span>
+          <button
+            type="button"
+            className="rounded p-0.5 text-muted hover:bg-hover hover:text-primary"
+            aria-label={`${open ? 'Fold' : 'Unfold'} command ${n}`}
+            aria-expanded={open}
+            onClick={() => onOpen(!open)}
+          >
+            <Icon
+              name="chevron-down"
+              className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`}
+            />
+          </button>
+          <StepTitle
+            n={n}
+            name={step.name}
+            on={on}
+            onRename={(name) => change((p) => setStepName(p, pageId, hotspot.id, index, name))}
+          />
+          {!on && <span className="text-label-s text-muted">Off</span>}
+          <SendSwitch
+            label={`Send command ${n}`}
+            on={on}
+            onChange={(next) => change((p) => setStepEnabled(p, pageId, hotspot.id, index, next))}
+          />
           <Button
             variant="ghost"
             size="s"
             icon="trash"
             ariaLabel={`Remove command ${n}`}
-            onClick={() => change((p) => setCommandTarget(p, pageId, hotspot.id, null, index))}
+            onClick={onRemove}
           />
         </div>
-        <DelayField
-          label={`Wait before command ${n}`}
-          delayMs={step.delayMs ?? 0}
-          onChange={(ms) => change((p) => setStepDelay(p, pageId, hotspot.id, index, ms))}
-        />
-        <Select
-          ariaLabel={`Command ${n} target`}
-          size="s"
-          value={command.targetId}
-          options={targetOptions(project)}
-          onChange={(value) => change((p) => setCommandTarget(p, pageId, hotspot.id, value, index))}
-          {...(target ? { helper: address(target) } : {})}
-        />
-        {target && (
-          <CommandFields
-            command={command}
-            target={target}
-            fader={undefined}
-            onChange={(next) => change((p) => setCommand(p, pageId, hotspot.id, next, index))}
-          />
+        {!open ? (
+          <p
+            className={`truncate pl-11 text-body-s text-muted ${on ? '' : 'opacity-60'}`}
+            data-testid="step-summary"
+          >
+            {stepSummary(step, target)}
+          </p>
+        ) : (
+          <div className={`space-y-2 ${on ? '' : 'opacity-60'}`}>
+            <DelayField
+              label={`Wait before command ${n}`}
+              delayMs={step.delayMs ?? 0}
+              onChange={(ms) => change((p) => setStepDelay(p, pageId, hotspot.id, index, ms))}
+            />
+            <Select
+              ariaLabel={`Command ${n} target`}
+              size="s"
+              value={command.targetId}
+              options={targetOptions(project)}
+              onChange={(value) =>
+                change((p) => setCommandTarget(p, pageId, hotspot.id, value, index))
+              }
+              {...(target ? { helper: address(target) } : {})}
+            />
+            {target && (
+              <CommandFields
+                command={command}
+                target={target}
+                fader={undefined}
+                onChange={(next) => change((p) => setCommand(p, pageId, hotspot.id, next, index))}
+              />
+            )}
+          </div>
         )}
       </div>
       {dropAfter && <DropLine edge="bottom" />}
     </li>
+  );
+}
+
+/**
+ * A step's title: its name, or "Command N". A click or F2 renames it in place; Enter or leaving
+ * the field keeps the new name, Escape the old one, and an empty name brings back "Command N".
+ */
+function StepTitle({
+  n,
+  name,
+  on,
+  onRename,
+}: {
+  n: number;
+  name: string | undefined;
+  on: boolean;
+  onRename: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  /** After a rename the focus goes back to the title, not to the page. */
+  const [returned, setReturned] = useState(false);
+  const [value, setValue] = useState('');
+  const fallback = `Command ${n}`;
+  const finish = (save: boolean) => {
+    if (save) onRename(value);
+    setEditing(false);
+    setReturned(true);
+  };
+  if (editing) {
+    return (
+      <input
+        aria-label={`Command ${n} name`}
+        className="field h-7 min-w-0 flex-1 rounded border border-strong bg-surface px-2 text-label-s"
+        value={value}
+        placeholder={fallback}
+        maxLength={100}
+        autoFocus
+        onFocus={(event) => event.currentTarget.select()}
+        onChange={(event) => setValue(event.target.value)}
+        onBlur={() => finish(true)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== 'Escape') return;
+          // The focus moves to the title at once; without this, the browser would go on to press
+          // it with the same key and open the field again.
+          event.preventDefault();
+          finish(event.key === 'Enter');
+        }}
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`min-w-0 flex-1 truncate rounded px-1 text-left text-label-s hover:bg-hover ${
+        on ? 'text-primary' : 'text-muted'
+      }`}
+      title="Click or F2 to rename"
+      aria-label={`Rename ${name || fallback}`}
+      autoFocus={returned}
+      onClick={() => {
+        setValue(name ?? '');
+        setEditing(true);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'F2') {
+          setValue(name ?? '');
+          setEditing(true);
+        }
+      }}
+    >
+      {name || fallback}
+    </button>
+  );
+}
+
+/** On/off for a command (spec ACT-9): the design system's toggle button, pressed while it sends. */
+function SendSwitch({
+  label,
+  on,
+  onChange,
+}: {
+  label: string;
+  on: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="s"
+      icon="power"
+      ariaLabel={label}
+      title={on ? `${label}: on` : `${label}: off`}
+      pressed={on}
+      onClick={() => onChange(!on)}
+    />
   );
 }
 

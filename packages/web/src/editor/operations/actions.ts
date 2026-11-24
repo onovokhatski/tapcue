@@ -1,8 +1,9 @@
 // What a tap does: go to a page, send a sequence of commands, or both (spec ACT-1, ACT-5, ACT-6,
-// ADR 0022). Pure functions (project, args) => project; an operation that cannot apply returns the
+// ACT-9, ADR 0022). Pure functions (project, args) => project; an operation that cannot apply returns the
 // same project. Steps have no ids: their place in the list names them, as in the editor.
 import {
   type Action,
+  activeSteps,
   type Command,
   type HotspotId,
   MAX_DELAY_MS,
@@ -146,9 +147,62 @@ export function setStepDelay(
   });
 }
 
-/** How long a sequence takes from the tap to its last step: the sum of its pauses, in ms. */
+/**
+ * Names step `index`, trimmed, up to 100 characters; an empty name leaves the field out and the
+ * editor shows "Command N" again (spec ACT-9).
+ */
+export function setStepName(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  index: number,
+  name: string,
+): Project {
+  const trimmed = name.trim();
+  if (trimmed.length > 100) return project;
+  return updateStep(project, pageId, hotspotId, index, (step) => {
+    const { name: _old, ...rest } = step;
+    return trimmed === '' ? rest : { ...rest, name: trimmed };
+  });
+}
+
+/**
+ * Switches step `index` on or off (spec ACT-9). On leaves the field out, as a step that is on is
+ * written; off is skipped with its pause when the hotspot is tapped.
+ */
+export function setStepEnabled(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  index: number,
+  enabled: boolean,
+): Project {
+  return updateStep(project, pageId, hotspotId, index, (step) => {
+    const { enabled: _old, ...rest } = step;
+    return enabled ? rest : { ...rest, enabled: false };
+  });
+}
+
+function updateStep(
+  project: Project,
+  pageId: PageId,
+  hotspotId: HotspotId,
+  index: number,
+  update: (step: Step) => Step,
+): Project {
+  // A missing step changes nothing, and setAction then keeps the same project.
+  return setAction(project, pageId, hotspotId, (action) => ({
+    ...action,
+    commands: action.commands.map((s, i) => (i === index ? update(s) : s)),
+  }));
+}
+
+/**
+ * How long a sequence takes from the tap to its last step: the sum of the pauses of the steps that
+ * are on, in ms. A step that is off is skipped with its pause (spec ACT-9).
+ */
 export function sequenceLength(action: Action): number {
-  return action.commands.reduce((sum, step) => sum + (step.delayMs ?? 0), 0);
+  return activeSteps(action).reduce((sum, step) => sum + (step.delayMs ?? 0), 0);
 }
 
 /**

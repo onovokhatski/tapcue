@@ -10,6 +10,8 @@ import {
   setCommandTarget,
   setGoTo,
   setStepDelay,
+  setStepEnabled,
+  setStepName,
   withStep,
 } from './actions';
 import { setKind } from './hotspots';
@@ -255,6 +257,49 @@ describe('sequences (spec ACT-5, ACT-6, ADR 0022)', () => {
   it('adds up the pauses of a sequence', () => {
     expect(sequenceLength(action(three()))).toBe(500);
     expect(sequenceLength({ goTo: null, commands: [] })).toBe(0);
+  });
+
+  it('leaves out the pause of a step that is off (spec ACT-9)', () => {
+    const project = setStepEnabled(three(), 'p_home00', 'h_carda0', 1, false);
+    expect(sequenceLength(action(project))).toBe(0);
+  });
+
+  describe('setStepName (spec ACT-9)', () => {
+    it('names a step, trimmed; an empty name leaves the field out', () => {
+      const named = setStepName(three(), 'p_home00', 'h_carda0', 1, '  Lights up ');
+      expect(action(named).commands[1]).toEqual({
+        delayMs: 500,
+        name: 'Lights up',
+        command: udp('TWO'),
+      });
+      expectValid(named);
+      const cleared = setStepName(named, 'p_home00', 'h_carda0', 1, '   ');
+      expect(action(cleared).commands[1]).toEqual({ delayMs: 500, command: udp('TWO') });
+    });
+
+    it('keeps the project for a name over 100 characters or a missing step', () => {
+      const project = three();
+      expect(setStepName(project, 'p_home00', 'h_carda0', 0, 'x'.repeat(101))).toBe(project);
+      expect(setStepName(project, 'p_home00', 'h_carda0', 3, 'Late')).toBe(project);
+      const longest = setStepName(project, 'p_home00', 'h_carda0', 0, 'x'.repeat(100));
+      expect(action(longest).commands[0]!.name).toHaveLength(100);
+    });
+  });
+
+  describe('setStepEnabled (spec ACT-9)', () => {
+    it('switches a step off, and on again by leaving the field out', () => {
+      const off = setStepEnabled(three(), 'p_home00', 'h_carda0', 2, false);
+      expect(action(off).commands[2]).toEqual({ enabled: false, command: udp('THREE') });
+      expectValid(off);
+      const on = setStepEnabled(off, 'p_home00', 'h_carda0', 2, true);
+      expect(action(on).commands[2]).toEqual({ command: udp('THREE') });
+      expect(setStepEnabled(on, 'p_home00', 'h_carda0', 2, true)).toBe(on);
+    });
+
+    it('keeps the project for a missing step', () => {
+      const project = three();
+      expect(setStepEnabled(project, 'p_home00', 'h_carda0', 5, false)).toBe(project);
+    });
   });
 });
 
