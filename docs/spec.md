@@ -255,6 +255,19 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   horizontally or vertically; and several can be given the same width or height.
 - **ED-19** Settings several selected hotspots share (style, shape, press effect, text style)
   can be changed for all at once; a setting whose values differ shows as "Mixed".
+- **ED-20** Every section of the hotspot panel, for one hotspot or several, folds. Folded, it
+  shows its state in one line ("144, 500 · 560 × 720", "Go to Product A · 2 commands over
+  1.5 s"); open, its fields are edited. A section with an invalid field opens and stays open
+  until the field is fixed (ED-10). Which sections are folded is kept in the browser, the same
+  for every hotspot; Name, Position and size, and On tap start open.
+- **ED-21** The hotspot panel goes from how a hotspot looks to what it does: Name, Type,
+  Position and size (with the align tools, ED-18), Style, Text, On tap (While dragged for a
+  fader), Stacking.
+- **ED-22** "Go to page" is one of the choices of Add command: the first card of the list, at
+  most one, with no pause; the page still changes at once on the tablet (ACT-2). The project
+  keeps the link in `action.goTo`.
+- **ED-23** The position and size fields show four-digit values, the size of a 2048 × 1536
+  canvas, in full.
 
 ### 5.10 Demo receiver
 
