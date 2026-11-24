@@ -1187,6 +1187,18 @@ describe('arranging (spec ED-18)', () => {
     h.height,
   ];
 
+  it('sits with position and size, in the single and the group panel (spec ED-21)', async () => {
+    const { store } = await renderPanel();
+    const position = () => within(screen.getByRole('region', { name: 'Position and size' }));
+    expect(position().getByRole('toolbar', { name: 'Arrange' })).toBeInTheDocument();
+    act(() =>
+      store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_about0'] }),
+    );
+    const group = within(screen.getByRole('region', { name: 'Position' }));
+    expect(group.getByRole('toolbar', { name: 'Arrange' })).toBeInTheDocument();
+    expect(screen.getAllByRole('toolbar', { name: 'Arrange' })).toHaveLength(1);
+  });
+
   it('aligns one hotspot to the canvas, and offers nothing else for one', async () => {
     const { cardA } = await renderPanel();
     expect(toolbar().getByRole('button', { name: 'Align right' })).toHaveAttribute(

@@ -67,10 +67,10 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
           Drag one of them to move them all; the arrow keys nudge them. Shift- or Cmd-click on the
           canvas adds or removes one.
         </p>
-        <ArrangeTools pageId={page.id} hotspots={hotspots} />
       </div>
       <section aria-label="Position" className="space-y-3 border-b border-default px-4 py-4">
         <h3 className="text-overline text-muted uppercase">Position of the group</h3>
+        <ArrangeTools pageId={page.id} hotspots={hotspots} />
         <GroupPosition
           key={ids.join()}
           pageId={page.id}

@@ -83,7 +83,6 @@ export function HotspotPanel() {
         </div>
         {/* Keyed, so the fields start afresh for another hotspot. */}
         <NameField key={hotspot.id} page={page} hotspot={hotspot} />
-        <ArrangeTools pageId={page.id} hotspots={[hotspot]} />
         {cropped && (
           // Shown whether or not the safe area is drawn on the canvas (spec ED-3).
           <Banner tone="warning" title="Partly outside the safe area">
@@ -106,6 +105,8 @@ export function HotspotPanel() {
         />
       </Section>
       <Section title="Position and size">
+        {/* Aligning is about position, so its tools sit next to X and Y (spec ED-18, ED-21). */}
+        <ArrangeTools pageId={page.id} hotspots={[hotspot]} />
         <GeometryFields
           key={hotspot.id}
           pageId={page.id}
@@ -237,7 +238,9 @@ function GeometryFields({
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-1.5">
+      {/* Two by two: a 2048 × 1536 canvas has four-digit values, which one row of four cuts off
+          (spec ED-23). */}
+      <div className="grid grid-cols-2 gap-1.5">
         {FIELDS.map(({ key, prefix, label }) => (
           <NumberField
             key={key}
