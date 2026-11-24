@@ -3,7 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Loaded, ProjectApi, Saved } from '../lib/projectApi';
 import { demoProject } from '../test/demoProject';
 import { errorEntry, sentEntry } from '../test/logEntries';
-import { createEditorStore, SAVE_DELAY_MS } from './editorStore';
+import {
+  canRedo,
+  canUndo,
+  createEditorStore,
+  GROUP_QUIET_MS,
+  HISTORY_LIMIT,
+  SAVE_DELAY_MS,
+} from './editorStore';
 
 /** A promise the test settles by hand. */
 function deferred<T>() {
@@ -634,6 +641,246 @@ describe('editor store', () => {
         ok: false,
         reason: 'could not be sent: cannot reach the server.',
       });
+    });
+  });
+  describe('undo and redo (spec ED-24 to ED-27, ADR 0023)', () => {
+    const names = (projects: { project: Project }[]) => projects.map((s) => s.project.name);
+    /** Removes a hotspot from the home page. */
+    const removeHotspot = (id: string) => (project: Project) => ({
+      ...project,
+      pages: project.pages.map((page) =>
+        page.id === 'p_home00'
+          ? { ...page, hotspots: page.hotspots.filter((h) => h.id !== id) }
+          : page,
+      ),
+    });
+
+    it('goes back and forward through the changes in order', async () => {
+      const { state } = await loaded();
+      expect(canUndo(state())).toBe(false);
+      for (const name of ['One', 'Two', 'Three']) state().change(rename(name));
+      expect(names(state().past)).toEqual(['Demo stand', 'One', 'Two']);
+      state().undo();
+      state().undo();
+      expect(state().project?.name).toBe('One');
+      expect(names(state().future)).toEqual(['Three', 'Two']);
+      expect(canRedo(state())).toBe(true);
+      state().redo();
+      expect(state().project?.name).toBe('Two');
+      expect(names(state().past)).toEqual(['Demo stand', 'One']);
+      expect(names(state().future)).toEqual(['Three']);
+      state().undo();
+      state().undo();
+      expect(state().project?.name).toBe('Demo stand');
+      expect(canUndo(state())).toBe(false);
+    });
+
+    it('drops what could be redone when a new change is made', async () => {
+      const { state } = await loaded();
+      state().change(rename('One'));
+      state().change(rename('Two'));
+      state().undo();
+      state().change(rename('Other'));
+      expect(canRedo(state())).toBe(false);
+      expect(names(state().past)).toEqual(['Demo stand', 'One']);
+    });
+
+    it(`keeps the last ${HISTORY_LIMIT} steps and drops the oldest`, async () => {
+      const { state } = await loaded();
+      for (let i = 1; i <= HISTORY_LIMIT; i++) state().change(rename(`Name ${i}`));
+      expect(state().past).toHaveLength(HISTORY_LIMIT);
+      expect(state().past[0]!.project.name).toBe('Demo stand'); // exactly the limit: all kept
+      state().change(rename('One more'));
+      expect(state().past).toHaveLength(HISTORY_LIMIT);
+      expect(state().past[0]!.project.name).toBe('Name 1');
+      // A redo goes back onto the history under the same limit.
+      state().undo();
+      state().change(rename('Again'));
+      state().undo();
+      state().redo();
+      expect(state().past).toHaveLength(HISTORY_LIMIT);
+      expect(state().past[0]!.project.name).toBe('Name 1');
+    });
+
+    it('records nothing for a change that changes nothing, and undoes nothing without history', async () => {
+      const { state, server } = await loaded();
+      const before = state().project;
+      state().change((project) => project);
+      expect(state().past).toEqual([]);
+      state().undo();
+      state().redo();
+      expect(state().project).toBe(before);
+      await wait(SAVE_DELAY_MS * 2);
+      expect(server.saves).toHaveLength(0);
+    });
+
+    it('makes one step of the changes of one group within the quiet time', async () => {
+      const { state } = await loaded();
+      state().change(rename('T'), { group: 'name' });
+      await wait(GROUP_QUIET_MS); // exactly the quiet time still merges
+      state().change(rename('Ty'), { group: 'name' });
+      await wait(GROUP_QUIET_MS - 1);
+      state().change(rename('Typed'), { group: 'name' });
+      expect(names(state().past)).toEqual(['Demo stand']);
+      state().undo();
+      expect(state().project?.name).toBe('Demo stand');
+    });
+
+    it('starts a new step after the quiet time, with another group, or after a change without one', async () => {
+      const { state } = await loaded();
+      state().change(rename('A'), { group: 'name' });
+      await wait(GROUP_QUIET_MS + 1);
+      state().change(rename('B'), { group: 'name' });
+      state().change(rename('C'), { group: 'title' });
+      state().change(rename('D'));
+      state().change(rename('E'));
+      state().change(rename('F'), { group: 'title' });
+      expect(names(state().past)).toEqual(['Demo stand', 'A', 'B', 'C', 'D', 'E']);
+    });
+
+    it('starts a new step after an undo, even in the same group', async () => {
+      const { state } = await loaded();
+      state().change(rename('A'), { group: 'name' });
+      state().undo();
+      state().change(rename('B'), { group: 'name' });
+      expect(names(state().past)).toEqual(['Demo stand']);
+      state().undo();
+      state().redo();
+      state().change(rename('C'), { group: 'name' });
+      expect(names(state().past)).toEqual(['Demo stand', 'B']);
+    });
+
+    it('brings back the selection of each moment', async () => {
+      const { state } = await loaded();
+      state().select({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
+      state().change(removeHotspot('h_carda0'));
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
+      state().select({ pageId: 'p_about0', hotspotIds: [] });
+      state().undo();
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
+      expect(state().project?.pages[0]?.hotspots.some((h) => h.id === 'h_carda0')).toBe(true);
+      state().redo();
+      expect(state().selection).toEqual({ pageId: 'p_about0', hotspotIds: [] });
+    });
+
+    it('keeps the selection valid for the project it brings back', async () => {
+      const { state } = await loaded();
+      state().select({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
+      state().change(removeHotspot('h_carda0'));
+      state().undo();
+      // Redo brings back the project without the hotspot; the hotspot selected now goes.
+      state().redo();
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
+    });
+
+    it('saves an undo and a redo as any change is saved', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      state().undo();
+      expect(state().save).toEqual({ state: 'saving' });
+      await wait(SAVE_DELAY_MS);
+      expect(server.saves[1]!.project.name).toBe('Demo stand');
+      expect(server.saves[1]!.basedOn).toBe(2);
+      server.saves[1]!.answer.resolve({ ok: true, revision: 3 });
+      await settle();
+      state().redo();
+      await wait(SAVE_DELAY_MS);
+      expect(server.saves[2]!.project.name).toBe('One');
+    });
+
+    it('keeps undo in the tab in demo mode, without saving', async () => {
+      const server = fakeServer();
+      const store = createEditorStore(server.api);
+      store.getState().start();
+      server.loads[0]!.resolve({ revision: 1, project: demoProject(), demo: true });
+      await settle();
+      store.getState().change(rename('Visitor'));
+      store.getState().undo();
+      expect(store.getState().project?.name).toBe('Demo stand');
+      await wait(SAVE_DELAY_MS * 2);
+      expect(server.saves).toHaveLength(0);
+      expect(store.getState().save).toEqual({ state: 'saved' });
+    });
+
+    it('is cleared when another editor saves, and says so once', async () => {
+      const { state, server } = await loaded();
+      expect(state().historyCleared).toBe(false); // the first load cleared nothing
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      state().undo();
+      await wait(SAVE_DELAY_MS);
+      server.saves[1]!.answer.resolve({ ok: true, revision: 3 });
+      await settle();
+      state().projectUpdated(4);
+      server.loads[1]!.resolve({ revision: 4, project: { ...demoProject(), name: 'Theirs' } });
+      await settle();
+      expect(state().past).toEqual([]);
+      expect(state().future).toEqual([]);
+      expect(state().historyCleared).toBe(true);
+      state().dismissHistoryCleared();
+      expect(state().historyCleared).toBe(false);
+    });
+
+    it('does not say so when there was nothing to clear', async () => {
+      const { state, server } = await loaded();
+      state().projectUpdated(2);
+      server.loads[1]!.resolve({ revision: 2, project: { ...demoProject(), name: 'Theirs' } });
+      await settle();
+      expect(state().historyCleared).toBe(false);
+    });
+
+    it('keeps the history when a check after reconnecting finds no other save', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      state().connected();
+      server.loads[1]!.resolve({ revision: 2, project: { ...demoProject(), name: 'One' } });
+      await settle();
+      expect(names(state().past)).toEqual(['Demo stand']);
+      expect(state().historyCleared).toBe(false);
+    });
+
+    it('is cleared when this editor opens another project', async () => {
+      const { state } = await loaded();
+      state().change(rename('One'));
+      state().undo();
+      state().projectOpened(7);
+      expect(state().future).toEqual([]);
+      expect(state().historyCleared).toBe(true);
+      // Opening one more before the editor said so keeps the notice.
+      state().projectOpened(8);
+      expect(state().historyCleared).toBe(true);
+    });
+
+    it('is cleared when a save finds another project open on the server', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('Old stand edit'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({
+        ok: false,
+        reason: 'Another project was opened on the server.',
+        errors: [],
+        stale: true,
+      });
+      await settle();
+      // Cleared at once, even before the open project arrives.
+      expect(state().past).toEqual([]);
+      expect(state().historyCleared).toBe(true);
+    });
+
+    it('starts a new step after the history was cleared, even in the same group', async () => {
+      const { state } = await loaded();
+      state().change(rename('A'), { group: 'name' });
+      state().projectOpened(7);
+      state().change(rename('B'), { group: 'name' });
+      expect(names(state().past)).toEqual(['A']);
     });
   });
 });
