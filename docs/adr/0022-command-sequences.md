@@ -63,3 +63,18 @@ up what to send. A sequence fits that split.
 - The server keeps per-hotspot timers; they are cancelled on a new tap, on opening another
   project and on stop.
 - Sequences are as reliable as single commands: UDP still cannot confirm arrival (TGT-5).
+
+## Amendment (2026-11-23, v0.6): named steps and steps that are off
+- **A step may have a `name` and `enabled`**, both optional, so `schemaVersion` stays 2 (spec
+  ACT-9). Tapcue 0.5 refuses such a project: its step schema allows no other fields.
+- **A step that is off is skipped with its pause,** as if it were not in the list: not sent, not
+  waited for, not logged, and not counted in "step 2 of 3" nor in `X-Tapcue-Sequence`. The
+  integrator switches a step off to try a cue without it, and expects the rest to keep its rhythm
+  without a gap. Keeping the pause was considered and rejected: a silent wait for a command that
+  never comes reads as a fault on the stand.
+- **Every step off** sends nothing, like a button without commands; "Send test" answers 409.
+- **A fader's one command can be switched off:** a drag still moves the fader on every tablet,
+  and sends nothing.
+- **The log carries a step's name** in `sequence.name`, also for a single named command, so the
+  log reads "Lights up" rather than "Step 2 of 3". The name is not sent to the media server: the
+  `X-Tapcue-Sequence` header stays as it was and is sent only for a real sequence.

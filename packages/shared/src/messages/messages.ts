@@ -15,14 +15,16 @@ export type LogSource = z.infer<typeof LogSource>;
 
 /**
  * Where an entry sits in a tap's sequence of commands (ADR 0022): `run` is the same for every entry
- * of one tap, `step` counts from 1 of `of`, and `delayMs` is the pause before the step. Absent for
- * a tap that sends one command at once.
+ * of one tap, `step` counts from 1 of `of`, and `delayMs` is the pause before the step. Steps that
+ * are off are not counted (spec ACT-9). Absent for a tap that sends one unnamed command at once.
  */
 export const SequenceStep = z.strictObject({
   run: z.int().min(0),
   step: z.int().min(1),
   of: z.int().min(1),
   delayMs: z.int().min(0),
+  /** The step's name, when it has one (spec ACT-9). */
+  name: z.string().max(100).optional(),
 });
 export type SequenceStep = z.infer<typeof SequenceStep>;
 

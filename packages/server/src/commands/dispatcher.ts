@@ -3,17 +3,19 @@
 //
 // A hotspot's commands are a sequence: each step is sent after its delay, on the server's own
 // timers, so a tablet that sleeps or moves on does not stop it. A new tap on the same hotspot
-// cancels the steps not yet sent and starts over.
-import type {
-  Hotspot,
-  HotspotId,
-  LogEntry,
-  LogSource,
-  PageId,
-  Project,
-  Protocol,
-  SequenceStep,
-  Step,
+// cancels the steps not yet sent and starts over. Steps that are off are skipped with their pause,
+// as if they were not in the list, and are not counted (spec ACT-9).
+import {
+  activeSteps,
+  type Hotspot,
+  type HotspotId,
+  type LogEntry,
+  type LogSource,
+  type PageId,
+  type Project,
+  type Protocol,
+  type SequenceStep,
+  type Step,
 } from '@tapcue/shared';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
@@ -106,7 +108,7 @@ export function createDispatcher({
   function runStep(run: Run, index: number): Promise<LogEntry | null> {
     run.timer = null;
     const hotspot = find(run.pageId, run.hotspotId);
-    const steps = hotspot && hotspot.kind !== 'fader' ? hotspot.action.commands : [];
+    const steps = hotspot && hotspot.kind !== 'fader' ? activeSteps(hotspot.action) : [];
     const step = steps[index];
     if (!hotspot || !step) {
       // The hotspot was deleted or lost its later steps since the tap: nothing left to send.
@@ -121,9 +123,16 @@ export function createDispatcher({
     if (following) {
       run.timer = setTimeout(() => void runStep(run, index + 1), following.delayMs ?? 0);
     }
+    // A named step says its name in the log, even when it is the only one.
     const sequence =
-      steps.length > 1 || step.delayMs
-        ? { run: run.id, step: index + 1, of: steps.length, delayMs: step.delayMs ?? 0 }
+      steps.length > 1 || step.delayMs || step.name
+        ? {
+            run: run.id,
+            step: index + 1,
+            of: steps.length,
+            delayMs: step.delayMs ?? 0,
+            ...(step.name && { name: step.name }),
+          }
         : undefined;
     return send(run, hotspot, step, sequence);
   }
@@ -150,10 +159,12 @@ export function createDispatcher({
       // The check above pairs target and command by protocol; the types cannot follow that across
       // the union, so the driver is called as a driver of any protocol.
       const driver = drivers[target.protocol] as Driver<Protocol>;
+      // The media server hears of a sequence only when there is one: a name alone is for the log.
+      const inSequence = sequence && (sequence.of > 1 || sequence.delayMs > 0);
       await driver.send(target, command, {
         source: tap.source,
         hotspotName: hotspot.name,
-        ...(sequence && {
+        ...(inSequence && {
           sequence: { run: sequence.run, step: sequence.step, of: sequence.of },
         }),
       });
@@ -186,13 +197,15 @@ export function createDispatcher({
     const previous = running.get(tap.hotspotId);
     if (previous) stop(previous, 'tapped again');
 
-    const [first] = hotspot.action.commands;
-    if (!first) return Promise.resolve(null); // only navigates: nothing to send, nothing to log
+    const steps = activeSteps(hotspot.action);
+    const [first] = steps;
+    // Only navigates, or every step is off: nothing to send, nothing to log.
+    if (!first) return Promise.resolve(null);
     const run: Run = {
       ...tap,
       id: runs++,
       next: 0,
-      of: hotspot.action.commands.length,
+      of: steps.length,
       timer: null,
     };
     // One command sent at once has nothing to cancel later, so it is not kept as running.

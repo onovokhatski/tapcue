@@ -161,17 +161,14 @@ describe('validateProject', () => {
   describe('references to targets', () => {
     it('reports a command whose target is missing', () => {
       const errors = errorsOf(project((p) => (p.targets = [])));
-      // Every step is checked: the example's button sends two commands (ADR 0022).
-      expect(errors).toEqual([
-        {
-          path: 'pages[0].hotspots[0].action.commands[0].command.targetId',
+      // Every step is checked, also the third one, which is off: switched back on, it must work
+      // (ADR 0022, spec ACT-9).
+      expect(errors).toEqual(
+        [0, 1, 2].map((c) => ({
+          path: `pages[0].hotspots[0].action.commands[${c}].command.targetId`,
           message: 'target "t_demo01" does not exist',
-        },
-        {
-          path: 'pages[0].hotspots[0].action.commands[1].command.targetId',
-          message: 'target "t_demo01" does not exist',
-        },
-      ]);
+        })),
+      );
     });
 
     it('reports a command of another protocol than its target', () => {
@@ -190,6 +187,7 @@ describe('validateProject', () => {
       expect(errors).toEqual([
         { path: 'pages[0].hotspots[0].action.commands[0].command.type', message },
         { path: 'pages[0].hotspots[0].action.commands[1].command.type', message },
+        { path: 'pages[0].hotspots[0].action.commands[2].command.type', message },
       ]);
     });
   });
@@ -449,6 +447,7 @@ describe('validateProject', () => {
       'pages[0].hotspots[0].action.goTo',
       'pages[0].hotspots[0].action.commands[0].command.targetId',
       'pages[0].hotspots[0].action.commands[1].command.targetId',
+      'pages[0].hotspots[0].action.commands[2].command.targetId',
     ]);
   });
 });

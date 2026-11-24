@@ -246,3 +246,53 @@ describe('POST /api/test-send for a sequence (spec ACT-4, ADR 0022)', () => {
     await app.close();
   });
 });
+
+describe('POST /api/test-send with steps that are off (spec ACT-9)', () => {
+  let dir: string;
+  let offStore: ProjectStore;
+  const udp = (text: string): Command => ({ type: 'udp', targetId: 't_projec', text });
+
+  // A copy of the demo stand: Product A's card has every step off; Product B's card has its first
+  // step, with a pause, off.
+  beforeAll(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'tapcue-off-'));
+    await cp(DEFAULT_PROJECT_DIR, dir, { recursive: true });
+    const file = join(dir, 'project.json');
+    const project = JSON.parse(await readFile(file, 'utf8')) as Project;
+    const card = (id: string) => project.pages[0]!.hotspots.find((h) => h.id === id)!;
+    card('h_carda0').action.commands = [
+      { command: udp('A'), enabled: false },
+      { delayMs: 100, command: udp('B'), enabled: false },
+    ];
+    card('h_cardb0').action.commands = [
+      { delayMs: 2000, command: udp('A'), enabled: false },
+      { command: udp('B') },
+    ];
+    await writeFile(file, JSON.stringify(project));
+    offStore = await loadProjectStore(dir);
+  });
+  afterAll(() => rm(dir, { recursive: true, force: true }));
+
+  function send(hotspotId: string) {
+    const fake = fakeDrivers();
+    const app = buildApp({ store: offStore, drivers: fake.drivers });
+    const payload = { pageId: 'p_home00', hotspotId };
+    return { response: app.inject({ method: 'POST', url: '/api/test-send', payload }), ...fake };
+  }
+
+  it('answers 409 when every command is off, and sends nothing', async () => {
+    const { response, sent } = send('h_carda0');
+    const answer = await response;
+    expect(answer.statusCode).toBe(409);
+    expect(answer.json()).toEqual({ error: 'Every command of the hotspot is switched off' });
+    expect(sent).toHaveLength(0);
+  });
+
+  it('skips a step that is off with its pause, as a tap would', async () => {
+    const { response, sent } = send('h_cardb0');
+    const answer = await response;
+    expect(answer.statusCode).toBe(200);
+    expect(sent.map((s) => s.command)).toEqual([udp('B')]);
+    expect(answer.json()).toMatchObject({ entry: { status: 'sent', command: udp('B') } });
+  });
+});

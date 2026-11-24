@@ -319,6 +319,19 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     expect(faders.values()).toEqual({ h_vol000: 0.5 });
   });
 
+  it('holds the value of a fader whose command is off, and sends nothing (spec ACT-9)', async () => {
+    const [step] = volume.action.commands;
+    project = projectWith({
+      ...volume,
+      action: { goTo: null, commands: [{ ...step!, enabled: false }] },
+    });
+    expect(await faders.receive(at(0.5, true))).toBeNull();
+    expect(await faders.receive(at(0.6, false))).toBeNull();
+    await vi.advanceTimersByTimeAsync(SEND_INTERVAL_MS * 3);
+    expect(sent).toEqual([]);
+    expect(faders.values()).toEqual({ h_vol000: 0.6 });
+  });
+
   it('holds the value of a fader that sends nothing yet, and sends nothing', async () => {
     project = projectWith({ ...volume, action: { goTo: null, commands: [] } });
     expect(await faders.receive(at(0.5, true))).toBeNull();

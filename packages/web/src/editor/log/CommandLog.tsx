@@ -340,7 +340,10 @@ function CommandText({ entry }: { entry: LogEntry }) {
   );
 }
 
-/** "Step 2 of 3 · after 1.5 s ·" before a step's command (ADR 0022). */
+/**
+ * "Step 2 of 3 · after 1.5 s ·" before a step's command (ADR 0022); a named step says its name
+ * instead: "Lights up · after 1.5 s ·" (spec ACT-9).
+ */
 function StepPlace({ entry }: { entry: LogEntry }) {
   const { sequence } = entry;
   if (!sequence) return null;
@@ -348,7 +351,8 @@ function StepPlace({ entry }: { entry: LogEntry }) {
     sequence.delayMs > 0 ? ` · after ${Number((sequence.delayMs / 1000).toFixed(1))} s` : '';
   return (
     <span className="text-body-s text-muted">
-      {sequence.of > 1 ? `Step ${sequence.step} of ${sequence.of}` : 'One command'}
+      {sequence.name ??
+        (sequence.of > 1 ? `Step ${sequence.step} of ${sequence.of}` : 'One command')}
       {after} ·{' '}
     </span>
   );
