@@ -55,6 +55,7 @@ const PATHS = {
     </>
   ),
   'chevron-down': <path d="M4 6l4 4 4-4" />,
+  power: <path d="M8 1.75v5.5M4.9 3.9a5.25 5.25 0 1 0 6.2 0" />,
   'panel-left': (
     <>
       <rect x="2" y="2.75" width="12" height="10.5" rx="1.5" />
