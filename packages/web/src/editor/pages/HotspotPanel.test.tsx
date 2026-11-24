@@ -1,18 +1,27 @@
 import type { Hotspot, LogEntry, Project } from '@tapcue/shared';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { TestSent } from '../../lib/projectApi';
 import { demoProject } from '../../test/demoProject';
 import { DEFAULT_TEXT, placeHotspot } from '../operations/hotspots';
 import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { HotspotPanel } from './HotspotPanel';
+import { forgetFolds } from './PanelSection';
 
 const testSends: unknown[][] = [];
+
+const ALL_OPEN = Object.fromEntries(
+  ['name', 'type', 'position', 'style', 'text', 'tap', 'stacking', 'selected'].map((id) => [
+    id,
+    true,
+  ]),
+);
 
 async function renderPanel(
   project: Project = demoProject(),
   answer: TestSent = { ok: false, reason: 'Recorded by the test' },
+  open = true,
 ) {
   testSends.length = 0;
   const store = createEditorStore({
@@ -28,6 +37,8 @@ async function renderPanel(
   store.getState().start();
   await act(() => Promise.resolve());
   act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0'] }));
+  // Every section open: these tests are about the fields; folding has its own tests.
+  if (open) localStorage.setItem('tapcue.panelSections', JSON.stringify(ALL_OPEN));
   render(
     <EditorStoreContext value={store}>
       <HotspotPanel />
@@ -1167,8 +1178,9 @@ describe('HotspotPanel for several hotspots (spec ED-16)', () => {
 
   it('lists them, and a click selects only that one', async () => {
     const { state } = await renderGroup();
-    const list = within(screen.getByRole('region', { name: 'Selected hotspots' }));
-    expect(list.getAllByRole('button').map((b) => b.textContent)).toEqual([
+    const list = within(screen.getByRole('region', { name: 'Selected' }));
+    // The section's own header is a button too; the list follows it.
+    expect(list.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'Product A card',
       'Product C card',
     ]);
@@ -1194,7 +1206,7 @@ describe('arranging (spec ED-18)', () => {
     act(() =>
       store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_about0'] }),
     );
-    const group = within(screen.getByRole('region', { name: 'Position' }));
+    const group = within(screen.getByRole('region', { name: 'Position and size' }));
     expect(group.getByRole('toolbar', { name: 'Arrange' })).toBeInTheDocument();
     expect(screen.getAllByRole('toolbar', { name: 'Arrange' })).toHaveLength(1);
   });
@@ -1301,11 +1313,11 @@ describe('shared settings of several hotspots (spec ED-19)', () => {
     expect(style.getByRole('textbox', { name: 'Border width' })).toHaveValue('');
     expect(style.getByRole('textbox', { name: 'Frost' })).toHaveValue('0');
     // Both rectangles with radius 40.
-    expect(region('Shape').getByRole('radio', { name: 'Rectangle' })).toHaveAttribute(
+    expect(region('Style').getByRole('radio', { name: 'Rectangle' })).toHaveAttribute(
       'aria-checked',
       'true',
     );
-    expect(region('Shape').getByRole('textbox', { name: 'Corner radius' })).toHaveValue('40');
+    expect(region('Style').getByRole('textbox', { name: 'Corner radius' })).toHaveValue('40');
   });
 
   it('gives a value to all of them, replacing Mixed', async () => {
@@ -1358,7 +1370,7 @@ describe('shared settings of several hotspots (spec ED-19)', () => {
 
   it('chooses no shape when they differ; a choice applies to all, a radius to the rectangles', async () => {
     const { hotspots } = await renderGroup(['h_carda0', 'h_about0', 'h_call00']);
-    const shape = region('Shape');
+    const shape = region('Style');
     expect(shape.getByRole('radio', { name: 'Rectangle' })).toHaveAttribute(
       'aria-checked',
       'false',
@@ -1453,5 +1465,119 @@ describe('shared settings of several hotspots (spec ED-19)', () => {
   it('says so when none of them has a text label', async () => {
     await renderGroup(['h_cardb0', 'h_about0']);
     expect(region('Text').getByText('None of them has a text label.')).toBeInTheDocument();
+  });
+});
+
+describe('foldable sections (spec ED-20, ED-21)', () => {
+  const sections = () => screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+  const header = (title: string) =>
+    within(screen.getByRole('region', { name: title })).getByRole('button', {
+      name: new RegExp(`^${title}`),
+    });
+  const isOpen = (title: string) => header(title).getAttribute('aria-expanded') === 'true';
+  const summary = (title: string) =>
+    within(screen.getByRole('region', { name: title })).queryByTestId('section-summary')
+      ?.textContent;
+
+  it('goes from how the hotspot looks to what it does', async () => {
+    await renderPanel(undefined, undefined, false);
+    expect(sections()).toEqual([
+      'Name',
+      'Type',
+      'Position and size',
+      'Style',
+      'Text',
+      'On tap',
+      'Stacking',
+    ]);
+  });
+
+  it('starts with Name, Position and On tap open, the rest folded with their state', async () => {
+    await renderPanel(undefined, undefined, false);
+    expect(
+      ['Name', 'Type', 'Position and size', 'Style', 'Text', 'On tap', 'Stacking'].map(isOpen),
+    ).toEqual([true, false, true, false, false, true, false]);
+    expect(summary('Type')).toBe('Button');
+    expect(summary('Style')).toBe('Rectangle R 40 · invisible');
+    expect(summary('Text')).toBe('No text');
+    expect(summary('Stacking')).toBe('1 of 5 from the bottom');
+    // The full summary is the tooltip, for one cut off by the panel's width.
+    expect(screen.getByRole('region', { name: 'Style' }).querySelector('[title]')).toHaveAttribute(
+      'title',
+      'Rectangle R 40 · invisible',
+    );
+    expect(summary('Name')).toBeUndefined();
+  });
+
+  it('folds and opens a section, keeping the focus on its header', async () => {
+    await renderPanel(undefined, undefined, false);
+    header('Name').focus();
+    fireEvent.click(header('Name'));
+    expect(isOpen('Name')).toBe(false);
+    expect(header('Name')).toHaveFocus();
+    expect(summary('Name')).toBe('Product A card');
+    expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
+    fireEvent.click(header('Style'));
+    expect(isOpen('Style')).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Opacity' })).toBeInTheDocument();
+    expect(summary('Style')).toBeUndefined();
+  });
+
+  it('remembers the folds for every hotspot, also after a reload', async () => {
+    const { store } = await renderPanel(undefined, undefined, false);
+    fireEvent.click(header('Position and size'));
+    fireEvent.click(header('Text'));
+    act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_about0'] }));
+    expect(isOpen('Position and size')).toBe(false);
+    expect(isOpen('Text')).toBe(true);
+    expect(JSON.parse(localStorage.getItem('tapcue.panelSections')!)).toEqual({
+      position: false,
+      text: true,
+    });
+  });
+
+  it('still folds with storage off, for this tab', async () => {
+    const denied = () => {
+      throw new Error('storage off');
+    };
+    vi.stubGlobal('localStorage', { getItem: denied, setItem: denied });
+    try {
+      const { store } = await renderPanel(undefined, undefined, false);
+      expect(isOpen('Name')).toBe(true);
+      fireEvent.click(header('Name'));
+      // Through the group panel, which has no Name section, so the section is made anew.
+      act(() =>
+        store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_about0'] }),
+      );
+      act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_about0'] }));
+      expect(isOpen('Name')).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+      forgetFolds();
+    }
+  });
+
+  it('keeps a section with an invalid value open until it is fixed', async () => {
+    await renderPanel(undefined, undefined, false);
+    fireEvent.change(screen.getByRole('textbox', { name: 'X' }), { target: { value: '99999' } });
+    fireEvent.click(header('Position and size'));
+    expect(isOpen('Position and size')).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'X' })).toHaveValue('99999');
+    fireEvent.change(screen.getByRole('textbox', { name: 'X' }), { target: { value: '100' } });
+    fireEvent.click(header('Position and size'));
+    expect(isOpen('Position and size')).toBe(false);
+    expect(summary('Position and size')).toBe('100, 500 · 560 × 720');
+  });
+
+  it('sums up several hotspots in the group panel', async () => {
+    const { store } = await renderPanel(undefined, undefined, false);
+    act(() =>
+      store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_about0'] }),
+    );
+    expect(sections()).toEqual(['Position and size', 'Style', 'Text', 'Selected']);
+    expect(summary('Style')).toBe('Mixed shapes · invisible');
+    expect(summary('Text')).toBe('No text');
+    fireEvent.click(header('Selected'));
+    expect(summary('Selected')).toBe('Product A card, About');
   });
 });

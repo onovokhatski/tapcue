@@ -2,7 +2,7 @@
 // press effect, what a tap does, duplicate, delete and stacking order (spec HS-2–HS-7, ACT-1,
 // ED-10; design: hotspotProps()).
 import type { Canvas, Hotspot, Page, PageId } from '@tapcue/shared';
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -21,6 +21,16 @@ import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geomet
 import { useEditor } from '../useEditor';
 import { ArrangeTools } from './ArrangeTools';
 import { GroupPanel } from './GroupPanel';
+import { PanelSection } from './PanelSection';
+import {
+  nameSummary,
+  onTapSummary,
+  positionSummary,
+  stackingSummary,
+  styleSummary,
+  textSummary,
+  typeSummary,
+} from './summaries';
 import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
 import { KindFields } from './HotspotFader';
@@ -81,8 +91,6 @@ export function HotspotPanel() {
             />
           </div>
         </div>
-        {/* Keyed, so the fields start afresh for another hotspot. */}
-        <NameField key={hotspot.id} page={page} hotspot={hotspot} />
         {cropped && (
           // Shown whether or not the safe area is drawn on the canvas (spec ED-3).
           <Banner tone="warning" title="Partly outside the safe area">
@@ -92,19 +100,15 @@ export function HotspotPanel() {
           </Banner>
         )}
       </div>
-      <Section title="Type">
+      {/* From how the hotspot looks to what it does (spec ED-21); each section folds (ED-20). */}
+      <PanelSection id="name" title="Name" summary={nameSummary(hotspot)}>
+        {/* Keyed, so the fields start afresh for another hotspot. */}
+        <NameField key={hotspot.id} page={page} hotspot={hotspot} />
+      </PanelSection>
+      <PanelSection id="type" title="Type" summary={typeSummary(hotspot)}>
         <KindFields key={`kind-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
-      </Section>
-      {/* What a button does matters more than where it is exactly (design: "On tap" first). */}
-      <Section title={hotspot.kind === 'fader' ? 'While dragged' : 'On tap'}>
-        <OnTapFields
-          key={`tap-${hotspot.id}`}
-          project={project}
-          pageId={page.id}
-          hotspot={hotspot}
-        />
-      </Section>
-      <Section title="Position and size">
+      </PanelSection>
+      <PanelSection id="position" title="Position and size" summary={positionSummary([hotspot])}>
         {/* Aligning is about position, so its tools sit next to X and Y (spec ED-18, ED-21). */}
         <ArrangeTools pageId={page.id} hotspots={[hotspot]} />
         <GeometryFields
@@ -113,15 +117,31 @@ export function HotspotPanel() {
           hotspot={hotspot}
           canvas={project.canvas}
         />
+      </PanelSection>
+      <PanelSection id="style" title="Style" summary={styleSummary([hotspot])}>
         <ShapeRow key={`shape-${hotspot.id}`} pageId={page.id} hotspots={[hotspot]} />
-      </Section>
-      <Section title="Style">
         <StyleFields key={`style-${hotspot.id}`} pageId={page.id} hotspots={[hotspot]} />
-      </Section>
-      <Section title="Text">
+      </PanelSection>
+      <PanelSection id="text" title="Text" summary={textSummary([hotspot])}>
         <HotspotTextFields key={`text-${hotspot.id}`} pageId={page.id} hotspots={[hotspot]} />
-      </Section>
-      <Section title="Stacking">
+      </PanelSection>
+      <PanelSection
+        id="tap"
+        title={hotspot.kind === 'fader' ? 'While dragged' : 'On tap'}
+        summary={onTapSummary(hotspot, project)}
+      >
+        <OnTapFields
+          key={`tap-${hotspot.id}`}
+          project={project}
+          pageId={page.id}
+          hotspot={hotspot}
+        />
+      </PanelSection>
+      <PanelSection
+        id="stacking"
+        title="Stacking"
+        summary={stackingSummary(index, page.hotspots.length)}
+      >
         <div className="flex gap-2">
           <Button
             size="s"
@@ -137,25 +157,16 @@ export function HotspotPanel() {
           />
         </div>
         <p className="text-body-s text-muted">
-          {index + 1} of {page.hotspots.length} from the bottom. Where hotspots overlap, the one on
-          top gets the tap.
+          {stackingSummary(index, page.hotspots.length)}. Where hotspots overlap, the one on top
+          gets the tap.
         </p>
-      </Section>
+      </PanelSection>
     </aside>
   );
 }
 
 /** Which way to move a hotspot out of the band at an edge. */
 const AWAY = { top: 'down', bottom: 'up', left: 'right', right: 'left' } as const;
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section aria-label={title} className="space-y-3 border-b border-default px-4 py-4">
-      <h3 className="text-overline text-muted uppercase">{title}</h3>
-      {children}
-    </section>
-  );
-}
 
 /**
  * A name another hotspot on the page has is refused: it stays in the field with the hint until it
@@ -174,7 +185,8 @@ function NameField({ page, hotspot }: { page: Page; hotspot: Hotspot }) {
   const commit = () => change((p) => renameHotspot(p, page.id, hotspot.id, value));
   return (
     <TextField
-      label="Name"
+      // The section's header already says "Name"; the field keeps it as its accessible name.
+      ariaLabel="Name"
       size="s"
       value={value}
       maxLength={100}

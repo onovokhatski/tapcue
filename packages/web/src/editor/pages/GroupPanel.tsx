@@ -11,6 +11,8 @@ import { boundingBox, boxFieldLimits, checkBoxField, type Rect } from '../operat
 import { deleteHotspots, duplicateHotspots, nudgeHotspots } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
 import { ArrangeTools } from './ArrangeTools';
+import { PanelSection } from './PanelSection';
+import { positionSummary, styleSummary, textSummary } from './summaries';
 import { ShapeRow, StyleFields } from './HotspotStyle';
 import { HotspotTextFields } from './HotspotText';
 
@@ -68,8 +70,8 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
           canvas adds or removes one.
         </p>
       </div>
-      <section aria-label="Position" className="space-y-3 border-b border-default px-4 py-4">
-        <h3 className="text-overline text-muted uppercase">Position of the group</h3>
+      {/* The same sections as for one hotspot, in the same order (spec ED-20, ED-21). */}
+      <PanelSection id="position" title="Position and size" summary={positionSummary(hotspots)}>
         <ArrangeTools pageId={page.id} hotspots={hotspots} />
         <GroupPosition
           key={ids.join()}
@@ -78,22 +80,20 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
           box={boundingBox(hotspots) ?? { x: 0, y: 0, width: 0, height: 0 }}
           canvas={project.canvas}
         />
-      </section>
+      </PanelSection>
       {/* The settings they share (spec ED-19); names, commands and links stay each one's own. */}
-      <section aria-label="Shape" className="space-y-3 border-b border-default px-4 py-4">
-        <h3 className="text-overline text-muted uppercase">Shape</h3>
+      <PanelSection id="style" title="Style" summary={styleSummary(hotspots)}>
         <ShapeRow key={ids.join()} pageId={page.id} hotspots={hotspots} />
-      </section>
-      <section aria-label="Style" className="space-y-3 border-b border-default px-4 py-4">
-        <h3 className="text-overline text-muted uppercase">Style</h3>
         <StyleFields key={ids.join()} pageId={page.id} hotspots={hotspots} />
-      </section>
-      <section aria-label="Text" className="space-y-3 border-b border-default px-4 py-4">
-        <h3 className="text-overline text-muted uppercase">Text</h3>
+      </PanelSection>
+      <PanelSection id="text" title="Text" summary={textSummary(hotspots)}>
         <HotspotTextFields key={ids.join()} pageId={page.id} hotspots={hotspots} />
-      </section>
-      <section aria-label="Selected hotspots" className="space-y-2 px-4 py-4">
-        <h3 className="text-overline text-muted uppercase">Selected</h3>
+      </PanelSection>
+      <PanelSection
+        id="selected"
+        title="Selected"
+        summary={hotspots.map((h) => h.name || 'Unnamed').join(', ')}
+      >
         <ul className="-mx-2 space-y-0.5">
           {hotspots.map((hotspot) => (
             <li key={hotspot.id}>
@@ -108,7 +108,7 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
             </li>
           ))}
         </ul>
-      </section>
+      </PanelSection>
       {deleting && (
         <DeleteHotspotsDialog
           count={hotspots.length}
