@@ -1,11 +1,13 @@
 // Segmented control of the design system (components.md: Segmented control; prototype segmented()):
-// two or three fixed options, one chosen. A radio group: Tab enters it, the arrow keys choose.
+// two or three fixed options, one chosen, or none when several hotspots differ (spec ED-19). A radio
+// group: Tab enters it, the arrow keys choose.
 import { type KeyboardEvent, useRef } from 'react';
 
 interface SegmentedProps<T extends string> {
   label: string;
   options: { value: T; label: string }[];
-  value: T;
+  /** null: no option is chosen, e.g. "Mixed". */
+  value: T | null;
   onChange: (value: T) => void;
   disabled?: boolean;
 }
@@ -45,8 +47,9 @@ export function Segmented<T extends string>({
             type="button"
             role="radio"
             aria-checked={on}
-            // Only the chosen option is in the Tab order (a radio group's usual keyboard model).
-            tabIndex={on ? 0 : -1}
+            // Only the chosen option is in the Tab order (a radio group's usual keyboard model);
+            // with none chosen, the first one.
+            tabIndex={on || (value === null && index === 0) ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => onKeyDown(event, index)}

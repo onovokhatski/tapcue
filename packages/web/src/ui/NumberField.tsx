@@ -24,6 +24,8 @@ interface NumberFieldProps {
   decimal?: boolean;
   onChange: (text: string) => void;
   onBlur?: () => void;
+  /** Shown while the field is empty, e.g. "Mixed" for values that differ (spec ED-19). */
+  placeholder?: string;
 }
 
 /**
@@ -52,6 +54,7 @@ export function NumberField({
   decimal = false,
   onChange,
   onBlur,
+  placeholder,
 }: NumberFieldProps) {
   // The drag in progress: where the pointer went down, and the value it started from.
   const drag = useRef<{ x: number; start: string } | null>(null);
@@ -122,6 +125,7 @@ export function NumberField({
           disabled ? 'text-disabled' : ''
         }`}
         value={value}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={keyDown}
         onBlur={onBlur}
