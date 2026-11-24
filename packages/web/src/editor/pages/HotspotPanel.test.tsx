@@ -27,7 +27,7 @@ async function renderPanel(
   });
   store.getState().start();
   await act(() => Promise.resolve());
-  act(() => store.getState().select({ pageId: 'p_home00', hotspotId: 'h_carda0' }));
+  act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0'] }));
   render(
     <EditorStoreContext value={store}>
       <HotspotPanel />
@@ -173,14 +173,14 @@ describe('HotspotPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Duplicate hotspot' }));
     const copy = hotspots()[1]!;
     expect(copy).toMatchObject({ name: 'Product A card 2', x: 164, y: 520 });
-    expect(state().selection.hotspotId).toBe(copy.id);
+    expect(state().selection.hotspotIds).toEqual([copy.id]);
   });
 
   it('deletes the hotspot; nothing is selected afterwards (spec HS-6)', async () => {
     const { hotspots, state } = await renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Delete hotspot' }));
     expect(hotspots().map((h) => h.id)).not.toContain('h_carda0');
-    expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: null });
+    expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
   });
 
   describe('stacking (spec HS-6)', () => {
@@ -915,7 +915,7 @@ describe('HotspotPanel', () => {
         };
         const { store } = await renderPanel(project);
         fireEvent.click(onTap().getByRole('button', { name: 'Unfold all' }));
-        act(() => store.getState().select({ pageId: 'p_home00', hotspotId: 'h_cardb0' }));
+        act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_cardb0'] }));
         expect([1, 2, 3].map(isOpen)).toEqual([false, false, false]);
       });
 
@@ -1080,5 +1080,85 @@ describe('HotspotPanel', () => {
       expect(cardA().action.commands[0]).not.toHaveProperty('enabled');
       expect(dragged.queryByText(/^Off:/)).toBeNull();
     });
+  });
+});
+
+describe('HotspotPanel for several hotspots (spec ED-16)', () => {
+  async function renderGroup(ids = ['h_carda0', 'h_cardc0']) {
+    const rendered = await renderPanel();
+    act(() => rendered.store.getState().select({ pageId: 'p_home00', hotspotIds: ids }));
+    return rendered;
+  }
+  const at = (h: { x: number; y: number }) => [h.x, h.y];
+
+  it('says how many, with the position and size of their common box', async () => {
+    const { field } = await renderGroup();
+    expect(screen.getByRole('heading', { name: '2 hotspots' })).toBeInTheDocument();
+    expect(field('Group X')).toHaveValue('144');
+    expect(field('Group Y')).toHaveValue('500');
+    expect(screen.getByText('1760 × 720')).toBeInTheDocument();
+    // None of a single hotspot's own fields.
+    expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
+  });
+
+  it('moves them all by the group position; an invalid value stays with its reason', async () => {
+    const { field, hotspots } = await renderGroup();
+    fireEvent.change(field('Group X'), { target: { value: '100' } });
+    expect(
+      hotspots()
+        .filter((h) => h.id !== 'h_cardb0')
+        .slice(0, 2)
+        .map(at),
+    ).toEqual([
+      [100, 500],
+      [1300, 500],
+    ]);
+    fireEvent.change(field('Group Y'), { target: { value: '900' } });
+    expect(screen.getByText('Group Y: 0 to 816, to stay inside the canvas')).toBeInTheDocument();
+    expect(hotspots()[0]!.y).toBe(500);
+    fireEvent.blur(field('Group Y'));
+    expect(field('Group Y')).toHaveValue('900');
+    fireEvent.change(field('Group Y'), { target: { value: '16' } });
+    fireEvent.blur(field('Group Y'));
+    expect(at(hotspots()[0]!)).toEqual([100, 16]);
+    expect(field('Group Y')).toHaveValue('16');
+  });
+
+  it('duplicates them all and selects the copies', async () => {
+    const { state, hotspots } = await renderGroup();
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate 2 hotspots' }));
+    const names = hotspots().map((h) => h.name);
+    expect(names).toContain('Product A card 2');
+    expect(names).toContain('Product C card 2');
+    const copies = hotspots()
+      .filter((h) => / 2$/.test(h.name))
+      .map((h) => h.id);
+    expect(state().selection.hotspotIds).toEqual(copies);
+  });
+
+  it('deletes them all after asking once', async () => {
+    const { state, hotspots } = await renderGroup();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete 2 hotspots' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 hotspots?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(hotspots()).toHaveLength(5);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete 2 hotspots' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete 2 hotspots' }),
+    );
+    expect(hotspots().map((h) => h.id)).toEqual(['h_cardb0', 'h_about0', 'h_call00']);
+    expect(state().selection.hotspotIds).toEqual([]);
+  });
+
+  it('lists them, and a click selects only that one', async () => {
+    const { state } = await renderGroup();
+    const list = within(screen.getByRole('region', { name: 'Selected hotspots' }));
+    expect(list.getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Product A card',
+      'Product C card',
+    ]);
+    fireEvent.click(list.getByRole('button', { name: 'Product C card' }));
+    expect(state().selection.hotspotIds).toEqual(['h_cardc0']);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Product C card');
   });
 });

@@ -312,7 +312,7 @@ function HotspotList({ page }: { page: Page }) {
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-hover"
-            onClick={() => select({ pageId: page.id, hotspotId: hotspot.id })}
+            onClick={() => select({ pageId: page.id, hotspotIds: [hotspot.id] })}
           >
             <span
               className={`h-3 w-4 flex-none border-[1.5px] border-strong ${

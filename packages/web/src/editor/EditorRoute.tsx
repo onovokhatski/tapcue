@@ -105,7 +105,7 @@ function Body({ title, compact }: { title: string; compact: boolean }) {
 
 /** The selected hotspot's properties, or the page's when no hotspot is selected (design). */
 function PropertiesPanel() {
-  const hotspotSelected = useEditor((state) => state.selection.hotspotId !== null);
+  const hotspotSelected = useEditor((state) => state.selection.hotspotIds.length > 0);
   return hotspotSelected ? <HotspotPanel /> : <PagePanel />;
 }
 

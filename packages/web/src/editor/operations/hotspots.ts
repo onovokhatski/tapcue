@@ -16,7 +16,7 @@ import {
   type Style,
   VALUE_PLACEHOLDER,
 } from '@tapcue/shared';
-import { moveRect, type Rect } from './geometry';
+import { boundingBox, moveGroup, moveRect, type Rect } from './geometry';
 import { freeName, nameProblem } from './hotspotNames';
 import { newId } from './ids';
 
@@ -133,34 +133,108 @@ export function duplicateHotspot(
   hotspotId: HotspotId,
   random?: () => number,
 ): { project: Project; hotspotId: HotspotId | null } {
-  const page = project.pages.find((p) => p.id === pageId);
-  const original = page?.hotspots.find((h) => h.id === hotspotId);
-  if (!page || !original) return { project, hotspotId: null };
-  const id = newId(
-    'h',
-    project.pages.flatMap((p) => p.hotspots.map((h) => h.id)),
-    random,
+  const copied = duplicateHotspots(project, pageId, [hotspotId], random);
+  return { project: copied.project, hotspotId: copied.hotspotIds[0] ?? null };
+}
+
+/** The boxes of these hotspots of the page, by id; ids not on the page are left out. */
+function boxesOf(project: Project, pageId: PageId, ids: HotspotId[]): Record<HotspotId, Rect> {
+  const boxes: Record<HotspotId, Rect> = {};
+  for (const h of project.pages.find((p) => p.id === pageId)?.hotspots ?? []) {
+    if (ids.includes(h.id)) boxes[h.id] = { x: h.x, y: h.y, width: h.width, height: h.height };
+  }
+  return boxes;
+}
+
+/** The common box of these hotspots of the page: where a group stands (spec ED-16). */
+export function groupBox(project: Project, pageId: PageId, ids: HotspotId[]): Rect | null {
+  return boundingBox(Object.values(boxesOf(project, pageId, ids)));
+}
+
+/** Puts each hotspot where `rects` says, in one change; the caller keeps them inside the canvas. */
+export function placeHotspots(
+  project: Project,
+  pageId: PageId,
+  rects: Record<HotspotId, Rect>,
+): Project {
+  return Object.entries(rects).reduce(
+    (next, [id, rect]) => placeHotspot(next, pageId, id, rect),
+    project,
   );
-  const { x, y, width, height } = original;
-  const copy: Hotspot = {
-    ...structuredClone(original),
-    ...moveRect({ x, y, width, height }, DUPLICATE_OFFSET, DUPLICATE_OFFSET, project.canvas),
-    id,
-    name: freeName(page, original.name),
-  };
+}
+
+/**
+ * Moves hotspots together by (dx, dy) canvas pixels from where they are now; the group stops as a
+ * whole at the canvas edge (spec ED-16). One hotspot moves as nudgeHotspot moves it.
+ */
+export function nudgeHotspots(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+  dx: number,
+  dy: number,
+): Project {
+  const boxes = boxesOf(project, pageId, ids);
+  return placeHotspots(project, pageId, moveGroup(boxes, dx, dy, project.canvas));
+}
+
+/** Deletes hotspots of a page in one change. */
+export function deleteHotspots(project: Project, pageId: PageId, ids: HotspotId[]): Project {
+  const page = project.pages.find((p) => p.id === pageId);
+  if (!page?.hotspots.some((h) => ids.includes(h.id))) return project;
+  return updateHotspots(project, pageId, (hotspots) => hotspots.filter((h) => !ids.includes(h.id)));
+}
+
+/**
+ * Copies hotspots in one change: each copy with a new id and a free name, just above its original,
+ * and all of them moved together a little to the right and down, inside the canvas (spec HS-7,
+ * ED-14, ED-16). Returns the copies' ids, in page order.
+ */
+export function duplicateHotspots(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+  random?: () => number,
+): { project: Project; hotspotIds: HotspotId[] } {
+  const page = project.pages.find((p) => p.id === pageId);
+  if (!page) return { project, hotspotIds: [] };
+  const originals = page.hotspots.filter((h) => ids.includes(h.id));
+  const moved = moveGroup(
+    boxesOf(project, pageId, ids),
+    DUPLICATE_OFFSET,
+    DUPLICATE_OFFSET,
+    project.canvas,
+  );
+  const taken = project.pages.flatMap((p) => p.hotspots.map((h) => h.id));
+  const copies = new Map<HotspotId, Hotspot>();
+  let named = page;
+  for (const original of originals) {
+    const id = newId('h', taken, random);
+    taken.push(id);
+    const copy: Hotspot = {
+      ...structuredClone(original),
+      ...moved[original.id],
+      id,
+      name: freeName(named, original.name),
+    };
+    // Later copies must not take a name an earlier copy got.
+    named = { ...named, hotspots: [...named.hotspots, copy] };
+    copies.set(original.id, copy);
+  }
   return {
-    project: updateHotspots(project, pageId, (hotspots) => {
-      const index = hotspots.findIndex((h) => h.id === hotspotId);
-      return [...hotspots.slice(0, index + 1), copy, ...hotspots.slice(index + 1)];
-    }),
-    hotspotId: id,
+    project: updateHotspots(project, pageId, (hotspots) =>
+      hotspots.flatMap((h) => {
+        const copy = copies.get(h.id);
+        return copy ? [h, copy] : [h];
+      }),
+    ),
+    hotspotIds: [...copies.values()].map((c) => c.id),
   };
 }
 
 /** Deletes a hotspot. Nothing else refers to hotspots, so nothing else changes. */
 export function deleteHotspot(project: Project, pageId: PageId, hotspotId: HotspotId): Project {
-  if (!findHotspot(project, pageId, hotspotId)) return project;
-  return updateHotspots(project, pageId, (hotspots) => hotspots.filter((h) => h.id !== hotspotId));
+  return deleteHotspots(project, pageId, [hotspotId]);
 }
 
 /**

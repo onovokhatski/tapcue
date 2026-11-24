@@ -4,6 +4,11 @@ import { demoProject } from '../../test/demoProject';
 import {
   addHotspot,
   deleteHotspot,
+  deleteHotspots,
+  duplicateHotspots,
+  groupBox,
+  nudgeHotspots,
+  placeHotspots,
   DUPLICATE_OFFSET,
   duplicateHotspot,
   nudgeHotspot,
@@ -464,6 +469,133 @@ describe('hotspot operations (spec HS-1, HS-2)', () => {
       expect(setStyle(before, 'p_home00', 'h_carda0', { fill: null })).toBe(before);
       expect(setPressEffect(before, 'p_home00', 'h_carda0', 'press')).toBe(before);
       expect(setPressEffect(before, 'p_home00', 'h_zzzzzz', 'ripple')).toBe(before);
+    });
+  });
+});
+
+describe('several hotspots at once (spec ED-16)', () => {
+  // Home: the three cards are 560 × 720 at y 500, x 144, 744 and 1344.
+  const cards = ['h_carda0', 'h_cardb0', 'h_cardc0'];
+  const boxes = (project: Project, ids: string[]) =>
+    home(project)
+      .hotspots.filter((h) => ids.includes(h.id))
+      .map(({ x, y, width, height }) => ({ x, y, width, height }));
+
+  it('finds the common box of a group', () => {
+    expect(groupBox(demoProject(), 'p_home00', ['h_carda0', 'h_cardc0'])).toEqual({
+      x: 144,
+      y: 500,
+      width: 1760,
+      height: 720,
+    });
+    expect(groupBox(demoProject(), 'p_home00', ['h_zzzzzz'])).toBeNull();
+  });
+
+  it('nudges a group together, stopping it as a whole at the canvas edge', () => {
+    const moved = nudgeHotspots(demoProject(), 'p_home00', cards, 10, -10);
+    expect(boxes(moved, cards).map((b) => [b.x, b.y])).toEqual([
+      [154, 490],
+      [754, 490],
+      [1354, 490],
+    ]);
+    // The group's right edge is at 1904: it can go 144 further right, not 500.
+    const far = nudgeHotspots(demoProject(), 'p_home00', cards, 500, 0);
+    expect(boxes(far, cards).map((b) => b.x)).toEqual([288, 888, 1488]);
+    expect(nudgeHotspots(demoProject(), 'p_home00', [], 10, 10)).toEqual(demoProject());
+    expectValid(far);
+  });
+
+  it('places several hotspots in one change', () => {
+    const project = placeHotspots(demoProject(), 'p_home00', {
+      h_carda0: { x: 0, y: 0, width: 100, height: 100 },
+      h_about0: { x: 10, y: 20, width: 30, height: 40 },
+    });
+    expect(boxes(project, ['h_carda0', 'h_about0'])).toEqual([
+      { x: 0, y: 0, width: 100, height: 100 },
+      { x: 10, y: 20, width: 30, height: 40 },
+    ]);
+  });
+
+  it('deletes several in one change, and nothing for ids not on the page', () => {
+    const before = demoProject();
+    const project = deleteHotspots(before, 'p_home00', ['h_carda0', 'h_about0']);
+    expect(home(project).hotspots.map((h) => h.id)).toEqual(['h_cardb0', 'h_cardc0', 'h_call00']);
+    expect(deleteHotspots(before, 'p_home00', ['h_zzzzzz'])).toBe(before);
+  });
+
+  it('duplicates several: each just above its original, with free names, moved together', () => {
+    const before = demoProject();
+    home(before).hotspots[1]!.name = 'Product A card 2'; // taken: the copy of A must skip it
+    const { project, hotspotIds } = duplicateHotspots(before, 'p_home00', ['h_cardc0', 'h_carda0']);
+    const list = home(project).hotspots;
+    expect(list.map((h) => h.name)).toEqual([
+      'Product A card',
+      'Product A card 3',
+      'Product A card 2',
+      'Product C card',
+      'Product C card 2',
+      'About',
+      'Call our team',
+    ]);
+    // In page order, as the selection keeps them.
+    expect(hotspotIds).toEqual([list[1]!.id, list[4]!.id]);
+    expect(new Set([...hotspotIds, ...home(before).hotspots.map((h) => h.id)]).size).toBe(7);
+    // The group's right edge is at 1904: 20 px right and down fits.
+    expect(boxes(project, hotspotIds).map((b) => [b.x, b.y])).toEqual([
+      [164, 520],
+      [1364, 520],
+    ]);
+    expectValid(project);
+  });
+
+  it('gives each copy its own id, never one taken on any page or by another copy', () => {
+    const before = demoProject();
+    before.pages[1]!.hotspots[0]!.id = 'h_bbbbbb';
+    // The first copy gets h_aaaaaa; the second tries h_aaaaaa, then h_bbbbbb (Product A), then
+    // h_cccccc.
+    const random = [
+      ...Array<number>(12).fill(0),
+      ...Array<number>(6).fill(0.03),
+      ...Array<number>(6).fill(0.06),
+    ];
+    let i = 0;
+    const { hotspotIds } = duplicateHotspots(
+      before,
+      'p_home00',
+      ['h_carda0', 'h_cardb0'],
+      () => random[i++]!,
+    );
+    expect(hotspotIds).toEqual(['h_aaaaaa', 'h_cccccc']);
+  });
+
+  it('gives copies of copies distinct names', () => {
+    const before = demoProject();
+    home(before).hotspots[0]!.name = 'Play';
+    home(before).hotspots[1]!.name = 'Play 2';
+    const { project } = duplicateHotspots(before, 'p_home00', ['h_carda0', 'h_cardb0']);
+    expect(
+      home(project)
+        .hotspots.slice(0, 4)
+        .map((h) => h.name),
+    ).toEqual(['Play', 'Play 3', 'Play 2', 'Play 4']);
+  });
+
+  it('keeps the copies inside the canvas as a group', () => {
+    const before = demoProject();
+    Object.assign(home(before).hotspots[2]!, { x: 1488, y: 816 }); // card C touches the corner
+    const { project, hotspotIds } = duplicateHotspots(before, 'p_home00', ['h_carda0', 'h_cardc0']);
+    // No room right or down: the copies keep the originals' places, A's shape kept.
+    expect(boxes(project, hotspotIds).map((b) => [b.x, b.y])).toEqual([
+      [144, 500],
+      [1488, 816],
+    ]);
+  });
+
+  it('copies nothing on a missing page', () => {
+    const before = demoProject();
+    expect(duplicateHotspots(before, 'p_zzzzzz', cards)).toEqual({
+      project: before,
+      hotspotIds: [],
     });
   });
 });

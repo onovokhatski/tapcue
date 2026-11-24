@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  boundingBox,
   boxFieldLimits,
   checkBoxField,
   type Handle,
   MIN_SIZE,
+  moveGroup,
   moveRect,
+  overlaps,
+  rectBetween,
   resizeRect,
 } from './geometry';
 
@@ -113,5 +117,55 @@ describe('checkBoxField (spec ED-10)', () => {
     ['height', '1337', '1 to 1336, to stay inside the canvas'],
   ] as const)('refuses %s = "%s"', (key, text, message) => {
     expect(checkBoxField(key, text, box, canvas)).toBe(message);
+  });
+});
+
+describe('groups (spec ED-16)', () => {
+  const a = { x: 100, y: 100, width: 200, height: 100 };
+  const b = { x: 400, y: 300, width: 100, height: 300 };
+
+  it('finds the common box of several boxes, or none', () => {
+    expect(boundingBox([a, b])).toEqual({ x: 100, y: 100, width: 400, height: 500 });
+    expect(boundingBox([b])).toEqual(b);
+    expect(boundingBox([])).toBeNull();
+  });
+
+  it('moves boxes together by whole pixels', () => {
+    expect(moveGroup({ a, b }, 10.4, -20.6, canvas)).toEqual({
+      a: { ...a, x: 110, y: 79 },
+      b: { ...b, x: 410, y: 279 },
+    });
+  });
+
+  it('stops the group as a whole at each edge, keeping its shape', () => {
+    // The common box is 400 × 500 at (100, 100): it can go 100 left and up, 1548 right, 936 down.
+    expect(moveGroup({ a, b }, -500, -500, canvas)).toEqual({
+      a: { ...a, x: 0, y: 0 },
+      b: { ...b, x: 300, y: 200 },
+    });
+    expect(moveGroup({ a, b }, 5000, 5000, canvas)).toEqual({
+      a: { ...a, x: 1648, y: 1036 },
+      b: { ...b, x: 1948, y: 1236 },
+    });
+  });
+
+  it('leaves no boxes as they are', () => {
+    expect(moveGroup({}, 10, 10, canvas)).toEqual({});
+  });
+
+  it('sees boxes overlap, but not when they only touch', () => {
+    expect(overlaps(a, { x: 299, y: 199, width: 10, height: 10 })).toBe(true);
+    expect(overlaps(a, { x: 300, y: 150, width: 10, height: 10 })).toBe(false);
+    expect(overlaps(a, { x: 150, y: 200, width: 10, height: 10 })).toBe(false);
+    expect(overlaps(a, { x: 90, y: 150, width: 10, height: 10 })).toBe(false);
+    expect(overlaps(a, { x: 150, y: 90, width: 10, height: 10 })).toBe(false);
+    expect(overlaps(a, { x: 0, y: 0, width: 2048, height: 1536 })).toBe(true);
+  });
+
+  it('makes the box between two corners, in any order', () => {
+    const box = { x: 10, y: 20, width: 90, height: 60 };
+    expect(rectBetween({ x: 10, y: 20 }, { x: 100, y: 80 })).toEqual(box);
+    expect(rectBetween({ x: 100, y: 80 }, { x: 10, y: 20 })).toEqual(box);
+    expect(rectBetween({ x: 100, y: 20 }, { x: 10, y: 80 })).toEqual(box);
   });
 });

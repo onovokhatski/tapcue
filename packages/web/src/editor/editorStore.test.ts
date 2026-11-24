@@ -71,7 +71,7 @@ describe('editor store', () => {
       expect(state().load).toBe('ready');
       expect(state().project?.name).toBe('Demo stand');
       expect(state().revision).toBe(1);
-      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: null });
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
       expect(state().save).toEqual({ state: 'saved' });
     });
 
@@ -170,12 +170,12 @@ describe('editor store', () => {
 
     it('moves the selection off a page the change deleted', async () => {
       const { state } = await loaded();
-      state().select({ pageId: 'p_about0', hotspotId: null });
+      state().select({ pageId: 'p_about0', hotspotIds: [] });
       state().change((project) => ({
         ...project,
         pages: project.pages.filter((page) => page.id !== 'p_about0'),
       }));
-      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: null });
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
     });
 
     it('never changes the project it was given: an operation returns a new one', async () => {
@@ -284,10 +284,37 @@ describe('editor store', () => {
     });
   });
 
+  describe('the selection (spec ED-16)', () => {
+    it('keeps several hotspots in page order, and only those on the page', async () => {
+      const { state } = await loaded();
+      state().select({ pageId: 'p_home00', hotspotIds: ['h_cardc0', 'h_aplay0', 'h_carda0'] });
+      expect(state().selection).toEqual({
+        pageId: 'p_home00',
+        hotspotIds: ['h_carda0', 'h_cardc0'],
+      });
+    });
+
+    it('lets a deleted hotspot go and keeps the rest selected', async () => {
+      const { state } = await loaded();
+      state().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_cardb0'] });
+      const selection = state().selection;
+      state().change((p) => ({ ...p, name: 'Renamed' }));
+      // Nothing about the selection changed: the same object, so nothing draws again for it.
+      expect(state().selection).toBe(selection);
+      state().change((p) => ({
+        ...p,
+        pages: p.pages.map((page, i) =>
+          i === 0 ? { ...page, hotspots: page.hotspots.filter((h) => h.id !== 'h_carda0') } : page,
+        ),
+      }));
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: ['h_cardb0'] });
+    });
+  });
+
   describe('saves by others (architecture §6)', () => {
     it('loads a project another editor saved, and keeps the selection when it still exists', async () => {
       const { state, server } = await loaded();
-      state().select({ pageId: 'p_proda0', hotspotId: 'h_anext0' });
+      state().select({ pageId: 'p_proda0', hotspotIds: ['h_anext0'] });
       state().projectUpdated(2);
       server.loads[1]!.resolve({
         revision: 2,
@@ -296,18 +323,18 @@ describe('editor store', () => {
       await settle();
       expect(state().project?.name).toBe('From elsewhere');
       expect(state().revision).toBe(2);
-      expect(state().selection).toEqual({ pageId: 'p_proda0', hotspotId: 'h_anext0' });
+      expect(state().selection).toEqual({ pageId: 'p_proda0', hotspotIds: ['h_anext0'] });
     });
 
     it('selects the first page when the selected one was deleted elsewhere', async () => {
       const { state, server } = await loaded();
-      state().select({ pageId: 'p_about0', hotspotId: null });
+      state().select({ pageId: 'p_about0', hotspotIds: [] });
       state().projectUpdated(2);
       const project = demoProject();
       project.pages = project.pages.filter((page) => page.id !== 'p_about0');
       server.loads[1]!.resolve({ revision: 2, project });
       await settle();
-      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: null });
+      expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
     });
 
     it('ignores the message about its own save', async () => {

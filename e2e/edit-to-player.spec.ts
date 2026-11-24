@@ -67,6 +67,39 @@ test('a hotspot moved in the editor moves on the open player within a second', a
   await expect(player.locator('[data-layer="shown"]')).toHaveAttribute('data-page', 'p_home00');
 });
 
+test('three hotspots selected on the canvas move together on the open player (spec ED-16)', async ({
+  page,
+}) => {
+  const { player, editor } = await playerAndEditor(page);
+  const cardOnPlayer = (id: string) =>
+    player.locator(`[data-layer="shown"] [data-hotspot="${id}"]`);
+  await expect(cardOnPlayer('h_carda0')).toHaveCSS('top', '500px');
+
+  const canvas = editor.getByRole('region', { name: 'Canvas' });
+  const outline = (name: string) => canvas.getByRole('button', { name, exact: true });
+  await outline('Product A card').click();
+  await outline('Product B card').click({ modifiers: ['Shift'] });
+  await outline('Product C card').click({ modifiers: ['Shift'] });
+  await expect(editor.getByRole('heading', { name: '3 hotspots' })).toBeVisible();
+
+  // Drag card B up by 100 screen pixels: the three move together, by the same canvas distance.
+  const box = (await outline('Product B card').boundingBox())!;
+  const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await editor.mouse.move(start.x, start.y);
+  await editor.mouse.down();
+  await editor.mouse.move(start.x, start.y - 50, { steps: 5 });
+  await editor.mouse.move(start.x, start.y - 100, { steps: 5 });
+  await editor.mouse.up();
+
+  const moved = await editor.getByRole('textbox', { name: 'Group Y' }).inputValue();
+  expect(Number(moved)).toBeLessThan(500);
+  for (const id of ['h_carda0', 'h_cardb0', 'h_cardc0']) {
+    await expect(cardOnPlayer(id)).toHaveCSS('top', `${moved}px`, { timeout: FOLLOW_WITHIN_MS });
+  }
+  // The others stay where they were.
+  await expect(cardOnPlayer('h_about0')).toHaveCSS('top', '1244px');
+});
+
 test('a player on a page deleted in the editor goes back to the start page', async ({ page }) => {
   const { player, editor } = await playerAndEditor(page);
   await player.locator('[data-layer="shown"] [data-hotspot="h_carda0"]').click();

@@ -19,6 +19,7 @@ import { croppedBy } from '../canvas/safeArea';
 import { nameProblem } from '../operations/hotspotNames';
 import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geometry';
 import { useEditor } from '../useEditor';
+import { GroupPanel } from './GroupPanel';
 import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
 import { KindFields } from './HotspotFader';
@@ -31,7 +32,9 @@ export function HotspotPanel() {
   const select = useEditor((state) => state.select);
   const reference = useEditor((state) => state.safeArea.reference);
   const page = project?.pages.find((p) => p.id === selection.pageId);
-  const hotspot = page?.hotspots.find((h) => h.id === selection.hotspotId);
+  const selected = page?.hotspots.filter((h) => selection.hotspotIds.includes(h.id)) ?? [];
+  if (page && selected.length > 1) return <GroupPanel page={page} hotspots={selected} />;
+  const hotspot = selected[0];
   if (!project || !page || !hotspot) return null;
   const index = page.hotspots.indexOf(hotspot);
   const cropped = croppedBy(hotspot, project.canvas, reference);
@@ -41,7 +44,7 @@ export function HotspotPanel() {
     const copy = duplicateHotspot(project, page.id, hotspot.id);
     if (!copy.hotspotId) return;
     change(() => copy.project);
-    select({ pageId: page.id, hotspotId: copy.hotspotId });
+    select({ pageId: page.id, hotspotIds: [copy.hotspotId] });
   }
 
   return (

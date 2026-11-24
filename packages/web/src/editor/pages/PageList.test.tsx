@@ -50,7 +50,7 @@ describe('PageList (spec PG-1)', () => {
     const { state, row } = await renderList();
     expect(row('Home').querySelector('[aria-current="true"]')).toBeInTheDocument();
     fireEvent.click(within(row('Product B')).getByText('Product B'));
-    expect(state().selection).toEqual({ pageId: 'p_prodb0', hotspotId: null });
+    expect(state().selection).toEqual({ pageId: 'p_prodb0', hotspotIds: [] });
     expect(row('Product B').querySelector('[aria-current="true"]')).toBeInTheDocument();
   });
 
@@ -249,7 +249,7 @@ describe('PageList (spec PG-1)', () => {
       const { state, names } = await renderList();
       fireEvent.click(collapse());
       fireEvent.click(screen.getByRole('button', { name: /^Product B,/ }));
-      expect(state().selection).toEqual({ pageId: 'p_prodb0', hotspotId: null });
+      expect(state().selection).toEqual({ pageId: 'p_prodb0', hotspotIds: [] });
       fireEvent.click(screen.getByRole('button', { name: 'Add page' }));
       expect(names().at(-1)).toBe('Page 5');
     });
