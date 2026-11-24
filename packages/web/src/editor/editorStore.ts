@@ -12,9 +12,13 @@ import { addEntry } from './log/logEntries';
 /** Quiet time after the last change before the project is saved. */
 export const SAVE_DELAY_MS = 500;
 
+/**
+ * The page shown and the hotspots selected on it, in page order (spec ED-16). One selected works as
+ * a single selection always has; none shows the page's own panel.
+ */
 export interface Selection {
   pageId: PageId | null;
-  hotspotId: HotspotId | null;
+  hotspotIds: HotspotId[];
 }
 
 export type SaveStatus =
@@ -86,7 +90,7 @@ export interface EditorActions {
 
 export type EditorStore = EditorState & EditorActions;
 
-const NOTHING_SELECTED: Selection = { pageId: null, hotspotId: null };
+const NOTHING_SELECTED: Selection = { pageId: null, hotspotIds: [] };
 
 export function createEditorStore(api: ProjectApi = projectApi) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -187,7 +191,8 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       },
 
       select(selection) {
-        set({ selection });
+        const { project } = get();
+        set({ selection: project ? keepSelection(selection, project) : selection });
       },
 
       logged(entry) {
@@ -284,6 +289,13 @@ export function createEditorStore(api: ProjectApi = projectApi) {
 function keepSelection(selection: Selection, project: Project): Selection {
   const page = project.pages.find((p) => p.id === selection.pageId) ?? project.pages[0];
   if (!page) return NOTHING_SELECTED;
-  const hotspot = page.hotspots.find((h) => h.id === selection.hotspotId);
-  return { pageId: page.id, hotspotId: hotspot?.id ?? null };
+  // Kept in page order, so a group reads the same way however it was selected.
+  const hotspotIds = page.hotspots
+    .filter((h) => selection.hotspotIds.includes(h.id))
+    .map((h) => h.id);
+  const same =
+    page.id === selection.pageId &&
+    hotspotIds.length === selection.hotspotIds.length &&
+    hotspotIds.every((id, i) => id === selection.hotspotIds[i]);
+  return same ? selection : { pageId: page.id, hotspotIds };
 }

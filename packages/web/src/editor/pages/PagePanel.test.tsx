@@ -93,7 +93,7 @@ describe('PagePanel', () => {
   it('selects a hotspot from the list', async () => {
     const { state } = await renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Product B card' }));
-    expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: 'h_cardb0' });
+    expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: ['h_cardb0'] });
   });
 
   describe('background (spec PG-2, PG-6)', () => {
@@ -191,7 +191,7 @@ describe('PagePanel', () => {
     it('lands an upload on the page it was started for, even after another page is selected', async () => {
       const { state, choose, store } = await renderPanel(withoutBackground());
       choose(image());
-      act(() => store.getState().select({ pageId: 'p_proda0', hotspotId: null }));
+      act(() => store.getState().select({ pageId: 'p_proda0', hotspotIds: [] }));
       await act(async () => {
         uploads[0]!.resolve({ asset: 'assets/hero-3f9a1c2b.jpg', type: 'image' });
         await Promise.resolve();

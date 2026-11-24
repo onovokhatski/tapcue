@@ -68,7 +68,7 @@ function PageListPanel({
   if (!project) return null;
   const { pages } = project;
 
-  const selectPage = (pageId: PageId) => select({ pageId, hotspotId: null });
+  const selectPage = (pageId: PageId) => select({ pageId, hotspotIds: [] });
   const pickPage = (pageId: PageId) => {
     selectPage(pageId);
     onPicked?.();
@@ -244,7 +244,7 @@ function PageRail({
                       ? 'border-selection-border bg-selection'
                       : 'border-transparent hover:bg-hover'
                   }`}
-                  onClick={() => select({ pageId: page.id, hotspotId: null })}
+                  onClick={() => select({ pageId: page.id, hotspotIds: [] })}
                 >
                   <Thumbnail page={page} />
                   <span
@@ -268,7 +268,7 @@ function PageRail({
             onClick={() => {
               const added = addPage(project);
               change(() => added.project);
-              select({ pageId: added.pageId, hotspotId: null });
+              select({ pageId: added.pageId, hotspotIds: [] });
             }}
           />
         </div>
