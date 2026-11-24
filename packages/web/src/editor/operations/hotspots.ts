@@ -138,7 +138,11 @@ export function duplicateHotspot(
 }
 
 /** The boxes of these hotspots of the page, by id; ids not on the page are left out. */
-function boxesOf(project: Project, pageId: PageId, ids: HotspotId[]): Record<HotspotId, Rect> {
+export function boxesOf(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+): Record<HotspotId, Rect> {
   const boxes: Record<HotspotId, Rect> = {};
   for (const h of project.pages.find((p) => p.id === pageId)?.hotspots ?? []) {
     if (ids.includes(h.id)) boxes[h.id] = { x: h.x, y: h.y, width: h.width, height: h.height };
