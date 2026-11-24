@@ -19,6 +19,7 @@ import { croppedBy } from '../canvas/safeArea';
 import { nameProblem } from '../operations/hotspotNames';
 import { type BoxKey, checkBoxField, boxFieldLimits } from '../operations/geometry';
 import { useEditor } from '../useEditor';
+import { ArrangeTools } from './ArrangeTools';
 import { GroupPanel } from './GroupPanel';
 import { OnTapFields } from './HotspotAction';
 import { ShapeRow, StyleFields } from './HotspotStyle';
@@ -82,6 +83,7 @@ export function HotspotPanel() {
         </div>
         {/* Keyed, so the fields start afresh for another hotspot. */}
         <NameField key={hotspot.id} page={page} hotspot={hotspot} />
+        <ArrangeTools pageId={page.id} hotspots={[hotspot]} />
         {cropped && (
           // Shown whether or not the safe area is drawn on the canvas (spec ED-3).
           <Banner tone="warning" title="Partly outside the safe area">

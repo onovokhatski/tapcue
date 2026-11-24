@@ -55,6 +55,76 @@ const PATHS = {
     </>
   ),
   'chevron-down': <path d="M4 6l4 4 4-4" />,
+  'align-left': (
+    <>
+      <path d="M2.5 2v12" />
+      <rect x="5" y="4" width="8.5" height="3" rx=".75" />
+      <rect x="5" y="9" width="5" height="3" rx=".75" />
+    </>
+  ),
+  'align-center': (
+    <>
+      <path d="M8 2v12" />
+      <rect x="3.5" y="4" width="9" height="3" rx=".75" />
+      <rect x="5.5" y="9" width="5" height="3" rx=".75" />
+    </>
+  ),
+  'align-right': (
+    <>
+      <path d="M13.5 2v12" />
+      <rect x="2.5" y="4" width="8.5" height="3" rx=".75" />
+      <rect x="6" y="9" width="5" height="3" rx=".75" />
+    </>
+  ),
+  'align-top': (
+    <>
+      <path d="M2 2.5h12" />
+      <rect x="4" y="5" width="3" height="8.5" rx=".75" />
+      <rect x="9" y="5" width="3" height="5" rx=".75" />
+    </>
+  ),
+  'align-middle': (
+    <>
+      <path d="M2 8h12" />
+      <rect x="4" y="3.5" width="3" height="9" rx=".75" />
+      <rect x="9" y="5.5" width="3" height="5" rx=".75" />
+    </>
+  ),
+  'align-bottom': (
+    <>
+      <path d="M2 13.5h12" />
+      <rect x="4" y="2.5" width="3" height="8.5" rx=".75" />
+      <rect x="9" y="6" width="3" height="5" rx=".75" />
+    </>
+  ),
+  'distribute-h': (
+    <>
+      <path d="M2.5 2.5v11M13.5 2.5v11" />
+      <rect x="6.5" y="5" width="3" height="6" rx=".75" />
+    </>
+  ),
+  'distribute-v': (
+    <>
+      <path d="M2.5 2.5h11M2.5 13.5h11" />
+      <rect x="5" y="6.5" width="6" height="3" rx=".75" />
+    </>
+  ),
+  'same-width': (
+    <>
+      <path d="M2.5 8h11M5 5.5L2.5 8 5 10.5M11 5.5l2.5 2.5-2.5 2.5" />
+    </>
+  ),
+  'same-height': (
+    <>
+      <path d="M8 2.5v11M5.5 5L8 2.5 10.5 5M5.5 11L8 13.5l2.5-2.5" />
+    </>
+  ),
+  'same-size': (
+    <>
+      <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />
+      <path d="M6 10l4-4M7 6h3v3" />
+    </>
+  ),
   power: <path d="M8 1.75v5.5M4.9 3.9a5.25 5.25 0 1 0 6.2 0" />,
   'panel-left': (
     <>

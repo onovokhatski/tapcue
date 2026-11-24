@@ -1,5 +1,6 @@
-// The properties panel for several selected hotspots (spec ED-16): how many, where their common box
-// stands, duplicate and delete them all, and the list of them to pick one.
+// The properties panel for several selected hotspots (spec ED-16, ED-18): how many, align,
+// distribute and size them, where their common box stands, duplicate and delete them all, and the
+// list of them to pick one.
 import type { Hotspot, HotspotId, Page, PageId } from '@tapcue/shared';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
@@ -9,6 +10,7 @@ import { NumberField } from '../../ui/NumberField';
 import { boundingBox, boxFieldLimits, checkBoxField, type Rect } from '../operations/geometry';
 import { deleteHotspots, duplicateHotspots, nudgeHotspots } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
+import { ArrangeTools } from './ArrangeTools';
 
 export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[] }) {
   const project = useEditor((state) => state.project);
@@ -63,6 +65,7 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
           Drag one of them to move them all; the arrow keys nudge them. Shift- or Cmd-click on the
           canvas adds or removes one.
         </p>
+        <ArrangeTools pageId={page.id} hotspots={hotspots} />
       </div>
       <section aria-label="Position" className="space-y-3 border-b border-default px-4 py-4">
         <h3 className="text-overline text-muted uppercase">Position of the group</h3>

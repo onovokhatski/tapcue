@@ -1177,3 +1177,85 @@ describe('HotspotPanel for several hotspots (spec ED-16)', () => {
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Product C card');
   });
 });
+
+describe('arranging (spec ED-18)', () => {
+  const toolbar = () => within(screen.getByRole('toolbar', { name: 'Arrange' }));
+  const box = (h: { x: number; y: number; width: number; height: number }) => [
+    h.x,
+    h.y,
+    h.width,
+    h.height,
+  ];
+
+  it('aligns one hotspot to the canvas, and offers nothing else for one', async () => {
+    const { cardA } = await renderPanel();
+    expect(toolbar().getByRole('button', { name: 'Align right' })).toHaveAttribute(
+      'title',
+      'Align right, to the canvas',
+    );
+    fireEvent.click(toolbar().getByRole('button', { name: 'Align right' }));
+    expect(cardA().x).toBe(2048 - 560);
+    fireEvent.click(toolbar().getByRole('button', { name: 'Align top' }));
+    expect(cardA().y).toBe(0);
+    expect(toolbar().queryByRole('button', { name: /Distribute|Same/ })).toBeNull();
+  });
+
+  it('aligns several to their common box', async () => {
+    const { store, hotspots } = await renderPanel();
+    act(() =>
+      store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_about0'] }),
+    );
+    expect(toolbar().getByRole('button', { name: 'Align left' })).toHaveAttribute(
+      'title',
+      'Align left, to their common box',
+    );
+    fireEvent.click(toolbar().getByRole('button', { name: 'Align left' }));
+    expect(hotspots().find((h) => h.id === 'h_about0')!.x).toBe(144);
+    fireEvent.click(toolbar().getByRole('button', { name: 'Align bottom' }));
+    expect(hotspots().find((h) => h.id === 'h_carda0')!.y).toBe(1388 - 720);
+  });
+
+  it('distributes only three or more, and says why it cannot', async () => {
+    const { store, hotspots } = await renderPanel();
+    act(() =>
+      store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_carda0', 'h_cardb0'] }),
+    );
+    const spread = () => toolbar().getByRole('button', { name: 'Distribute horizontally' });
+    expect(spread()).toBeDisabled();
+    expect(spread()).toHaveAttribute('title', 'Distribute horizontally: select three or more');
+    expect(toolbar().getByRole('button', { name: 'Distribute vertically' })).toBeDisabled();
+    act(() =>
+      store.getState().select({
+        pageId: 'p_home00',
+        hotspotIds: ['h_carda0', 'h_cardb0', 'h_about0'],
+      }),
+    );
+    expect(spread()).toBeEnabled();
+    fireEvent.click(toolbar().getByRole('button', { name: 'Distribute vertically' }));
+    // By y: A and B at 500 (720 high), About at 1244 (144 high). The span 500–1388 is shorter
+    // than their heights (1584), so the two gaps are -348: B goes to 500 + 720 - 348 = 872.
+    const y = (id: string) => hotspots().find((h) => h.id === id)!.y;
+    expect([y('h_carda0'), y('h_cardb0'), y('h_about0')]).toEqual([500, 872, 1244]);
+  });
+
+  it('gives several the size of the first one listed', async () => {
+    const { store, hotspots } = await renderPanel();
+    act(() =>
+      store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_call00', 'h_about0'] }),
+    );
+    expect(toolbar().getByRole('button', { name: 'Same width' })).toHaveAttribute(
+      'title',
+      'Same width as About',
+    );
+    fireEvent.click(toolbar().getByRole('button', { name: 'Same width' }));
+    const call = () => hotspots().find((h) => h.id === 'h_call00')!;
+    expect(box(call())).toEqual([1592, 76, 144, 96]);
+    fireEvent.click(toolbar().getByRole('button', { name: 'Same height' }));
+    expect(box(call())).toEqual([1592, 76, 144, 144]);
+    act(() =>
+      store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_about0', 'h_carda0'] }),
+    );
+    fireEvent.click(toolbar().getByRole('button', { name: 'Same size' }));
+    expect(box(hotspots().find((h) => h.id === 'h_about0')!)).toEqual([1488, 816, 560, 720]);
+  });
+});
