@@ -58,3 +58,28 @@ test('a sequence built in the editor reaches the demo receiver in order, with it
   await sequence.click();
   await expect(log).toContainText('Step 2 of 2 · after 1.2 s');
 });
+
+test('a page link added as a card in the editor changes the page on the open player (spec ED-22)', async ({
+  page,
+}) => {
+  const editor = page;
+  await editor.goto('/edit/pages');
+  await expect(editor.getByRole('banner').getByText('Connected')).toBeVisible();
+  await editor
+    .getByRole('region', { name: 'Canvas' })
+    .getByRole('button', { name: 'Call our team' })
+    .click();
+
+  const onTap = editor.getByRole('region', { name: 'On tap' });
+  await onTap.getByRole('button', { name: 'Go to page' }).click();
+  const card = onTap.getByRole('group', { name: 'Go to page' });
+  await card.getByRole('combobox', { name: 'Page to go to' }).selectOption({ label: 'About us' });
+  await expect(editor.getByRole('banner').getByText('Saved')).toBeVisible();
+
+  const player = await page.context().newPage();
+  await player.goto('/play/main');
+  await expect(player.locator('[data-layer="shown"]')).toHaveAttribute('data-page', 'p_home00');
+  await player.locator('[data-layer="shown"] [data-hotspot="h_call00"]').click();
+  // The page changes, and the command still goes out.
+  await expect(player.locator('[data-layer="shown"]')).toHaveAttribute('data-page', 'p_about0');
+});

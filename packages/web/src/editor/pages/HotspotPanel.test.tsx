@@ -431,11 +431,12 @@ describe('HotspotPanel', () => {
       const { cardA } = await asFader();
       expect(cardA()).toMatchObject({ kind: 'fader', pressEffect: 'none' });
       expect(screen.getByText('While dragged')).toBeInTheDocument();
-      expect(screen.queryByRole('combobox', { name: 'Go to page' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Go to page' })).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Go to page' })).toBeNull();
       expect(screen.queryByRole('combobox', { name: 'Press effect' })).toBeNull();
       fireEvent.click(screen.getByRole('radio', { name: 'Button' }));
       expect(cardA()).not.toHaveProperty('kind');
-      expect(screen.getByRole('combobox', { name: 'Go to page' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Go to page' })).toBeEnabled();
     });
 
     it('sets direction, range, step and start, each only when it fits the others', async () => {
@@ -586,18 +587,65 @@ describe('HotspotPanel', () => {
       state().project!.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.action.commands[0]
         ?.command;
 
-    it('links to another page, or stays; its own page is not offered', async () => {
-      const { cardA } = await renderPanel();
-      const goTo = onTap().getByRole('combobox', { name: 'Go to page' });
-      expect(goTo).toHaveValue('p_proda0');
-      expect([...goTo.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
-        'Stay on this page',
-        'Product A',
-        'Product B',
-        'About us',
-      ]);
-      fireEvent.change(goTo, { target: { value: '' } });
-      expect(cardA().action.goTo).toBeNull();
+    describe('Go to page, a card among the commands (spec ED-22)', () => {
+      const card = () => within(onTap().getByRole('group', { name: 'Go to page' }));
+      const add = () => onTap().getByRole('button', { name: 'Go to page' });
+
+      it('shows the link as the first card, with the other pages to choose from', async () => {
+        const { cardA } = await renderPanel();
+        const groups = onTap()
+          .getAllByRole('group')
+          .map((g) => g.getAttribute('aria-label'));
+        expect(groups).toEqual(['Go to page', 'Command 1']);
+        const page = card().getByRole('combobox', { name: 'Page to go to' });
+        expect(page).toHaveValue('p_proda0');
+        // Its own page is never offered, and there is no "stay": removing the card is.
+        expect([...page.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+          'Product A',
+          'Product B',
+          'About us',
+        ]);
+        fireEvent.change(page, { target: { value: 'p_about0' } });
+        expect(cardA().action.goTo).toBe('p_about0');
+        // No pause and no switch: the page changes at once on the tablet.
+        expect(card().queryByRole('textbox')).toBeNull();
+        expect(card().queryByRole('button', { name: /^Send/ })).toBeNull();
+      });
+
+      it('allows one link: Go to page is offered again once the card is removed', async () => {
+        const { cardA } = await renderPanel();
+        expect(add()).toBeDisabled();
+        expect(add()).toHaveAttribute('title', 'A tap goes to one page: change it in its card');
+        fireEvent.click(card().getByRole('button', { name: 'Remove Go to page' }));
+        expect(cardA().action.goTo).toBeNull();
+        expect(onTap().queryByRole('group', { name: 'Go to page' })).toBeNull();
+        expect(add()).toBeEnabled();
+        fireEvent.click(add());
+        // The first other page, ready to change.
+        expect(cardA().action.goTo).toBe('p_proda0');
+        expect(card().getByRole('combobox', { name: 'Page to go to' })).toHaveValue('p_proda0');
+      });
+
+      it('is not offered on a page with no other page to go to', async () => {
+        const project = demoProject();
+        project.pages = [project.pages[0]!];
+        project.pages[0]!.hotspots = project.pages[0]!.hotspots.map((h) => ({
+          ...h,
+          action: { ...h.action, goTo: null },
+        }));
+        project.stations = project.stations.map((s) => ({ ...s, startPageId: 'p_home00' }));
+        await renderPanel(project);
+        expect(add()).toBeDisabled();
+        expect(add()).toHaveAttribute('title', 'Add another page first');
+      });
+
+      it('sums up On tap with the page first (spec ED-20)', async () => {
+        await renderPanel(undefined, undefined, false);
+        fireEvent.click(onTap().getByRole('button', { name: /^On tap/ }));
+        expect(onTap().getByTestId('section-summary')).toHaveTextContent(
+          'Go to Product A · 1 command',
+        );
+      });
     });
 
     it('shows the OSC command with its target address, and edits the address', async () => {
@@ -697,7 +745,10 @@ describe('HotspotPanel', () => {
       const { cardA } = await renderPanel();
       fireEvent.click(onTap().getByRole('button', { name: 'Remove command 1' }));
       expect(cardA().action.commands).toEqual([]);
-      expect(onTap().getByText('This hotspot sends no command.')).toBeInTheDocument();
+      // The page link is still there, so the tap does something: no "nothing yet".
+      expect(onTap().queryByText('A tap does nothing yet.')).toBeNull();
+      fireEvent.click(onTap().getByRole('button', { name: 'Remove Go to page' }));
+      expect(onTap().getByText('A tap does nothing yet.')).toBeInTheDocument();
     });
   });
 

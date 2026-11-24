@@ -61,23 +61,9 @@ interface Props {
 }
 
 export function OnTapFields({ project, pageId, hotspot }: Props) {
-  const change = useEditor((state) => state.change);
   const fader = hotspot.kind === 'fader' ? hotspot.fader : undefined;
   return (
     <>
-      {/* A fader changes no page (ADR 0020). */}
-      {!fader && (
-        <Select
-          label="Go to page"
-          size="s"
-          placeholder="Stay on this page"
-          value={hotspot.action.goTo}
-          options={project.pages
-            .filter((p) => p.id !== pageId)
-            .map((p) => ({ value: p.id, label: p.name }))}
-          onChange={(value) => change((p) => setGoTo(p, pageId, hotspot.id, value))}
-        />
-      )}
       {fader ? (
         <FaderCommand project={project} pageId={pageId} hotspot={hotspot} fader={fader} />
       ) : (
@@ -179,6 +165,8 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
   }
   const on = activeSteps(hotspot.action).length;
   const total = sequenceLength(hotspot.action);
+  /** The pages a tap can go to: never its own. */
+  const others = project.pages.filter((p) => p.id !== pageId);
 
   /** Moves a step and its fold with it. */
   function move(from: number, to: number) {
@@ -202,9 +190,14 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
   return (
     <div className="space-y-2">
       <p className="text-label-s text-secondary">Commands</p>
-      {steps.length === 0 ? (
-        <p className="text-body-s text-muted">This hotspot sends no command.</p>
-      ) : (
+      {/* The page link is one of the commands in the editor, first since the page changes at once
+          on the tablet; the project keeps it in action.goTo (spec ED-22, ACT-2). */}
+      {hotspot.action.goTo !== null && (
+        <GoToCard project={project} pageId={pageId} hotspot={hotspot} />
+      )}
+      {steps.length === 0 && hotspot.action.goTo === null ? (
+        <p className="text-body-s text-muted">A tap does nothing yet.</p>
+      ) : steps.length === 0 ? null : (
         <ol aria-label="Commands" className="space-y-2" onDragLeave={() => setDropIndex(null)}>
           {steps.map((step, index) => (
             <StepCard
@@ -249,6 +242,21 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
           disabled={steps.length >= MAX_STEPS || project.targets.length === 0}
           onClick={() => change((p) => addStep(p, pageId, hotspot.id))}
         />
+        <Button
+          variant="ghost"
+          size="s"
+          icon="plus"
+          label="Go to page"
+          title={
+            hotspot.action.goTo !== null
+              ? 'A tap goes to one page: change it in its card'
+              : others.length === 0
+                ? 'Add another page first'
+                : 'Go to another page after the tap'
+          }
+          disabled={hotspot.action.goTo !== null || others.length === 0}
+          onClick={() => change((p) => setGoTo(p, pageId, hotspot.id, others[0]!.id))}
+        />
         {steps.length > 1 && (
           <>
             <Button
@@ -281,6 +289,44 @@ function CommandSteps({ project, pageId, hotspot }: Props) {
       {steps.length > 0 && (
         <SendTest pageId={pageId} hotspotId={hotspot.id} sequence={on > 1 || total > 0} />
       )}
+    </div>
+  );
+}
+
+/**
+ * "Go to page" as a card among the commands (spec ED-22): the page, and a way to remove the link.
+ * No pause and no switch: the page changes on the tablet at once, as the tap lands (ACT-2).
+ */
+function GoToCard({ project, pageId, hotspot }: Props) {
+  const change = useEditor((state) => state.change);
+  return (
+    <div
+      role="group"
+      aria-label="Go to page"
+      className="space-y-2 rounded border border-default p-2"
+    >
+      <div className="flex items-center gap-1">
+        <Icon name="arrow-right" className="mx-1 h-3.5 w-3.5 text-muted" />
+        <span className="min-w-0 flex-1 px-1 text-label-s text-primary">Go to page</span>
+        <Button
+          variant="ghost"
+          size="s"
+          icon="trash"
+          ariaLabel="Remove Go to page"
+          onClick={() => change((p) => setGoTo(p, pageId, hotspot.id, null))}
+        />
+      </div>
+      <Select
+        ariaLabel="Page to go to"
+        size="s"
+        value={hotspot.action.goTo}
+        options={project.pages
+          .filter((p) => p.id !== pageId)
+          .map((p) => ({ value: p.id, label: p.name }))}
+        onChange={(value) => {
+          if (value) change((p) => setGoTo(p, pageId, hotspot.id, value));
+        }}
+      />
     </div>
   );
 }
