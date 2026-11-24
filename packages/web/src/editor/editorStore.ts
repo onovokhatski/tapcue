@@ -1,6 +1,6 @@
-// The editor's state: the project being edited, the selection and the save status. Every change is
-// a pure operation (project) => project, and the project is saved shortly after the last one
-// (spec ED-5, ED-7, architecture §4.2, ADR 0011).
+// The editor's state: the project being edited, the selection, the save status and the undo history.
+// Every change is a pure operation (project) => project, and the project is saved shortly after the
+// last one (spec ED-5, ED-7, ED-24, architecture §4.2, ADR 0011, ADR 0023).
 import type {
   Hotspot,
   HotspotId,
@@ -19,6 +19,10 @@ import { pasteHotspots } from './operations/hotspots';
 
 /** Quiet time after the last change before the project is saved. */
 export const SAVE_DELAY_MS = 500;
+/** Steps the editor can undo; the oldest is dropped past this (spec ED-24). */
+export const HISTORY_LIMIT = 100;
+/** Changes of one group closer than this to each other are one step (spec ED-25). */
+export const GROUP_QUIET_MS = 1000;
 
 /**
  * The page shown and the hotspots selected on it, in page order (spec ED-16). One selected works as
@@ -37,6 +41,15 @@ export type SaveStatus =
   | { state: 'unsaved' }
   /** The server refused the save; `errors` lists the fields when the project was invalid. */
   | { state: 'error'; reason: string; errors: ValidationError[] };
+
+/**
+ * The project at one moment, with what was selected then. The project is never changed in place,
+ * so a snapshot holds only references (ADR 0023).
+ */
+export interface Snapshot {
+  project: Project;
+  selection: Selection;
+}
 
 export interface EditorState {
   load: 'loading' | 'failed' | 'ready';
@@ -62,13 +75,36 @@ export interface EditorState {
    * while the tab is open; another project clears it, since its targets and images differ.
    */
   clipboard: { pageId: PageId; hotspots: Hotspot[] } | null;
+  /** The projects before each change, oldest first, at most HISTORY_LIMIT (spec ED-24). */
+  past: Snapshot[];
+  /** The projects undone, the next one to redo last. */
+  future: Snapshot[];
+  /**
+   * The history was dropped because the project was replaced from outside: saved by another
+   * editor, another project opened, or a stale save (spec ED-27). The editor says so once.
+   */
+  historyCleared: boolean;
+}
+
+/** Options of a change: changes with the same `group` in quick succession are one step (ED-25). */
+export interface ChangeOptions {
+  group?: string;
 }
 
 export interface EditorActions {
   /** Loads the project from the server. */
   start: () => void;
-  /** Applies an operation to the project and saves it after the quiet time. */
-  change: (operation: (project: Project) => Project) => void;
+  /**
+   * Applies an operation to the project, records the project before it for undo, and saves it
+   * after the quiet time.
+   */
+  change: (operation: (project: Project) => Project, options?: ChangeOptions) => void;
+  /** Goes back one step, with the selection of that moment, and saves it (spec ED-24). */
+  undo: () => void;
+  /** Goes forward again one step undone, and saves it. */
+  redo: () => void;
+  /** The editor has said that the history was cleared. */
+  dismissHistoryCleared: () => void;
   select: (selection: Selection) => void;
   /** Copies the selected hotspots into the editor's clipboard (spec ED-17). */
   copy: () => void;
@@ -111,13 +147,44 @@ export type EditorStore = EditorState & EditorActions;
 
 const NOTHING_SELECTED: Selection = { pageId: null, hotspotIds: [] };
 
+export const canUndo = (state: EditorState) => state.past.length > 0;
+export const canRedo = (state: EditorState) => state.future.length > 0;
+
 export function createEditorStore(api: ProjectApi = projectApi) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let inFlight = false;
   /** A change the server has not been sent yet. */
   let pending = false;
+  /** The group of the last change and when it was made, while its steps may still merge. */
+  let lastGroup: { key: string; at: number } | undefined;
 
   return createStore<EditorStore>()((set, get) => {
+    /**
+     * The history emptied, for a project replaced from outside: its steps belong to another copy
+     * and undoing them would bring that copy back over the new one (ADR 0023).
+     */
+    function clearedHistory(): Pick<EditorState, 'past' | 'future' | 'historyCleared'> {
+      lastGroup = undefined;
+      const { past, future, historyCleared } = get();
+      return {
+        past: [],
+        future: [],
+        historyCleared: historyCleared || past.length > 0 || future.length > 0,
+      };
+    }
+
+    /** Shows a new project, then saves it after the quiet time; demo mode keeps it in this tab. */
+    function apply(project: Project, selection: Selection, history: Partial<EditorState>) {
+      // The selection follows: a deleted page or hotspot is no longer selected.
+      const kept = keepSelection(selection, project);
+      // In demo mode the change stays in this tab; the server would refuse it anyway.
+      if (get().demo) return void set({ project, selection: kept, ...history });
+      set({ project, selection: kept, ...history, save: { state: 'saving' } });
+      pending = true;
+      clearTimeout(timer);
+      timer = setTimeout(() => void flush(), SAVE_DELAY_MS);
+    }
+
     /** Loads the project; with `onlyIfNew`, keeps the current one when the revision is the same. */
     async function load(onlyIfNew: boolean) {
       try {
@@ -131,6 +198,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
           selection: keepSelection(get().selection, project),
           demo,
           canQuit: quit,
+          ...clearedHistory(),
         });
       } catch {
         if (get().load !== 'ready') set({ load: 'failed' });
@@ -168,7 +236,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         pending = false;
         clearTimeout(timer);
         timer = undefined;
-        set({ save: { state: 'saved' }, clipboard: null });
+        set({ save: { state: 'saved' }, clipboard: null, ...clearedHistory() });
         await load(false);
         return;
       }
@@ -189,25 +257,57 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       canQuit: false,
       stopped: false,
       clipboard: null,
+      past: [],
+      future: [],
+      historyCleared: false,
 
       start() {
         set({ load: 'loading' });
         void load(false);
       },
 
-      change(operation) {
-        const { project } = get();
+      change(operation, { group } = {}) {
+        const { project, selection, past } = get();
         if (!project) return;
         const next = operation(project);
-        if (next === project) return; // nothing changed: nothing to save
-        // The selection follows: a deleted page or hotspot is no longer selected.
-        const selection = keepSelection(get().selection, next);
-        // In demo mode the change stays in this tab; the server would refuse it anyway.
-        if (get().demo) return void set({ project: next, selection });
-        set({ project: next, selection, save: { state: 'saving' } });
-        pending = true;
-        clearTimeout(timer);
-        timer = setTimeout(() => void flush(), SAVE_DELAY_MS);
+        if (next === project) return; // nothing changed: nothing to save or undo
+        const now = Date.now();
+        // A drag or typing in a field is one step: the project before its first change is kept.
+        const merges =
+          group !== undefined && lastGroup?.key === group && now - lastGroup.at <= GROUP_QUIET_MS;
+        lastGroup = group === undefined ? undefined : { key: group, at: now };
+        // A new change ends what could be redone.
+        const history = merges
+          ? {}
+          : { past: [...past, { project, selection }].slice(-HISTORY_LIMIT), future: [] };
+        apply(next, selection, history);
+      },
+
+      undo() {
+        const { project, selection, past, future } = get();
+        const step = past.at(-1);
+        if (!project || !step) return;
+        lastGroup = undefined; // what comes after an undo is a step of its own
+        apply(step.project, step.selection, {
+          past: past.slice(0, -1),
+          future: [...future, { project, selection }],
+        });
+      },
+
+      redo() {
+        const { project, selection, past, future } = get();
+        const step = future.at(-1);
+        // No group to end: an undo came first, and nothing changed since, or this would be empty.
+        if (!project || !step) return;
+        // Undo and redo only move steps between the stacks, so together they stay within the limit.
+        apply(step.project, step.selection, {
+          past: [...past, { project, selection }],
+          future: future.slice(0, -1),
+        });
+      },
+
+      dismissHistoryCleared() {
+        set({ historyCleared: false });
       },
 
       select(selection) {
@@ -291,7 +391,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       },
 
       projectOpened(revision) {
-        set({ clipboard: null });
+        set({ clipboard: null, ...clearedHistory() });
         get().projectUpdated(revision);
       },
 
