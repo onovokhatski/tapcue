@@ -1,13 +1,21 @@
 // The editor's state: the project being edited, the selection and the save status. Every change is
 // a pure operation (project) => project, and the project is saved shortly after the last one
 // (spec ED-5, ED-7, architecture §4.2, ADR 0011).
-import type { HotspotId, LogEntry, PageId, Project, ValidationError } from '@tapcue/shared';
+import type {
+  Hotspot,
+  HotspotId,
+  LogEntry,
+  PageId,
+  Project,
+  ValidationError,
+} from '@tapcue/shared';
 import { createStore } from 'zustand/vanilla';
 import { type ProjectApi, projectApi, type TestSent } from '../lib/projectApi';
 import type { Imported } from '../lib/projectArchive';
 import type { SocketStatus } from '../lib/serverSocket';
 import { readSafeArea, type SafeAreaPreference, writeSafeArea } from './canvas/safeAreaPreference';
 import { addEntry } from './log/logEntries';
+import { pasteHotspots } from './operations/hotspots';
 
 /** Quiet time after the last change before the project is saved. */
 export const SAVE_DELAY_MS = 500;
@@ -49,6 +57,11 @@ export interface EditorState {
   canQuit: boolean;
   /** Quit from this editor: the server is gone and will not come back by itself. */
   stopped: boolean;
+  /**
+   * Hotspots copied in this editor, as they were, and the page they came from (spec ED-17). Kept
+   * while the tab is open; another project clears it, since its targets and images differ.
+   */
+  clipboard: { pageId: PageId; hotspots: Hotspot[] } | null;
 }
 
 export interface EditorActions {
@@ -57,6 +70,10 @@ export interface EditorActions {
   /** Applies an operation to the project and saves it after the quiet time. */
   change: (operation: (project: Project) => Project) => void;
   select: (selection: Selection) => void;
+  /** Copies the selected hotspots into the editor's clipboard (spec ED-17). */
+  copy: () => void;
+  /** Pastes the clipboard onto the page shown and selects the copies (spec ED-17). */
+  paste: () => void;
   setSafeArea: (change: Partial<SafeAreaPreference>) => void;
   /** The server sent or failed to send a command. */
   logged: (entry: LogEntry) => void;
@@ -76,6 +93,8 @@ export interface EditorActions {
   testSend: (pageId: PageId, hotspotId: HotspotId, value?: number) => Promise<TestSent>;
   /** The server says the project was saved, by this editor or another one. */
   projectUpdated: (revision: number) => void;
+  /** This editor opened another project of the library: loads it and clears the clipboard. */
+  projectOpened: (revision: number) => void;
   /**
    * Replaces the project with a .zip (spec PRJ-4). A change still waiting is saved first, so no
    * save after the import puts the old project back; then the imported project is loaded.
@@ -149,7 +168,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         pending = false;
         clearTimeout(timer);
         timer = undefined;
-        set({ save: { state: 'saved' } });
+        set({ save: { state: 'saved' }, clipboard: null });
         await load(false);
         return;
       }
@@ -169,6 +188,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       demo: false,
       canQuit: false,
       stopped: false,
+      clipboard: null,
 
       start() {
         set({ load: 'loading' });
@@ -193,6 +213,24 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       select(selection) {
         const { project } = get();
         set({ selection: project ? keepSelection(selection, project) : selection });
+      },
+
+      copy() {
+        const { project, selection } = get();
+        const page = project?.pages.find((p) => p.id === selection.pageId);
+        const hotspots = page?.hotspots.filter((h) => selection.hotspotIds.includes(h.id)) ?? [];
+        if (!page || hotspots.length === 0) return;
+        // The hotspots as they are now: every change makes new objects, so later edits to the
+        // originals do not reach the clipboard.
+        set({ clipboard: { pageId: page.id, hotspots } });
+      },
+
+      paste() {
+        const { project, selection, clipboard } = get();
+        if (!project || !clipboard || !selection.pageId) return;
+        const pasted = pasteHotspots(project, selection.pageId, clipboard);
+        get().change(() => pasted.project);
+        get().select({ pageId: selection.pageId, hotspotIds: pasted.hotspotIds });
       },
 
       logged(entry) {
@@ -250,6 +288,11 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         } catch {
           return { ok: false, reason: 'Cannot reach the server.' };
         }
+      },
+
+      projectOpened(revision) {
+        set({ clipboard: null });
+        get().projectUpdated(revision);
       },
 
       projectUpdated(revision) {

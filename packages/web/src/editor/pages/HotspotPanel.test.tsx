@@ -176,6 +176,15 @@ describe('HotspotPanel', () => {
     expect(state().selection.hotspotIds).toEqual([copy.id]);
   });
 
+  it('copies the hotspot for pasting on any page (spec ED-17)', async () => {
+    const { state } = await renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(state().clipboard).toMatchObject({
+      pageId: 'p_home00',
+      hotspots: [{ id: 'h_carda0', name: 'Product A card' }],
+    });
+  });
+
   it('deletes the hotspot; nothing is selected afterwards (spec HS-6)', async () => {
     const { hotspots, state } = await renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Delete hotspot' }));
@@ -1148,6 +1157,12 @@ describe('HotspotPanel for several hotspots (spec ED-16)', () => {
     );
     expect(hotspots().map((h) => h.id)).toEqual(['h_cardb0', 'h_about0', 'h_call00']);
     expect(state().selection.hotspotIds).toEqual([]);
+  });
+
+  it('copies them all for pasting on any page (spec ED-17)', async () => {
+    const { state } = await renderGroup();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(state().clipboard?.hotspots.map((h) => h.id)).toEqual(['h_carda0', 'h_cardc0']);
   });
 
   it('lists them, and a click selects only that one', async () => {

@@ -8,6 +8,8 @@ import {
   duplicateHotspots,
   groupBox,
   nudgeHotspots,
+  PASTE_OFFSET,
+  pasteHotspots,
   placeHotspots,
   DUPLICATE_OFFSET,
   duplicateHotspot,
@@ -597,5 +599,119 @@ describe('several hotspots at once (spec ED-16)', () => {
       project: before,
       hotspotIds: [],
     });
+  });
+});
+
+describe('pasteHotspots (spec ED-17)', () => {
+  const page = (project: Project, id: string) => project.pages.find((p) => p.id === id)!;
+  const copiedFrom = (project: Project, pageId: string, ids: string[]) => ({
+    pageId,
+    hotspots: structuredClone(page(project, pageId).hotspots.filter((h) => ids.includes(h.id))),
+  });
+
+  it('puts copies on another page at the same positions, on top, with new ids and free names', () => {
+    const before = demoProject();
+    const copied = copiedFrom(before, 'p_proda0', ['h_aback0', 'h_aplay0']);
+    const { project, hotspotIds } = pasteHotspots(before, 'p_prodb0', copied);
+    const list = page(project, 'p_prodb0').hotspots;
+    expect(list.map((h) => h.name)).toEqual([
+      'Back',
+      'Play demo',
+      'Show on the wall',
+      'Back 2',
+      'Play demo 2',
+    ]);
+    expect(hotspotIds).toEqual([list[3]!.id, list[4]!.id]);
+    expect(list.slice(3).map((h) => [h.x, h.y])).toEqual(copied.hotspots.map((h) => [h.x, h.y]));
+    // Everything else is kept: style, commands, kind.
+    const { id: _a, name: _b, ...rest } = list[4]!;
+    const { id: _c, name: _d, ...original } = copied.hotspots[1]!;
+    expect(rest).toEqual(original);
+    const ids = before.pages.flatMap((p) => p.hotspots.map((h) => h.id));
+    expect(hotspotIds.some((id) => ids.includes(id))).toBe(false);
+    expectValid(project);
+  });
+
+  it('offsets copies pasted on the page they came from, so they show', () => {
+    const before = demoProject();
+    const copied = copiedFrom(before, 'p_home00', ['h_carda0']);
+    const { project, hotspotIds } = pasteHotspots(before, 'p_home00', copied);
+    const copy = home(project).hotspots.find((h) => h.id === hotspotIds[0])!;
+    expect(PASTE_OFFSET).toBe(24);
+    expect([copy.x, copy.y]).toEqual([144 + 24, 500 + 24]);
+    expect(copy.name).toBe('Product A card 2');
+  });
+
+  it('keeps the copies inside the canvas as a group', () => {
+    const before = demoProject();
+    // About touches the right and bottom edges, so its copy cannot go further.
+    Object.assign(home(before).hotspots[3]!, { x: 1904, y: 1392 });
+    const copied = copiedFrom(before, 'p_home00', ['h_about0']);
+    const { project, hotspotIds } = pasteHotspots(before, 'p_home00', copied);
+    const copy = home(project).hotspots.find((h) => h.id === hotspotIds[0])!;
+    expect([copy.x, copy.y]).toEqual([1904, 1392]);
+    // On a canvas made smaller since the copy, they are moved back inside.
+    const smaller = { ...demoProject(), canvas: { ...before.canvas, width: 1920, height: 1080 } };
+    const fitted = pasteHotspots(smaller, 'p_prodb0', copied);
+    const placed = page(fitted.project, 'p_prodb0').hotspots.at(-1)!;
+    expect([placed.x, placed.y]).toEqual([1776, 936]);
+  });
+
+  it('turns a link to the page it lands on, or to a deleted page, into "stay"', () => {
+    const before = demoProject();
+    const copied = copiedFrom(before, 'p_home00', ['h_carda0', 'h_cardb0', 'h_about0']);
+    // A, B and About link to Product A, Product B and About us.
+    const onA = pasteHotspots(before, 'p_proda0', copied).project;
+    expect(
+      page(onA, 'p_proda0')
+        .hotspots.slice(-3)
+        .map((h) => h.action.goTo),
+    ).toEqual([null, 'p_prodb0', 'p_about0']);
+    const withoutAbout = {
+      ...demoProject(),
+      pages: demoProject().pages.filter((p) => p.id !== 'p_about0'),
+    };
+    const pasted = pasteHotspots(withoutAbout, 'p_prodb0', copied).project;
+    expect(
+      page(pasted, 'p_prodb0')
+        .hotspots.slice(-3)
+        .map((h) => h.action.goTo),
+    ).toEqual(['p_proda0', null, null]);
+    expectValid(onA);
+  });
+
+  it('drops commands to a target deleted since the copy', () => {
+    const before = demoProject();
+    const copied = copiedFrom(before, 'p_home00', ['h_carda0', 'h_call00']);
+    const project = {
+      ...demoProject(),
+      targets: demoProject().targets.filter((t) => t.id !== 't_resolm'),
+    };
+    // Without Resolume the project is invalid; strip its commands from the cards first.
+    project.pages = project.pages.map((p) => ({
+      ...p,
+      hotspots: p.hotspots.map((h) => ({
+        ...h,
+        action: {
+          ...h.action,
+          commands: h.action.commands.filter((s) => s.command.targetId !== 't_resolm'),
+        },
+      })),
+    }));
+    const pasted = pasteHotspots(project, 'p_about0', copied).project;
+    const [a, call] = page(pasted, 'p_about0').hotspots.slice(-2);
+    expect(a!.action.commands).toEqual([]);
+    expect(call!.action.commands.map((s) => s.command.targetId)).toEqual(['t_demo00']);
+    expectValid(pasted);
+  });
+
+  it('pastes nothing from an empty clipboard or onto a missing page', () => {
+    const before = demoProject();
+    const empty = pasteHotspots(before, 'p_home00', { pageId: 'p_home00', hotspots: [] });
+    // The same project, so the editor has nothing to save.
+    expect(empty.project).toBe(before);
+    expect(empty.hotspotIds).toEqual([]);
+    const copied = copiedFrom(before, 'p_home00', ['h_carda0']);
+    expect(pasteHotspots(before, 'p_zzzzzz', copied)).toEqual({ project: before, hotspotIds: [] });
   });
 });

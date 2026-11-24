@@ -30,6 +30,7 @@ export function HotspotPanel() {
   const selection = useEditor((state) => state.selection);
   const change = useEditor((state) => state.change);
   const select = useEditor((state) => state.select);
+  const copy = useEditor((state) => state.copy);
   const reference = useEditor((state) => state.safeArea.reference);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const selected = page?.hotspots.filter((h) => selection.hotspotIds.includes(h.id)) ?? [];
@@ -56,6 +57,13 @@ export function HotspotPanel() {
         <div className="flex items-center justify-between">
           <h2 className="text-overline text-muted uppercase">Hotspot</h2>
           <div className="-mr-1 flex gap-0.5">
+            <Button
+              variant="ghost"
+              size="s"
+              label="Copy"
+              title="Copy to paste on any page (Cmd/Ctrl + C)"
+              onClick={copy}
+            />
             <Button
               variant="ghost"
               size="s"

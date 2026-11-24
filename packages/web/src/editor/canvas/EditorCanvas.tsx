@@ -1,6 +1,6 @@
 // The centre of the Pages tab: the selected page drawn by the player's own PageView, always scaled
 // to fit, with the selection layer on top, "Add hotspot" and the safe area of `fill` mode
-// (spec ED-2, ED-3, ED-8, ED-16, HS-1, HS-2; design: canvasToolbar(), canvasStage()).
+// (spec ED-2, ED-3, ED-8, ED-16, ED-17, HS-1, HS-2; design: canvasToolbar(), canvasStage()).
 import type { Canvas, HotspotId, Page } from '@tapcue/shared';
 import { useEffect, useState } from 'react';
 import { PageView } from '../../stage/PageView';
@@ -27,6 +27,8 @@ export function EditorCanvas() {
   const change = useEditor((state) => state.change);
   const safeArea = useEditor((state) => state.safeArea);
   const setSafeArea = useEditor((state) => state.setSafeArea);
+  const clipboard = useEditor((state) => state.clipboard);
+  const paste = useEditor((state) => state.paste);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
   const place = (rects: Record<HotspotId, Rect>) => {
@@ -59,6 +61,13 @@ export function EditorCanvas() {
             select({ pageId: page.id, hotspotIds: [added.hotspotId] });
           }}
         />
+        {clipboard && (
+          <Button
+            label="Paste"
+            title={`Paste ${hotspotCount(clipboard.hotspots.length)} (Cmd/Ctrl + V)`}
+            onClick={paste}
+          />
+        )}
         <span className="mx-1 h-5 w-px bg-pressed" aria-hidden="true" />
         <Button
           icon="crop"
@@ -131,6 +140,11 @@ export function EditorCanvas() {
   );
 }
 
+/** "1 hotspot", "3 hotspots". */
+export function hotspotCount(n: number): string {
+  return `${n} ${n === 1 ? 'hotspot' : 'hotspots'}`;
+}
+
 interface StageProps {
   page: Page;
   canvas: Canvas;
@@ -194,7 +208,8 @@ const NUDGE: Record<string, [number, number]> = {
  * (spec HS-2, ED-16). The arrows move the selection by 1 canvas pixel, with Shift by 10; each step
  * starts from the hotspots as the store has them at that moment, so fast repeats never undo one
  * another. Delete and Backspace delete one hotspot at once, and ask first for several (`onDelete`).
- * Cmd/Ctrl+A selects every hotspot of the page, Escape none.
+ * Cmd/Ctrl+A selects every hotspot of the page, Escape none. Cmd/Ctrl+C copies the selection into
+ * the editor's clipboard, unless text on the page is selected, and Cmd/Ctrl+V pastes it (ED-17).
  */
 function useCanvasKeys(
   page: Page | null,
@@ -203,6 +218,8 @@ function useCanvasKeys(
 ) {
   const change = useEditor((state) => state.change);
   const select = useEditor((state) => state.select);
+  const copy = useEditor((state) => state.copy);
+  const paste = useEditor((state) => state.paste);
   const pageId = page?.id;
   const allIds = page?.hotspots.map((h) => h.id).join(' ') ?? '';
   const selectedKey = selectedIds.join(' ');
@@ -212,9 +229,22 @@ function useCanvasKeys(
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (target?.closest('input, textarea, select, [role="dialog"], [role="alertdialog"]')) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
+      const command = event.metaKey || event.ctrlKey;
+      const key = event.key.toLowerCase();
+      if (command && key === 'a') {
         event.preventDefault();
         select({ pageId, hotspotIds: allIds === '' ? [] : allIds.split(' ') });
+        return;
+      }
+      if (command && key === 'v') {
+        event.preventDefault();
+        paste();
+        return;
+      }
+      // Text selected on the page is the browser's to copy.
+      if (command && key === 'c' && ids.length > 0 && !document.getSelection()?.toString()) {
+        event.preventDefault();
+        copy();
         return;
       }
       if (ids.length === 0) return;
@@ -238,5 +268,5 @@ function useCanvasKeys(
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [change, select, onDelete, pageId, allIds, selectedKey]);
+  }, [change, select, copy, paste, onDelete, pageId, allIds, selectedKey]);
 }

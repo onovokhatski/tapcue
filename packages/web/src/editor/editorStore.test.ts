@@ -284,6 +284,70 @@ describe('editor store', () => {
     });
   });
 
+  describe('the clipboard (spec ED-17)', () => {
+    const hotspotsOf = (project: Project | null, pageId: string) =>
+      project!.pages.find((p) => p.id === pageId)!.hotspots;
+
+    it('copies the selection as it is, and pastes it on another page, selecting the copies', async () => {
+      const { state } = await loaded();
+      expect(state().clipboard).toBeNull();
+      state().copy(); // nothing selected: nothing copied
+      expect(state().clipboard).toBeNull();
+      state().select({ pageId: 'p_proda0', hotspotIds: ['h_aback0'] });
+      state().copy();
+      expect(state().clipboard?.pageId).toBe('p_proda0');
+      // Later edits to the original do not change what is pasted.
+      state().change((p) => ({
+        ...p,
+        pages: p.pages.map((page) => ({
+          ...page,
+          hotspots: page.hotspots.map((h) => (h.id === 'h_aback0' ? { ...h, x: 999 } : h)),
+        })),
+      }));
+      state().select({ pageId: 'p_about0', hotspotIds: [] });
+      state().paste();
+      const pasted = hotspotsOf(state().project, 'p_about0').at(-1)!;
+      expect(pasted.name).toBe('Back 2');
+      expect(pasted.x).toBe(120); // where Back was when copied, not 999
+      expect(state().selection).toEqual({ pageId: 'p_about0', hotspotIds: [pasted.id] });
+      expect(state().save).toEqual({ state: 'saving' });
+      // The clipboard stays for more pastes.
+      state().paste();
+      expect(hotspotsOf(state().project, 'p_about0').at(-1)!.name).toBe('Back 3');
+    });
+
+    it('pastes nothing without a clipboard', async () => {
+      const { state } = await loaded();
+      const project = state().project;
+      state().paste();
+      expect(state().project).toBe(project);
+    });
+
+    it('is cleared when this editor opens another project', async () => {
+      const { state } = await loaded();
+      state().select({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
+      state().copy();
+      state().projectOpened(7);
+      expect(state().clipboard).toBeNull();
+    });
+
+    it('is cleared when a save finds another project open on the server', async () => {
+      const { state, server } = await loaded();
+      state().select({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
+      state().copy();
+      state().change(rename('Old stand edit'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({
+        ok: false,
+        reason: 'Another project was opened on the server.',
+        errors: [],
+        stale: true,
+      });
+      await settle();
+      expect(state().clipboard).toBeNull();
+    });
+  });
+
   describe('the selection (spec ED-16)', () => {
     it('keeps several hotspots in page order, and only those on the page', async () => {
       const { state } = await loaded();

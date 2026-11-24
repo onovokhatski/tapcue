@@ -205,31 +205,89 @@ export function duplicateHotspots(
     DUPLICATE_OFFSET,
     project.canvas,
   );
+  const copies = makeCopies(project, page, originals, (h) => moved[h.id]!, random);
+  const copyOf = new Map(originals.map((h, i) => [h.id, copies[i]!]));
+  return {
+    project: updateHotspots(project, pageId, (hotspots) =>
+      hotspots.flatMap((h) => {
+        const copy = copyOf.get(h.id);
+        return copy ? [h, copy] : [h];
+      }),
+    ),
+    hotspotIds: copies.map((c) => c.id),
+  };
+}
+
+/** How far hotspots pasted on the page they were copied from land, right and down (spec ED-17). */
+export const PASTE_OFFSET = 24;
+
+/**
+ * Pastes copied hotspots onto a page of the project (spec ED-17): on top of the others, at the
+ * same positions, or 24 px right and down on the page they were copied from, so the copies show;
+ * moved together, inside the canvas; with new ids and free names (ED-14). A link to the page they
+ * land on, or to a page deleted since, becomes "stay"; commands to a target deleted since are
+ * dropped, so the project stays valid. Returns the copies' ids.
+ */
+export function pasteHotspots(
+  project: Project,
+  pageId: PageId,
+  copied: { pageId: PageId; hotspots: Hotspot[] },
+  random?: () => number,
+): { project: Project; hotspotIds: HotspotId[] } {
+  const page = project.pages.find((p) => p.id === pageId);
+  if (!page || copied.hotspots.length === 0) return { project, hotspotIds: [] };
+  const offset = copied.pageId === pageId ? PASTE_OFFSET : 0;
+  const boxes: Record<string, Rect> = {};
+  copied.hotspots.forEach(({ x, y, width, height }, i) => (boxes[i] = { x, y, width, height }));
+  const moved = moveGroup(boxes, offset, offset, project.canvas);
+  const targets = new Set(project.targets.map((t) => t.id));
+  const pages = new Set(project.pages.map((p) => p.id));
+  const fitted = copied.hotspots.map((hotspot): Hotspot => {
+    const { goTo, commands } = hotspot.action;
+    const stay = goTo === null || goTo === pageId || !pages.has(goTo);
+    return {
+      ...hotspot,
+      action: {
+        goTo: stay ? null : goTo,
+        commands: commands.filter((step) => targets.has(step.command.targetId)),
+      },
+    };
+  });
+  const copies = makeCopies(project, page, fitted, (_, i) => moved[i]!, random);
+  return {
+    project: updateHotspots(project, pageId, (hotspots) => [...hotspots, ...copies]),
+    hotspotIds: copies.map((c) => c.id),
+  };
+}
+
+/**
+ * Copies of `originals` for `page`, each at the box `boxOf` gives it, with an id not used on any
+ * page and a name free on the page, also among the copies themselves.
+ */
+function makeCopies(
+  project: Project,
+  page: Project['pages'][number],
+  originals: Hotspot[],
+  boxOf: (original: Hotspot, index: number) => Rect,
+  random?: () => number,
+): Hotspot[] {
   const taken = project.pages.flatMap((p) => p.hotspots.map((h) => h.id));
-  const copies = new Map<HotspotId, Hotspot>();
+  const copies: Hotspot[] = [];
   let named = page;
-  for (const original of originals) {
+  for (const [index, original] of originals.entries()) {
     const id = newId('h', taken, random);
     taken.push(id);
     const copy: Hotspot = {
       ...structuredClone(original),
-      ...moved[original.id],
+      ...boxOf(original, index),
       id,
       name: freeName(named, original.name),
     };
     // Later copies must not take a name an earlier copy got.
     named = { ...named, hotspots: [...named.hotspots, copy] };
-    copies.set(original.id, copy);
+    copies.push(copy);
   }
-  return {
-    project: updateHotspots(project, pageId, (hotspots) =>
-      hotspots.flatMap((h) => {
-        const copy = copies.get(h.id);
-        return copy ? [h, copy] : [h];
-      }),
-    ),
-    hotspotIds: [...copies.values()].map((c) => c.id),
-  };
+  return copies;
 }
 
 /** Deletes a hotspot. Nothing else refers to hotspots, so nothing else changes. */
