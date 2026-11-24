@@ -175,11 +175,25 @@ selected, copied to another page, aligned, distributed and edited together.
   a minute; a set of buttons is copied to another page in two keystrokes; a sequence's steps are
   named and switched off without deleting them.
 
+### v0.7 — Properties panel
+
+The hotspot panel reads at a glance: every section folds and sums up its state in one line, the
+sections go from how a hotspot looks to what it does, position values fit their fields, and
+"Go to page" is one of the commands.
+
+- **Requirements:** ED-20 to ED-23
+- **Decided** (2026-11-24): Go to page changes only the editor, not the project format; the
+  order is Name, Type, Position and size, Style, Text, On tap, Stacking; one set of folded
+  sections for every hotspot, kept in the browser; done before undo/redo.
+- **Done when:** with every section folded, the panel of a hotspot fits a 900 px-high window
+  and still says its size, style, text and what a tap does; a page link is added from Add
+  command; 2048 and 1536 show in full in the position fields.
+
 ## 6. After MVP
 
 Each becomes its own milestone when started.
 
-**Next, in this order** (set on 2026-11-23):
+**Next, in this order** (set on 2026-11-23; v0.7 put first on 2026-11-24):
 
 1. Undo / redo in the editor
 2. Image-based hotspot states (a "pressed" image)
