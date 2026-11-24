@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type Config, ConfigError } from './config';
 import type { Library } from './project/library';
 import { ProjectLoadError } from './project/store';
-import { portInUse, reportStartError, startDir } from './start';
+import { portInUse, reportStartError, startErrorMessage, startDir } from './start';
 
 const busy = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE', port: 4000 });
 
@@ -29,6 +29,15 @@ describe('reportStartError', () => {
     expect(lines()).toEqual([
       'Tapcue cannot start: port 4000 is in use by another program. Close it, or start Tapcue on another port with --port 4001.',
     ]);
+  });
+
+  it('gives the same words as one message, for the click-to-run app’s error page (issue #230)', () => {
+    expect(
+      startErrorMessage(
+        new ProjectLoadError('/stand', [{ path: 'name', message: 'Expected a name' }]),
+      ),
+    ).toBe('Tapcue cannot start. The project in /stand has 1 problem:\n  name: Expected a name');
+    expect(startErrorMessage(new Error('Something else'))).toBeNull();
   });
 
   it('reports a bad option and an invalid project', () => {

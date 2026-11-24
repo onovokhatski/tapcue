@@ -10,11 +10,14 @@ import { createLibrary, type Library } from './project/library';
 import { loadProjectStore, ProjectLoadError } from './project/store';
 import { hasWebBuild } from './webApp';
 
-/** `quittable`: the click-to-run app, which the editor can stop (POST /api/quit). */
+/**
+ * `quittable`: the click-to-run app, which the editor can stop (POST /api/quit). `log`: where the
+ * server's log goes instead of stdout, the app's log file (issue #230).
+ */
 export async function startServer(
   config: Config,
   webDir: string,
-  { quittable = false } = {},
+  { quittable = false, log }: { quittable?: boolean; log?: { write(text: string): void } } = {},
 ): Promise<FastifyInstance> {
   const library = createLibrary(config.projectsDir);
   const store = await loadProjectStore(await startDir(config, library));
@@ -25,7 +28,7 @@ export async function startServer(
   const app = buildApp({
     store,
     library,
-    logger: true,
+    logger: log ? { stream: log } : true,
     webDir,
     demo: config.demo,
     ...(quittable ? { onQuit: quit } : {}),
@@ -62,21 +65,27 @@ export function portInUse(error: unknown): number | null {
   return code === 'EADDRINUSE' && typeof port === 'number' ? port : null;
 }
 
+/** Why Tapcue cannot start, for problems a person can fix; null for anything else. */
+export function startErrorMessage(error: unknown): string | null {
+  const port = portInUse(error);
+  if (error instanceof ConfigError) return `Tapcue cannot start: ${error.message}`;
+  if (error instanceof ProjectLoadError) {
+    const problems = error.errors.map((problem) => `  ${problem.path}: ${problem.message}`);
+    return [`Tapcue cannot start. ${error.message}:`, ...problems].join('\n');
+  }
+  if (port !== null) {
+    return (
+      `Tapcue cannot start: port ${port} is in use by another program. ` +
+      `Close it, or start Tapcue on another port with --port ${port + 1}.`
+    );
+  }
+  return null;
+}
+
 /** Says why Tapcue cannot start, for problems a person can fix; false for anything else. */
 export function reportStartError(error: unknown): boolean {
-  const port = portInUse(error);
-  if (error instanceof ConfigError) {
-    console.error(`Tapcue cannot start: ${error.message}`);
-  } else if (error instanceof ProjectLoadError) {
-    console.error(`Tapcue cannot start. ${error.message}:`);
-    for (const problem of error.errors) console.error(`  ${problem.path}: ${problem.message}`);
-  } else if (port !== null) {
-    console.error(
-      `Tapcue cannot start: port ${port} is in use by another program. ` +
-        `Close it, or start Tapcue on another port with --port ${port + 1}.`,
-    );
-  } else {
-    return false;
-  }
+  const message = startErrorMessage(error);
+  if (message === null) return false;
+  for (const line of message.split('\n')) console.error(line);
   return true;
 }

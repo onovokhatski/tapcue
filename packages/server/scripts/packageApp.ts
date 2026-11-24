@@ -7,9 +7,18 @@
 // macOS: dist/app/Tapcue.app and Tapcue-macos.zip. Windows: dist/app/Tapcue/Tapcue.exe and
 // Tapcue-windows.zip. The app is not code-signed yet (ad hoc on macOS, so it runs at all).
 import { execFileSync, type ExecFileSyncOptions } from 'node:child_process';
-import { chmodSync, copyFileSync, cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
+import { makeWindowed } from './peSubsystem';
 
 const SERVER = resolve(import.meta.dirname, '..');
 const ROOT = resolve(SERVER, '../..');
@@ -95,8 +104,14 @@ if (process.platform === 'darwin') {
 } else if (windows) {
   const dir = join(OUT, 'Tapcue');
   mkdirSync(dir, { recursive: true });
-  copyNode(join(dir, 'Tapcue.exe'));
-  injectBlob(join(dir, 'Tapcue.exe'), []);
+  const exe = join(dir, 'Tapcue.exe');
+  copyNode(exe);
+  injectBlob(exe, []);
+  // A windowed program: Windows opens no command-prompt window for it (issue #230). After the
+  // injection, which rewrites the file.
+  const bytes = readFileSync(exe);
+  makeWindowed(bytes);
+  writeFileSync(exe, bytes);
   copyResources(dir);
   run('powershell', [
     '-NoProfile',
