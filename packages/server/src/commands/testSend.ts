@@ -1,6 +1,6 @@
 // POST /api/test-send: the editor's "Send test" — a hotspot's command sent exactly as a tap would
 // send it, from the source "test" (spec ACT-4, TGT-4, TGT-6, architecture §5.1).
-import { HotspotId, PageId, type Project } from '@tapcue/shared';
+import { activeSteps, HotspotId, PageId, type Project } from '@tapcue/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Dispatch } from './dispatcher';
 import type { Faders } from './faders';
@@ -22,6 +22,9 @@ export function registerTestSend(
     if (!hotspot) return reply.code(404).send({ error: 'The hotspot is not in the saved project' });
     if (hotspot.action.commands.length === 0)
       return reply.code(409).send({ error: 'The hotspot sends no command' });
+    // Sent as a tap would send it, so the steps that are off are skipped (spec ACT-9).
+    if (activeSteps(hotspot.action).length === 0)
+      return reply.code(409).send({ error: 'Every command of the hotspot is switched off' });
 
     // A fader's test sends a value, as a drag that stops there would (spec FD-2, ADR 0020); it is
     // held and shown on the tablets too, since it is now the media server's level.

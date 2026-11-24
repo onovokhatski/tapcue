@@ -352,6 +352,7 @@ describe('sequences (spec ACT-5 to ACT-8, ADR 0022)', () => {
 
     expect(texts()).toEqual(['B']);
     expect(entries[0]!.sequence).toEqual({ run: 0, step: 1, of: 1, delayMs: 2000 });
+    expect(fake.sent[0]!.context.sequence).toEqual({ run: 0, step: 1, of: 1 });
   });
 
   it('starts over on a new tap, from any station, and logs the steps it cancelled (ACT-7)', async () => {
@@ -538,5 +539,129 @@ describe('sequences (spec ACT-5 to ACT-8, ADR 0022)', () => {
 
     expect(entries.map((e) => e.status)).toEqual(['sent', 'sent', 'sent']);
     expect(entries.map((e) => e.sequence?.run)).toEqual([0, 0, 1]);
+  });
+  describe('steps that are off (spec ACT-9)', () => {
+    it('skips a step in the middle with its pause, and numbers the rest without it', async () => {
+      project = withSteps([
+        { command: A() },
+        { delayMs: 5000, command: B, enabled: false },
+        { delayMs: 500, command: C },
+      ]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      await later(499);
+      expect(texts()).toEqual(['A']);
+      await later(1);
+      expect(texts()).toEqual(['A', 'C']);
+      await later(10_000);
+      expect(texts()).toEqual(['A', 'C']);
+      expect(entries.map((e) => e.sequence)).toEqual([
+        { run: 0, step: 1, of: 2, delayMs: 0 },
+        { run: 0, step: 2, of: 2, delayMs: 500 },
+      ]);
+      expect(fake.sent.map((s) => s.context.sequence)).toEqual([
+        { run: 0, step: 1, of: 2 },
+        { run: 0, step: 2, of: 2 },
+      ]);
+    });
+
+    it('skips a first step that is off, with its pause: the next one is sent at once', async () => {
+      project = withSteps([
+        { delayMs: 3000, command: A(), enabled: false },
+        { command: B },
+        { delayMs: 200, command: C },
+      ]);
+      const first = await dispatch(tap('p_home00', 'h_carda0'));
+      expect(first).toMatchObject({ status: 'sent', sequence: { step: 1, of: 2 } });
+      expect(texts()).toEqual(['B']);
+      await later(200);
+      expect(texts()).toEqual(['B', 'C']);
+    });
+
+    it('skips a last step that is off: the run ends after the step before it', async () => {
+      project = withSteps([
+        { command: B },
+        { delayMs: 100, command: C },
+        { delayMs: 100, command: A(), enabled: false },
+      ]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      await later(1000);
+      expect(texts()).toEqual(['B', 'C']);
+      // Done: a new tap has nothing to cancel.
+      await dispatch(tap('p_home00', 'h_carda0'));
+      expect(entries.map((e) => e.status)).toEqual(['sent', 'sent', 'sent']);
+    });
+
+    it('logs one command left on as a single command, without a place in a sequence', async () => {
+      project = withSteps([{ command: B }, { delayMs: 100, command: C, enabled: false }]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      expect(entries[0]).not.toHaveProperty('sequence');
+      expect(fake.sent[0]!.context).not.toHaveProperty('sequence');
+    });
+
+    it('sends and logs nothing when every step is off, like a hotspot without commands', async () => {
+      project = withSteps([
+        { command: B, enabled: false },
+        { delayMs: 100, command: C, enabled: false },
+      ]);
+      expect(await dispatch(tap('p_home00', 'h_carda0'))).toBeNull();
+      await later(1000);
+      expect(fake.sent).toEqual([]);
+      expect(entries).toEqual([]);
+    });
+
+    it('treats enabled: true as on', async () => {
+      project = withSteps([{ command: B, enabled: true }]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      expect(texts()).toEqual(['B']);
+    });
+
+    it('reads the switch when the step runs: one switched off meanwhile is not sent', async () => {
+      project = withSteps([
+        { command: B },
+        { delayMs: 100, command: C },
+        { delayMs: 100, command: A() },
+      ]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      project = withSteps([
+        { command: B },
+        { delayMs: 100, command: C, enabled: false },
+        { delayMs: 100, command: A() },
+      ]);
+      await later(1000);
+      expect(texts()).toEqual(['B', 'A']);
+    });
+  });
+
+  describe('named steps (spec ACT-9)', () => {
+    it('logs a step with its name', async () => {
+      project = withSteps([{ command: B }, { delayMs: 100, command: C, name: 'Lights up' }]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      await later(100);
+      expect(entries.map((e) => e.sequence)).toEqual([
+        { run: 0, step: 1, of: 2, delayMs: 0 },
+        { run: 0, step: 2, of: 2, delayMs: 100, name: 'Lights up' },
+      ]);
+      // The media server is told the place, not the name.
+      expect(fake.sent[1]!.context.sequence).toEqual({ run: 0, step: 2, of: 2 });
+    });
+
+    it('logs a single named command with its name, but tells the media server of no sequence', async () => {
+      project = withSteps([{ command: B, name: 'Projector on' }]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      expect(entries[0]!.sequence).toEqual({
+        run: 0,
+        step: 1,
+        of: 1,
+        delayMs: 0,
+        name: 'Projector on',
+      });
+      expect(fake.sent[0]!.context).not.toHaveProperty('sequence');
+    });
+
+    it('logs an empty name as no name', async () => {
+      project = withSteps([{ command: B, name: '' }]);
+      await dispatch(tap('p_home00', 'h_carda0'));
+      expect(entries[0]).not.toHaveProperty('sequence');
+    });
   });
 });

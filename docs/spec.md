@@ -146,9 +146,11 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   sends them exactly as if the hotspot had been tapped, the whole sequence with its delays, so
   commands can be checked during setup without the tablet.
 - **ACT-5** A button's commands are a sequence of up to 20 steps, sent in order. Each step has its
-  own target, so one tap can drive several media servers.
+  own target, so one tap can drive several media servers. A step can be named and switched off
+  (ACT-9).
 - **ACT-6** Each step may wait before it is sent: 0 to 60 seconds, set in tenths of a second. The
-  server keeps the time, so a tablet that sleeps or changes page does not stop the sequence.
+  server keeps the time, so a tablet that sleeps or changes page does not stop the sequence. A
+  step that is off does not wait either: its pause is skipped with it (ACT-9).
 - **ACT-7** Tapping a hotspot again while its sequence is still running, from any station, cancels
   the steps not yet sent and starts the sequence over. Sequences of other hotspots keep running.
 - **ACT-8** A step that fails is logged, and the next step is still sent on time. Steps not yet

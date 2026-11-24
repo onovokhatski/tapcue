@@ -206,7 +206,7 @@ contract at runtime and get the same TypeScript types at compile time.
 | `POST /api/projects/:id/open` | Make a project active (PRJ-7): checked like a load, remembered for the next start, announced as `project-updated`, fader values back to their start. Answers `{ revision }`, `400` with the load errors, `404` for an id the library does not list |
 | `DELETE /api/projects/:id` | Move a project into the library's `.trash/` (PRJ-8); `409` for the active project, `404` for an unknown id |
 | `GET /api/network` | Local IPv4 addresses for station URLs and QR codes, private ranges first; no port, the editor adds the one it is served on |
-| `POST /api/test-send` | Send a hotspot's commands from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)): the whole sequence with its delays. Answers the first step's log entry (sent or error), or `entry: null` when the first step waits for its delay; later steps reach the editor as log entries. `404` for an unknown hotspot, `409` for one without a command |
+| `POST /api/test-send` | Send a hotspot's commands from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)): the whole sequence with its delays. Answers the first step's log entry (sent or error), or `entry: null` when the first step waits for its delay; later steps reach the editor as log entries. `404` for an unknown hotspot, `409` for one without a command or with every command switched off |
 | `* /demo/<screen>/<content>` | Demo receiver endpoint (any method; the page itself is `/demo` in the web app) |
 
 The editor saves the **whole project** in one request. A project is a few kilobytes of JSON,
@@ -223,7 +223,7 @@ that says `hello` is a player; every other connection (editors, demo pages) is a
 | player → server | `hello` | `stationId` | Identify after (re)connect |
 | player → server | `tap` | `pageId`, `hotspotId` | A hotspot was tapped |
 | server → all | `project-updated` | `revision` | Fetch the new project |
-| server → viewers | `log-entry` | entry: source (a station or `test`), hotspot, status `sent`, `error` or `ignored`; for a sequence, `sequence` (run, step, of, delay) | A command was sent, failed, or was not sent: an unknown hotspot, or steps of a sequence cancelled |
+| server → viewers | `log-entry` | entry: source (a station or `test`), hotspot, status `sent`, `error` or `ignored`; for a sequence, `sequence` (run, step, of, delay, and the step's name if it has one) | A command was sent, failed, or was not sent: an unknown hotspot, or steps of a sequence cancelled |
 | server → viewers | `demo-received` | request summary | Demo receiver got a request |
 | both | `ping` / `pong` | — | Detect dead connections |
 

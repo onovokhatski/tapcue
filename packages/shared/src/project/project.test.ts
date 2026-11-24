@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { errorOf } from '../test/errors';
 import { docExample } from '../test/format-doc';
 import { Canvas } from './canvas';
-import { Action, Hotspot, Page } from './pages';
+import { Action, activeSteps, Hotspot, Page } from './pages';
 import { Project } from './project';
 import { Station } from './stations';
 import { Target } from './targets';
@@ -511,10 +511,41 @@ describe('Action (ADR 0022)', () => {
     expect(errorOf(Action, action([{ ...step, delayMs }]))).toBe(`commands.0.delayMs: ${message}`);
   });
 
+  it('accepts a name of up to 100 characters and an on/off switch (spec ACT-9)', () => {
+    for (const name of ['', 'Lights up', 'x'.repeat(100)]) {
+      expect(errorOf(Action, action([{ ...step, name }]))).toBeNull();
+    }
+    for (const enabled of [true, false]) {
+      expect(errorOf(Action, action([{ ...step, enabled }]))).toBeNull();
+    }
+  });
+
+  it('refuses a longer name and a switch that is not true or false', () => {
+    expect(errorOf(Action, action([{ ...step, name: 'x'.repeat(101) }]))).toBe(
+      'commands.0.name: Expected at most 100 characters',
+    );
+    expect(errorOf(Action, action([{ ...step, enabled: 'no' }]))).toContain('commands.0.enabled');
+    expect(errorOf(Action, action([{ ...step, name: 7 }]))).toContain('commands.0.name');
+  });
+
   it('refuses the old single command and unknown step fields', () => {
     expect(errorOf(Action, { goTo: null, command: step.command })).toContain('commands');
     expect(errorOf(Action, action([{ ...step, wait: 1 }]))).toBe(
       'commands.0: Unrecognized key: "wait"',
     );
+  });
+});
+
+describe('activeSteps (spec ACT-9)', () => {
+  const step = (text: string, enabled?: boolean) => ({
+    command: { type: 'udp' as const, targetId: 't_projec', text },
+    ...(enabled === undefined ? {} : { enabled }),
+  });
+
+  it('keeps the steps that are on, in order: absent and true mean on', () => {
+    const commands = [step('A'), step('B', false), step('C', true), step('D', false)];
+    const kept = activeSteps({ goTo: null, commands });
+    expect(kept).toEqual([commands[0], commands[2]]);
+    expect(activeSteps({ goTo: null, commands: [step('A', false)] })).toEqual([]);
   });
 });

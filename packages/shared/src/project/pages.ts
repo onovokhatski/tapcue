@@ -98,10 +98,14 @@ export const MAX_STEPS = 20;
 export const MAX_DELAY_MS = 60_000;
 
 /**
- * One command of a sequence and the pause before it is sent (spec ACT-5, ACT-6, ADR 0022). Absent
- * `delayMs` means no pause.
+ * One command of a sequence and the pause before it is sent (spec ACT-5, ACT-6, ACT-9, ADR 0022).
+ * Absent `delayMs` means no pause; absent `enabled` means on. A step that is off is skipped with
+ * its pause, as if it were not in the list.
  */
 export const Step = z.strictObject({
+  /** Shown in the editor and the command log instead of "Command 2"; optional. */
+  name: z.string().max(100, 'Expected at most 100 characters').optional(),
+  enabled: z.boolean().optional(),
   delayMs: z
     .int('Expected a whole number of milliseconds')
     .min(0, `Expected 0 to ${MAX_DELAY_MS} ms`)
@@ -121,7 +125,15 @@ export const Action = z.strictObject({
 });
 export type Action = z.infer<typeof Action>;
 
-/** The first command, the only one a fader has (ADR 0022); null when there is none. */
+/** The steps that are on, in order: what a tap sends (spec ACT-9). */
+export function activeSteps(action: Action): Step[] {
+  return action.commands.filter((step) => step.enabled !== false);
+}
+
+/**
+ * The first command, the only one a fader has (ADR 0022); null when there is none. It may be
+ * switched off: what is sent comes from activeSteps().
+ */
 export function firstCommand(action: Action): Command | null {
   return action.commands[0]?.command ?? null;
 }

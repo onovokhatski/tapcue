@@ -5,6 +5,7 @@
 import type {
   Command,
   FaderSettings,
+  Hotspot,
   HotspotId,
   LogEntry,
   LogSource,
@@ -12,7 +13,7 @@ import type {
   Project,
   Protocol,
 } from '@tapcue/shared';
-import { fillValue, firstCommand, formatFaderValue, snapFaderValue } from '@tapcue/shared';
+import { activeSteps, fillValue, formatFaderValue, snapFaderValue } from '@tapcue/shared';
 import type { Drivers } from './dispatcher';
 import type { Driver } from './drivers/driver';
 import type { CommandLog } from './log';
@@ -49,6 +50,11 @@ export interface Faders {
   close(): void;
   /** Forgets every value and pending send: another project was opened (ADR 0021). */
   reset(): void;
+}
+
+/** The command a fader sends: its one command, unless that is switched off (spec ACT-9). */
+function faderCommand(hotspot: Hotspot): Command | null {
+  return activeSteps(hotspot.action)[0]?.command ?? null;
 }
 
 /**
@@ -133,7 +139,8 @@ export function createFaders({
       hotspotId: input.hotspotId,
     };
     const hotspot = find(input.pageId, input.hotspotId);
-    const command = hotspot && firstCommand(hotspot.action);
+    // A fader's one command may be switched off: a drag then sends nothing (spec ACT-9).
+    const command = hotspot && faderCommand(hotspot);
     if (!hotspot?.fader || !command) return null;
     const current = project();
     const target = current.targets.find((t) => t.id === command.targetId);
@@ -239,7 +246,7 @@ export function createFaders({
       const value = snapFaderValue(input.value, hotspot.fader);
       held.set(input.hotspotId, value);
       for (const listener of listeners) listener(input.hotspotId, value);
-      if (!firstCommand(hotspot.action)) return Promise.resolve(null); // a fader that sends nothing yet
+      if (!faderCommand(hotspot)) return Promise.resolve(null); // a fader that sends nothing (yet)
       return schedule({ input, value });
     },
     values() {

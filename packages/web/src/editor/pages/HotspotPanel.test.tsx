@@ -860,7 +860,7 @@ describe('HotspotPanel', () => {
             targetName: 'Projector',
             command: udp('B'),
             message: 'No route to host',
-            sequence: { ...step1, step: 2, delayMs: 1000 },
+            sequence: { ...step1, step: 2, delayMs: 1000, name: 'Lights up' },
           }),
         );
       });
@@ -868,7 +868,7 @@ describe('HotspotPanel', () => {
       const results = within(onTap().getByRole('list', { name: 'Test results' }));
       expect(results.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
         expect.stringMatching(/^Command 1: sent at \d\d:\d\d:01$/),
-        'Command 2: No route to host',
+        'Lights up: No route to host',
       ]);
     });
 

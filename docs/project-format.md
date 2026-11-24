@@ -225,7 +225,8 @@ Common fields: `id` ([Id](#92-ids), unique among targets) and `name` (1–100 ch
   "goTo": "p_7tn4vb",
   "commands": [
     { "command": { ... } },
-    { "delayMs": 2500, "command": { ... } }
+    { "delayMs": 2500, "name": "Lights up", "command": { ... } },
+    { "delayMs": 1000, "enabled": false, "command": { ... } }
   ]
 }
 ```
@@ -240,12 +241,15 @@ Common fields: `id` ([Id](#92-ids), unique among targets) and `name` (1–100 ch
 | Field | Type | Rules |
 |---|---|---|
 | `delayMs` | integer, optional | 0–60000. Milliseconds to wait before this step is sent; absent = 0. |
+| `name` | string, optional | 0–100 characters. Shown in the editor and the command log instead of the step's number. |
+| `enabled` | boolean, optional | `false` switches the step off; absent or `true` = on. A step that is off is skipped with its pause, as if it were not in the list, and is not counted in "step 2 of 3" ([spec ACT-9](spec.md#55-actions)). It is still validated: its target must exist, so it works when switched back on. |
 | `command` | Command | See below. Each step has its own target. |
 
 `goTo` may be `null` and `commands` empty (a hotspot that only plays its press effect). The first
 step without a delay is sent at once and the page changes right after the tap; later steps are
 sent by the server on its own timers, after the tablet has moved on
-([spec ACT-2](spec.md#55-actions), ACT-5 to ACT-8). A fader has at most one step, with no delay.
+([spec ACT-2](spec.md#55-actions), ACT-5 to ACT-8). A fader has at most one step, with no delay;
+switched off, a drag sends nothing. When every step is off, a tap sends nothing.
 
 **Command** — `type` must equal the `protocol` of the referenced target.
 
@@ -340,9 +344,12 @@ reason the last page of a project cannot be deleted.
             "commands": [
               { "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
                              "path": "/demo/screen-1/product-a", "body": null } },
-              { "delayMs": 1500,
+              { "delayMs": 1500, "name": "Second screen",
                 "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
-                             "path": "/demo/screen-2/product-a", "body": null } }
+                             "path": "/demo/screen-2/product-a", "body": null } },
+              { "delayMs": 3000, "enabled": false,
+                "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
+                             "path": "/demo/lights/product-a", "body": null } }
             ]
           }
         }
@@ -390,3 +397,5 @@ document gets a changelog section.
   keeps version 1 until the next save. Error messages name the upgraded fields, e.g.
   `action.commands[0].command.targetId` for what the file calls `action.command.targetId`.
   Tapcue 0.4 and older refuse a version 2 project.
+- **Version 2, Tapcue 0.6:** a step may have a `name` and `enabled` (both optional, so the version
+  stays 2). Tapcue 0.5 refuses a project that uses them, since a step has no other fields there.

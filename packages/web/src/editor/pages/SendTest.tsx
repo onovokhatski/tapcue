@@ -151,7 +151,8 @@ function StepResults({ entries }: { entries: LogEntry[] }) {
 }
 
 function describe(entry: LogEntry): string {
-  const step = entry.sequence ? `Command ${entry.sequence.step}: ` : '';
+  // A named step says its name, as in the log (spec ACT-9).
+  const step = entry.sequence ? `${entry.sequence.name ?? `Command ${entry.sequence.step}`}: ` : '';
   if (entry.status === 'sent') return `${step}sent at ${clock(entry.time).slice(0, 8)}`;
   // A cancellation names its own count, so it needs no step in front.
   if (entry.status === 'ignored') return entry.message;

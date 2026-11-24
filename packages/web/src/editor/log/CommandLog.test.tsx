@@ -258,6 +258,22 @@ describe('sequences in the command log (ADR 0022)', () => {
     expect(sequenceRow()).toHaveTextContent('Running');
   });
 
+  it('says a named step by its name instead of its number (spec ACT-9)', async () => {
+    setWindowSize(1440, 1000);
+    const named = {
+      ...step(11, 2, 2, 1500),
+      sequence: { run: 5, step: 2, of: 2, delayMs: 1500, name: 'Lights up' },
+    };
+    const { panel } = await renderLog([step(10, 1, 2, 0), named]);
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Sequence of 2 commands' }));
+    const rows = within(panel()).getAllByRole('row').slice(2);
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining('Step 1 of 2 · '),
+      expect.stringContaining('Lights up · after 1.5 s · '),
+    ]);
+    expect(rows[1]).not.toHaveTextContent('Step 2');
+  });
+
   it('says "One command" for a single command sent after a pause', async () => {
     setWindowSize(1440, 1000);
     const { panel } = await renderLog([step(1, 1, 1, 2000)]);
