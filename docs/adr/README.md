@@ -28,6 +28,7 @@ decision gets a new ADR that supersedes the old one.
 | [0020](0020-faders.md) | Faders: a hotspot that sends a value | Accepted |
 | [0021](0021-project-library.md) | A library of projects, one of them active | Accepted |
 | [0022](0022-command-sequences.md) | Command sequences: several commands per tap, with delays | Accepted |
+| [0023](0023-undo-history.md) | Undo history: snapshots of the immutable project | Accepted |
 
 ## Template
 

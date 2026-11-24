@@ -189,15 +189,25 @@ sections go from how a hotspot looks to what it does, position values fit their 
   and still says its size, style, text and what a tap does; a page link is added from Add
   command; 2048 and 1536 show in full in the position fields.
 
+### v0.8 — Undo and redo
+
+A wrong drag, delete or paste is one keystroke from undone.
+
+- **Requirements:** ED-24 to ED-27 ([ADR 0023](adr/0023-undo-history.md))
+- **Decided** (2026-11-24): the history lasts while the tab is open, 100 steps; a save from
+  another editor clears it; a drag, a series of nudges or typing into one field is one step.
+- **Done when:** a hotspot dragged across the page, renamed and deleted comes back in three
+  presses of Cmd + Z, on the editor and on every open tablet; Shift + Cmd + Z brings the changes
+  back.
+
 ## 6. After MVP
 
 Each becomes its own milestone when started.
 
-**Next, in this order** (set on 2026-11-23; v0.7 put first on 2026-11-24):
+**Next, in this order** (set on 2026-11-23; undo/redo became v0.8 on 2026-11-24):
 
-1. Undo / redo in the editor
-2. Image-based hotspot states (a "pressed" image)
-3. Idle ("attract") animations, more press effects and transitions
+1. Image-based hotspot states (a "pressed" image)
+2. Idle ("attract") animations, more press effects and transitions
 
 **Later:**
 

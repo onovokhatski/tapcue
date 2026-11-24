@@ -151,8 +151,9 @@ shape crops. The reference screen and whether the bands are shown are kept in th
   plus the pointer's total movement, so no rounding builds up; an arrow-key nudge starts from the
   hotspot as the store has it at that moment, so fast repeats never undo one another. Boxes stay
   whole canvas pixels, at least 16 px, inside the canvas.
-- The store never mutates the project; it replaces it. Undo/redo (post-MVP) then becomes a
-  stack of previous projects — no redesign needed.
+- The store never mutates the project; it replaces it. Undo/redo keeps the projects it replaced
+  on a stack, with the selection of each, up to 100; continuous edits share a group key and merge
+  into one step ([ADR 0023](adr/0023-undo-history.md)).
 - Changes are **auto-saved** 500 ms after the last edit (debounced), one save at a time; a
   change made during a save is sent right after it. The editor shows "Saving… / Saved", "Unsaved
   changes" when the server cannot be reached (saved again on reconnect), or "Save error" with the

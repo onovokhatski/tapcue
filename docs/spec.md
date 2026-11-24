@@ -268,6 +268,19 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   keeps the link in `action.goTo`.
 - **ED-23** The position and size fields show four-digit values, the size of a 2048 × 1536
   canvas, in full.
+- **ED-24** Every change to the project made in the editor can be undone and redone, in order,
+  up to 100 steps back ([ADR 0023](adr/0023-undo-history.md)). An undo is saved like any change
+  and reaches every open tablet. The history lasts while the editor tab is open: a reload starts
+  it afresh.
+- **ED-25** One step is one action: a whole drag on the canvas, a series of arrow nudges (until
+  1 s without one), typing into one field (until the focus leaves it or 1 s passes), or one
+  button such as Add hotspot, Paste or an align button.
+- **ED-26** Cmd/Ctrl + Z undoes, and Shift + Cmd/Ctrl + Z or Ctrl + Y redoes, outside text fields,
+  where they act on the text. Undo and Redo buttons in the top bar are disabled when there is
+  nothing to undo or redo, and their tooltips name the shortcut.
+- **ED-27** A project saved by another editor, opened from the library, or reloaded after a save
+  was refused as stale, clears the history, and the editor says so once: undo never overwrites
+  someone else's work.
 
 ### 5.10 Demo receiver
 
