@@ -4,6 +4,58 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-11-24
+
+The editor gets out of the way on a busy stand. Several hotspots are selected, copied to another
+page, aligned and styled together; the page list and command cards fold away; commands have names
+and an on/off switch; and the hotspot panel folds into one line per section. Milestones v0.6
+(Editor tidy-up) and v0.7 (Properties panel), released together.
+
+### Added
+
+- **Select several hotspots:** Shift-, Cmd- or Ctrl-click, a rectangle dragged on the empty page,
+  or Cmd/Ctrl + A; Escape clears. Drag one of them to move them all, nudge them with the arrow
+  keys, duplicate them, or delete them after one confirmation. The group stops as a whole at the
+  canvas edge.
+- **Copy and paste hotspots** between pages of the project: Cmd/Ctrl + C and V, or Copy and Paste
+  in the editor. Copies land at the same positions (24 px off on their own page) with new names,
+  and keep everything else.
+- **Align, distribute, same size:** align left, centre, right, top, middle or bottom (several to
+  their common box, one to the canvas); spread three or more with equal gaps; give several the
+  width, height or size of the first.
+- **Edit several at once:** the shape, style and text style that selected hotspots share; a value
+  they do not share shows as "Mixed".
+- **Named commands that can be switched off:** a step of a sequence can have a name, shown in the
+  editor and the command log, and an on/off switch. A step that is off is skipped with its pause
+  and not counted; a fader's command can be switched off too.
+- **Foldable command cards:** each folds into one line with its name, target, command and pause;
+  Fold all and Unfold all.
+- **Foldable panel sections:** every section of the hotspot panel folds and says its state in one
+  line ("144, 500 · 560 × 720", "Go to Product A · 2 commands over 1.5 s"). The folds are kept in
+  the browser, the same for every hotspot.
+- **Go to page as a command card:** the page link is the first card among the commands, added
+  next to Add command.
+- **Collapsible page list:** the page list folds into a rail of thumbnails at any window width.
+
+### Changed
+
+- **Unique hotspot names on a page:** a new hotspot is named "Button N", a copy gets a free name
+  ("Play demo 2"), and a rename to a name another hotspot on the page has is refused with a hint.
+  Duplicates in older projects stay until edited.
+- **The hotspot panel's order** goes from how a hotspot looks to what it does: Name, Type,
+  Position and size (with the align tools), Style (with the shape), Text, On tap, Stacking.
+- **Position and size fields** show four-digit values in full.
+- **Project format:** a step may have `name` and `enabled`, both optional, so the schema version
+  stays 2. Tapcue 0.5.0 refuses a project that uses them.
+
+### Known limitations
+
+- No undo yet: it comes next.
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: sequences (from 0.5.0), faders (from 0.3.0), the stand setup (from
+  0.1.0) and the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
 ## [0.5.0] - 2026-11-23
 
 One tap sends several commands in order, each after its own pause, to one media server or
