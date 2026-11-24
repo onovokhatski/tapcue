@@ -552,4 +552,69 @@ describe('EditorCanvas', () => {
       expect(screen.queryByRole('alertdialog')).toBeNull();
     });
   });
+  describe('copy and paste (spec ED-17)', () => {
+    type Store = Awaited<ReturnType<typeof renderCanvas>>['store'];
+    const names = (store: Store, pageId: string) =>
+      store
+        .getState()
+        .project!.pages.find((p) => p.id === pageId)!
+        .hotspots.map((h) => h.name);
+    const show = (store: Store, pageId: string) =>
+      act(() => store.getState().select({ pageId, hotspotIds: [] }));
+
+    it('copies with Cmd/Ctrl + C and pastes with Cmd/Ctrl + V on another page', async () => {
+      const { store, overlay } = await renderCanvas();
+      expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_call00'), { shiftKey: true });
+      fireEvent.keyDown(window, { key: 'c', metaKey: true });
+      // Paste is offered once something is copied.
+      expect(screen.getByRole('button', { name: 'Paste' })).toHaveAttribute(
+        'title',
+        'Paste 2 hotspots (Cmd/Ctrl + V)',
+      );
+      show(store, 'p_about0');
+      fireEvent.keyDown(window, { key: 'V', ctrlKey: true });
+      expect(names(store, 'p_about0')).toEqual(['Back', 'Product A card', 'Call our team']);
+      expect(store.getState().selection.hotspotIds).toHaveLength(2);
+    });
+
+    it('pastes with the Paste button too', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_about0'));
+      fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
+      fireEvent.click(screen.getByRole('button', { name: 'Paste' }));
+      expect(names(store, 'p_home00').at(-1)).toBe('About 2');
+    });
+
+    it('leaves the shortcuts to a text field, and Cmd + C to text selected on the page', async () => {
+      const { store, overlay } = await renderCanvas();
+      const field = document.createElement('input');
+      document.body.append(field);
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.keyDown(field, { key: 'c', metaKey: true });
+      expect(store.getState().clipboard).toBeNull();
+
+      const text = document.createElement('p');
+      text.textContent = 'Some words';
+      document.body.append(text);
+      document.getSelection()!.selectAllChildren(text);
+      fireEvent.keyDown(window, { key: 'c', metaKey: true });
+      expect(store.getState().clipboard).toBeNull();
+      document.getSelection()!.removeAllRanges();
+
+      fireEvent.keyDown(window, { key: 'c', metaKey: true });
+      expect(store.getState().clipboard?.hotspots.map((h) => h.id)).toEqual(['h_carda0']);
+      fireEvent.keyDown(field, { key: 'v', metaKey: true });
+      expect(names(store, 'p_home00')).toHaveLength(5);
+      // C and V alone are just letters.
+      fireEvent.keyDown(window, { key: 'v' });
+      expect(names(store, 'p_home00')).toHaveLength(5);
+      act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_cardb0'] }));
+      fireEvent.keyDown(window, { key: 'c' });
+      expect(store.getState().clipboard?.hotspots.map((h) => h.id)).toEqual(['h_carda0']);
+      field.remove();
+      text.remove();
+    });
+  });
 });

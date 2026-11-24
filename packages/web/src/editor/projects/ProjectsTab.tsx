@@ -24,7 +24,7 @@ export function ProjectsTab({ api = libraryApi }: { api?: LibraryApi }) {
   const demo = useEditor((state) => state.demo);
   const revision = useEditor((state) => state.revision);
   const saveNow = useEditor((state) => state.saveNow);
-  const projectUpdated = useEditor((state) => state.projectUpdated);
+  const projectOpened = useEditor((state) => state.projectOpened);
   const navigate = useNavigate();
   const [list, setList] = useState<ProjectList | 'loading' | 'failed'>('loading');
   const [asking, setAsking] = useState<Asking>({ step: 'none' });
@@ -55,7 +55,7 @@ export function ProjectsTab({ api = libraryApi }: { api?: LibraryApi }) {
     await saveNow();
     const opened = await api.open(id);
     if (!opened.ok) return opened.reason;
-    projectUpdated(opened.revision);
+    projectOpened(opened.revision);
     void navigate('/edit/pages');
     return null;
   }

@@ -14,6 +14,7 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
   const project = useEditor((state) => state.project);
   const change = useEditor((state) => state.change);
   const select = useEditor((state) => state.select);
+  const copy = useEditor((state) => state.copy);
   const [deleting, setDeleting] = useState(false);
   if (!project) return null;
   const ids = hotspots.map((h) => h.id);
@@ -35,6 +36,13 @@ export function GroupPanel({ page, hotspots }: { page: Page; hotspots: Hotspot[]
         <div className="flex items-center justify-between">
           <h2 className="text-label-m">{count}</h2>
           <div className="-mr-1 flex gap-0.5">
+            <Button
+              variant="ghost"
+              size="s"
+              label="Copy"
+              title="Copy to paste on any page (Cmd/Ctrl + C)"
+              onClick={copy}
+            />
             <Button
               variant="ghost"
               size="s"
