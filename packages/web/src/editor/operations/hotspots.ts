@@ -511,6 +511,21 @@ export function setAction(
   });
 }
 
+/**
+ * Applies `operation` to each of these hotspots of the page in turn, as one change: how a setting
+ * is given to several at once (spec ED-19). Each call gets the hotspot as it was before.
+ */
+export function forEachHotspot(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+  operation: (project: Project, hotspot: Hotspot) => Project,
+): Project {
+  const page = project.pages.find((p) => p.id === pageId);
+  const hotspots = page?.hotspots.filter((h) => ids.includes(h.id)) ?? [];
+  return hotspots.reduce(operation, project);
+}
+
 /** Applies a change to one hotspot; the same project when the hotspot is missing or unchanged. */
 function updateHotspot(
   project: Project,

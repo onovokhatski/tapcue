@@ -1,9 +1,9 @@
-import type { LogEntry, Project } from '@tapcue/shared';
+import type { Hotspot, LogEntry, Project } from '@tapcue/shared';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { TestSent } from '../../lib/projectApi';
 import { demoProject } from '../../test/demoProject';
-import { placeHotspot } from '../operations/hotspots';
+import { DEFAULT_TEXT, placeHotspot } from '../operations/hotspots';
 import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { HotspotPanel } from './HotspotPanel';
@@ -1257,5 +1257,189 @@ describe('arranging (spec ED-18)', () => {
     );
     fireEvent.click(toolbar().getByRole('button', { name: 'Same size' }));
     expect(box(hotspots().find((h) => h.id === 'h_about0')!)).toEqual([1488, 816, 560, 720]);
+  });
+});
+
+describe('shared settings of several hotspots (spec ED-19)', () => {
+  /** Home with cards A and C and About (an ellipse) given distinct looks. */
+  function styled() {
+    const project = demoProject();
+    const [a, , c, about] = project.pages[0]!.hotspots;
+    a!.style = { fill: '#FFFFFF', border: { color: '#000000', width: 2 }, opacity: 0.5 };
+    c!.style = { fill: '#FFFFFF', border: { color: '#000000', width: 4 }, opacity: 0.8 };
+    about!.style = { fill: null, border: null, opacity: 0.5 };
+    a!.text = { ...DEFAULT_TEXT, size: 40 };
+    c!.text = { ...DEFAULT_TEXT, size: 60, content: 'Other words', align: 'left' };
+    return project;
+  }
+  async function renderGroup(ids: string[], project = styled()) {
+    const rendered = await renderPanel(project);
+    act(() => rendered.store.getState().select({ pageId: 'p_home00', hotspotIds: ids }));
+    return rendered;
+  }
+  const region = (name: string) => within(screen.getByRole('region', { name }));
+  const byId = (hotspots: () => Hotspot[], id: string) => hotspots().find((h) => h.id === id)!;
+
+  it('shows a value they share, and Mixed for one that differs', async () => {
+    await renderGroup(['h_carda0', 'h_cardc0']);
+    const style = region('Style');
+    expect(style.getByRole('textbox', { name: 'fill hex' })).toHaveValue('#FFFFFF');
+    expect(style.getByRole('textbox', { name: 'Opacity' })).toHaveValue('');
+    expect(style.getByRole('textbox', { name: 'Opacity' })).toHaveAttribute('placeholder', 'Mixed');
+    expect(style.getByRole('textbox', { name: 'Border width' })).toHaveValue('');
+    expect(style.getByRole('textbox', { name: 'Frost' })).toHaveValue('0');
+    // Both rectangles with radius 40.
+    expect(region('Shape').getByRole('radio', { name: 'Rectangle' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(region('Shape').getByRole('textbox', { name: 'Corner radius' })).toHaveValue('40');
+  });
+
+  it('gives a value to all of them, replacing Mixed', async () => {
+    const { hotspots } = await renderGroup(['h_carda0', 'h_cardc0', 'h_about0']);
+    const style = region('Style');
+    fireEvent.change(style.getByRole('textbox', { name: 'Opacity' }), { target: { value: '70' } });
+    expect(
+      ['h_carda0', 'h_cardc0', 'h_about0'].map((id) => byId(hotspots, id).style.opacity),
+    ).toEqual([0.7, 0.7, 0.7]);
+    expect(style.getByRole('textbox', { name: 'Opacity' })).toHaveValue('70');
+    // The fill is mixed (About has none); a colour typed goes to all three.
+    const fill = style.getByRole('textbox', { name: 'fill hex' });
+    expect(fill).toHaveAttribute('placeholder', 'Mixed');
+    fireEvent.change(fill, { target: { value: '#112233' } });
+    expect(['h_carda0', 'h_cardc0', 'h_about0'].map((id) => byId(hotspots, id).style.fill)).toEqual(
+      ['#112233', '#112233', '#112233'],
+    );
+    // Hotspots not selected keep theirs.
+    expect(byId(hotspots, 'h_cardb0').style.fill).toBeNull();
+  });
+
+  it('gives a fill opacity only to those with a fill', async () => {
+    const { hotspots } = await renderGroup(['h_carda0', 'h_about0']);
+    fireEvent.change(region('Style').getByRole('textbox', { name: 'Fill opacity' }), {
+      target: { value: '40' },
+    });
+    expect(byId(hotspots, 'h_carda0').style.fillOpacity).toBe(0.4);
+    expect(byId(hotspots, 'h_about0').style).not.toHaveProperty('fillOpacity');
+  });
+
+  it('offers no image for several: each keeps its own', async () => {
+    await renderGroup(['h_carda0', 'h_about0']);
+    expect(screen.queryByRole('button', { name: 'Choose image' })).toBeNull();
+  });
+
+  it('gives a border width only to those with a border, and a new border its own width', async () => {
+    const { hotspots } = await renderGroup(['h_carda0', 'h_cardc0', 'h_about0']);
+    const style = region('Style');
+    fireEvent.change(style.getByRole('textbox', { name: 'Border width' }), {
+      target: { value: '6' },
+    });
+    expect(byId(hotspots, 'h_carda0').style.border).toEqual({ color: '#000000', width: 6 });
+    expect(byId(hotspots, 'h_about0').style.border).toBeNull();
+    fireEvent.change(style.getByRole('textbox', { name: 'border hex' }), {
+      target: { value: '#FF0000' },
+    });
+    expect(byId(hotspots, 'h_cardc0').style.border).toEqual({ color: '#FF0000', width: 6 });
+    expect(byId(hotspots, 'h_about0').style.border).toEqual({ color: '#FF0000', width: 2 });
+  });
+
+  it('chooses no shape when they differ; a choice applies to all, a radius to the rectangles', async () => {
+    const { hotspots } = await renderGroup(['h_carda0', 'h_about0', 'h_call00']);
+    const shape = region('Shape');
+    expect(shape.getByRole('radio', { name: 'Rectangle' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(shape.getByRole('radio', { name: 'Ellipse' })).toHaveAttribute('aria-checked', 'false');
+    // Card A has 40, "Call our team" 48: mixed among the rectangles.
+    expect(shape.getByRole('textbox', { name: 'Corner radius' })).toHaveValue('');
+    fireEvent.change(shape.getByRole('textbox', { name: 'Corner radius' }), {
+      target: { value: '12' },
+    });
+    expect(byId(hotspots, 'h_call00').shape).toEqual({ type: 'rect', cornerRadius: 12 });
+    expect(byId(hotspots, 'h_about0').shape).toEqual({ type: 'ellipse' });
+    fireEvent.click(shape.getByRole('radio', { name: 'Rectangle' }));
+    // The ellipse becomes a square-cornered rectangle; the rectangles keep their radius.
+    expect(byId(hotspots, 'h_about0').shape).toEqual({ type: 'rect', cornerRadius: 0 });
+    expect(byId(hotspots, 'h_carda0').shape).toEqual({ type: 'rect', cornerRadius: 12 });
+    fireEvent.click(shape.getByRole('radio', { name: 'Ellipse' }));
+    expect(['h_carda0', 'h_about0', 'h_call00'].map((id) => byId(hotspots, id).shape)).toEqual([
+      { type: 'ellipse' },
+      { type: 'ellipse' },
+      { type: 'ellipse' },
+    ]);
+    expect(shape.getByRole('textbox', { name: 'Corner radius' })).toBeDisabled();
+  });
+
+  it('gives the press effect to the buttons and leaves faders alone, saying so', async () => {
+    const project = styled();
+    Object.assign(project.pages[0]!.hotspots[4]!, {
+      kind: 'fader',
+      pressEffect: 'none',
+      fader: {
+        orientation: 'horizontal',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        start: 0,
+        value: { at: 0, as: 'f' },
+      },
+      action: { goTo: null, commands: [] },
+    });
+    const { hotspots } = await renderGroup(['h_carda0', 'h_cardc0', 'h_call00'], project);
+    const style = region('Style');
+    // A presses in, C ripples: mixed.
+    const effect = style.getByRole('combobox', { name: 'Press effect' });
+    expect(effect).toHaveValue('');
+    expect(
+      style.getByText('Faders have no press effect: it applies to the 2 buttons.'),
+    ).toBeInTheDocument();
+    fireEvent.change(effect, { target: { value: 'highlight' } });
+    expect(byId(hotspots, 'h_carda0').pressEffect).toBe('highlight');
+    expect(byId(hotspots, 'h_cardc0').pressEffect).toBe('highlight');
+    expect(byId(hotspots, 'h_call00').pressEffect).toBe('none');
+    expect(effect).toHaveValue('highlight');
+  });
+
+  it('shares the text style among those with a label, never the words', async () => {
+    const { hotspots } = await renderGroup(['h_carda0', 'h_cardc0', 'h_about0']);
+    const text = region('Text');
+    expect(
+      text.getByText("Applies to the 2 with a text label; the words stay each one's own."),
+    ).toBeInTheDocument();
+    expect(text.queryByRole('textbox', { name: 'Text' })).toBeNull();
+    expect(text.queryByRole('button', { name: 'Remove text' })).toBeNull();
+    expect(text.getByRole('textbox', { name: 'Text size' })).toHaveValue('');
+    // Both are medium; the alignment differs once C's is changed.
+    expect(text.getByRole('radio', { name: 'Medium' })).toHaveAttribute('aria-checked', 'true');
+    const alignment = within(text.getByRole('radiogroup', { name: 'Text alignment' }));
+    expect(alignment.getAllByRole('radio').map((r) => r.getAttribute('aria-checked'))).toEqual([
+      'false',
+      'false',
+      'false',
+    ]);
+    // With none chosen, the first option is where Tab enters the group.
+    expect(alignment.getByRole('radio', { name: 'Left' })).toHaveAttribute('tabindex', '0');
+    expect(alignment.getByRole('radio', { name: 'Center' })).toHaveAttribute('tabindex', '-1');
+    fireEvent.change(text.getByRole('textbox', { name: 'Text size' }), { target: { value: '50' } });
+    fireEvent.click(text.getByRole('radio', { name: 'Bold' }));
+    expect(byId(hotspots, 'h_carda0').text).toMatchObject({
+      size: 50,
+      weight: 'bold',
+      content: 'Label',
+    });
+    expect(byId(hotspots, 'h_cardc0').text).toMatchObject({
+      size: 50,
+      weight: 'bold',
+      content: 'Other words',
+    });
+    // About had no label and gets none.
+    expect(byId(hotspots, 'h_about0').text).toBeUndefined();
+  });
+
+  it('says so when none of them has a text label', async () => {
+    await renderGroup(['h_cardb0', 'h_about0']);
+    expect(region('Text').getByText('None of them has a text label.')).toBeInTheDocument();
   });
 });

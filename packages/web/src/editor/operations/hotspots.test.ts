@@ -6,6 +6,7 @@ import {
   deleteHotspot,
   deleteHotspots,
   duplicateHotspots,
+  forEachHotspot,
   groupBox,
   nudgeHotspots,
   PASTE_OFFSET,
@@ -713,5 +714,23 @@ describe('pasteHotspots (spec ED-17)', () => {
     expect(empty.hotspotIds).toEqual([]);
     const copied = copiedFrom(before, 'p_home00', ['h_carda0']);
     expect(pasteHotspots(before, 'p_zzzzzz', copied)).toEqual({ project: before, hotspotIds: [] });
+  });
+});
+
+describe('forEachHotspot (spec ED-19)', () => {
+  it('applies an operation to each of the hotspots, in page order, as one change', () => {
+    const seen: string[] = [];
+    const project = forEachHotspot(demoProject(), 'p_home00', ['h_about0', 'h_carda0'], (p, h) => {
+      seen.push(h.id);
+      return setStyle(p, 'p_home00', h.id, { opacity: 0.5 });
+    });
+    expect(seen).toEqual(['h_carda0', 'h_about0']);
+    expect(home(project).hotspots.map((h) => h.style.opacity)).toEqual([0.5, 1, 1, 0.5, 1]);
+  });
+
+  it('leaves the project as it is for no hotspots, or ids not on the page', () => {
+    const before = demoProject();
+    expect(forEachHotspot(before, 'p_home00', ['h_aback0'], () => demoProject())).toBe(before);
+    expect(forEachHotspot(before, 'p_zzzzzz', ['h_carda0'], () => demoProject())).toBe(before);
   });
 });

@@ -112,13 +112,13 @@ export function HotspotPanel() {
           hotspot={hotspot}
           canvas={project.canvas}
         />
-        <ShapeRow key={`shape-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
+        <ShapeRow key={`shape-${hotspot.id}`} pageId={page.id} hotspots={[hotspot]} />
       </Section>
       <Section title="Style">
-        <StyleFields key={`style-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
+        <StyleFields key={`style-${hotspot.id}`} pageId={page.id} hotspots={[hotspot]} />
       </Section>
       <Section title="Text">
-        <HotspotTextFields key={`text-${hotspot.id}`} pageId={page.id} hotspot={hotspot} />
+        <HotspotTextFields key={`text-${hotspot.id}`} pageId={page.id} hotspots={[hotspot]} />
       </Section>
       <Section title="Stacking">
         <div className="flex gap-2">
