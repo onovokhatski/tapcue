@@ -109,6 +109,14 @@ describe('PageView', () => {
       expect(renderReady(page()).onReady).toHaveBeenCalledTimes(1);
     });
 
+    it('draws nothing for a web background yet, and reports the page at once (issue #258)', () => {
+      const { container, onReady } = renderReady(
+        page({ background: { type: 'web', url: 'https://example.com' } }),
+      );
+      expect(container.querySelector('img, video, iframe')).toBeNull();
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+
     it('waits for every hotspot image too, decoded or failed (spec HS-9)', async () => {
       const withImage = (id: string, image: string) => ({
         ...hotspot,

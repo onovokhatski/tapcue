@@ -42,6 +42,25 @@ export const AssetPath = z
   );
 export type AssetPath = z.infer<typeof AssetPath>;
 
+/**
+ * A mini-site's folder inside assets/sites/, unpacked from a .zip (project format §9.4). Its
+ * index.html is checked on disk by the server.
+ */
+export const SitePath = z
+  .string()
+  .regex(
+    /^assets\/sites\/[A-Za-z0-9_-]+$/,
+    'Expected "assets/sites/<folder>" using only A–Z, a–z, 0–9, "_" and "-"',
+  );
+export type SitePath = z.infer<typeof SitePath>;
+
+/** An absolute http:// or https:// address, as a web background shows (spec PG-7). */
+export const WebUrl = z
+  .string()
+  .max(2000, 'Expected at most 2000 characters')
+  // A host after the scheme, and no spaces anywhere; the browser reads the rest.
+  .regex(/^https?:\/\/[^\s/?#]+\S*$/i, 'Expected an address starting with http:// or https://');
+
 /** Display name of a project, page, target or station. */
 export const Name = z
   .string()

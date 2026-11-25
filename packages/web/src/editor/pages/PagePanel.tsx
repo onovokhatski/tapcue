@@ -1,6 +1,6 @@
 // The properties panel of the selected page: its name, its background (upload, replace, remove),
 // its hotspots and the stations that start on it (spec PG-1, PG-2, PG-6; design: pageProps()).
-import type { Page, PageId, Project } from '@tapcue/shared';
+import { backgroundSource, type Page, type PageId, type Project } from '@tapcue/shared';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { checkFile, type Upload, UploadCancelled, uploadAsset } from '../../lib/uploadAsset';
 import { assetUrl } from '../../stage/assetUrl';
@@ -187,6 +187,23 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
   }
 
   const { background } = page;
+  if (background.type === 'web') {
+    // Choosing a web background comes with issue #259; until then one from a hand-edited project
+    // is named and can be removed.
+    return (
+      <>
+        {input}
+        {failed}
+        <p className="text-body-s text-secondary">Web page: {backgroundSource(background)}</p>
+        <Button
+          variant="ghost"
+          size="s"
+          label="Remove"
+          onClick={() => change((project) => setBackground(project, page.id, null))}
+        />
+      </>
+    );
+  }
   const src = assetUrl(background.asset);
   return (
     <>

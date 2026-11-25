@@ -105,6 +105,17 @@ describe('PagePanel', () => {
       expect(within(background()).getByRole('button', { name: 'Replace' })).toBeInTheDocument();
     });
 
+    it('names a web background from a hand-edited project and removes it (issue #259 adds more)', async () => {
+      const project = demoProject();
+      project.pages[0]!.background = { type: 'web', url: 'https://example.com/shop' };
+      const { state, background } = await renderPanel(project);
+      expect(
+        within(background()).getByText('Web page: https://example.com/shop'),
+      ).toBeInTheDocument();
+      fireEvent.click(within(background()).getByRole('button', { name: 'Remove' }));
+      expect(state().project!.pages[0]!.background).toBeNull();
+    });
+
     it('removes the background; the hotspots stay', async () => {
       const { state, background } = await renderPanel();
       fireEvent.click(within(background()).getByRole('button', { name: 'Remove' }));
@@ -196,8 +207,14 @@ describe('PagePanel', () => {
         uploads[0]!.resolve({ asset: 'assets/hero-3f9a1c2b.jpg', type: 'image' });
         await Promise.resolve();
       });
-      expect(state().project!.pages[0]!.background?.asset).toBe('assets/hero-3f9a1c2b.jpg');
-      expect(state().project!.pages[1]!.background?.asset).toBe('assets/product-a.jpg');
+      expect(state().project!.pages[0]!.background).toEqual({
+        type: 'image',
+        asset: 'assets/hero-3f9a1c2b.jpg',
+      });
+      expect(state().project!.pages[1]!.background).toEqual({
+        type: 'image',
+        asset: 'assets/product-a.jpg',
+      });
     });
 
     it('replaces the background with a new upload', async () => {

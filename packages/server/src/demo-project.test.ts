@@ -18,7 +18,7 @@ describe('examples/demo-stand', () => {
   it('has every asset it references', () => {
     if (!result.ok) throw new Error('The demo project is invalid; see the test above');
     const assets = result.project.pages.flatMap((page) =>
-      page.background ? [page.background.asset] : [],
+      page.background && page.background.type !== 'web' ? [page.background.asset] : [],
     );
     expect(assets.length).toBeGreaterThan(0);
     const missing = assets.filter((asset) => !existsSync(join(DEMO_DIR, asset)));
