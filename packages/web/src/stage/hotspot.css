@@ -101,10 +101,51 @@
   }
 }
 
-/* Reduced motion: the ripple only fades, without growing. The fades of highlight and press stay. */
+/* pop: after a tap the hotspot grows by a few percent and settles back. */
+.hotspot[data-popping] {
+  animation: hotspot-pop var(--duration-pop) var(--easing-out);
+}
+
+@keyframes hotspot-pop {
+  40% {
+    transform: scale(1.06);
+  }
+}
+
+/* glow: a soft light around the shape grows on touch-down and fades on release. It is the
+   hotspot's sibling, so the hotspot's clipping leaves it whole. */
+.hotspot-glow {
+  position: absolute;
+  pointer-events: none;
+  box-shadow: 0 0 32px 12px color-mix(in srgb, var(--color-overlay-light) 55%, transparent);
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity var(--duration-press-out) var(--easing-out),
+    transform var(--duration-press-out) var(--easing-out);
+}
+
+.hotspot-glow[data-pressed] {
+  opacity: 1;
+  transform: none;
+  transition-duration: var(--duration-base);
+}
+
+/* Reduced motion: nothing grows. The ripple only fades, the glow only fades in and out, and pop,
+   which is only growth, is left out. The fades of highlight and press stay. */
 @media (prefers-reduced-motion: reduce) {
   .hotspot > .ripple {
     animation-name: hotspot-ripple-fade;
+  }
+
+  /* Still an animation, so its end clears the pop as usual. */
+  .hotspot[data-popping] {
+    animation-name: hotspot-still;
+  }
+
+  .hotspot-glow,
+  .hotspot-glow[data-pressed] {
+    transform: none;
   }
 }
 
@@ -114,5 +155,11 @@
   }
   to {
     opacity: 0;
+  }
+}
+
+@keyframes hotspot-still {
+  to {
+    transform: none;
   }
 }

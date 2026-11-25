@@ -50,8 +50,14 @@ export function HotspotView({
     setRipples((current) => [...current, ripple]);
   }
 
+  // Pop plays once per tap, after the release; a tap while it plays does not restart it.
+  const [popping, setPopping] = useState(false);
+
   const press = usePress(
-    () => onTap?.(hotspot),
+    () => {
+      if (pressEffect === 'pop') setPopping(true);
+      onTap?.(hotspot);
+    },
     pressEffect === 'ripple' ? startRipple : undefined,
   );
   // A fader is dragged, not tapped (ADR 0020); both hooks run, as hooks must, and one is used.
@@ -59,93 +65,106 @@ export function HotspotView({
   const drag = useFaderDrag(fader, (value, final) => onValue?.(hotspot, value, final));
   const handlers = fader ? drag.handlers : press.handlers;
   const pressed = !fader && press.pressed;
+  const box = {
+    left: x,
+    top: y,
+    width,
+    height,
+    borderRadius: shape.type === 'ellipse' ? '50%' : shape.cornerRadius,
+  };
 
   return (
-    <div
-      data-hotspot={id}
-      data-effect={pressEffect}
-      data-kind={fader ? 'fader' : undefined}
-      data-pressed={pressed || undefined}
-      className="hotspot"
-      style={{
-        left: x,
-        top: y,
-        width,
-        height,
-        borderRadius: shape.type === 'ellipse' ? '50%' : shape.cornerRadius,
-      }}
-      {...handlers}
-    >
-      {/* Content layers, bottom to top (ADR 0019): backdrop blur, then fill, image and border.
-          They are layers of their own, so the opacity does not fade the press effect. */}
-      {style.backdropBlur ? (
-        // Frosted backdrop (spec HS-8), in canvas pixels like the border. Outside the group
-        // below: an element with opacity under 1 would hide the page from a blur inside it.
-        // Unprefixed since Safari 18, the oldest Safari the player supports (NFR-1).
-        <div
-          className="hotspot-backdrop"
-          style={{ backdropFilter: `blur(${style.backdropBlur}px)`, opacity: style.opacity }}
-        />
-      ) : null}
+    <>
+      {!fader && pressEffect === 'glow' && (
+        // Glow: a light around the shape. Outside the hotspot, which clips what is inside it, and
+        // before it, so the light is drawn under the button.
+        <div className="hotspot-glow" data-pressed={pressed || undefined} style={box} />
+      )}
       <div
-        className="hotspot-style"
-        // fill and border both null leave nothing visible: the button is part of the artwork.
-        style={{
-          backgroundColor: style.fill ? fillColor(style.fill, style.fillOpacity) : undefined,
-          opacity: style.opacity,
+        data-hotspot={id}
+        data-effect={pressEffect}
+        data-kind={fader ? 'fader' : undefined}
+        data-pressed={pressed || undefined}
+        data-popping={popping || undefined}
+        className="hotspot"
+        style={box}
+        onAnimationEnd={(event) => {
+          // A ripple's end bubbles up here too; only the hotspot's own animation is the pop.
+          if (event.target === event.currentTarget) setPopping(false);
         }}
+        {...handlers}
       >
-        {style.image && (
-          // Image (spec HS-9): covers the box, cropped; decorative, the hotspot's meaning is its action.
-          // Loaded is not yet decoded: decode() keeps it from appearing a frame after the page.
-          // A file that fails still counts, so a page is never held back by one missing image.
-          <img
-            className="hotspot-image"
-            src={assetUrl(style.image)}
-            alt=""
-            draggable={false}
-            onLoad={(event) => {
-              const image = style.image!;
-              void event.currentTarget
-                .decode()
-                .catch(() => undefined)
-                .then(() => onImageReady?.(image));
-            }}
-            onError={() => onImageReady?.(style.image!)}
-          />
-        )}
-        {text && <TextLayer text={text} />}
-        {style.border && (
+        {/* Content layers, bottom to top (ADR 0019): backdrop blur, then fill, image and border.
+          They are layers of their own, so the opacity does not fade the press effect. */}
+        {style.backdropBlur ? (
+          // Frosted backdrop (spec HS-8), in canvas pixels like the border. Outside the group
+          // below: an element with opacity under 1 would hide the page from a blur inside it.
+          // Unprefixed since Safari 18, the oldest Safari the player supports (NFR-1).
           <div
-            className="hotspot-border"
-            style={{ border: `${style.border.width}px solid ${style.border.color}` }}
+            className="hotspot-backdrop"
+            style={{ backdropFilter: `blur(${style.backdropBlur}px)`, opacity: style.opacity }}
+          />
+        ) : null}
+        <div
+          className="hotspot-style"
+          // fill and border both null leave nothing visible: the button is part of the artwork.
+          style={{
+            backgroundColor: style.fill ? fillColor(style.fill, style.fillOpacity) : undefined,
+            opacity: style.opacity,
+          }}
+        >
+          {style.image && (
+            // Image (spec HS-9): covers the box, cropped; decorative, the hotspot's meaning is its action.
+            // Loaded is not yet decoded: decode() keeps it from appearing a frame after the page.
+            // A file that fails still counts, so a page is never held back by one missing image.
+            <img
+              className="hotspot-image"
+              src={assetUrl(style.image)}
+              alt=""
+              draggable={false}
+              onLoad={(event) => {
+                const image = style.image!;
+                void event.currentTarget
+                  .decode()
+                  .catch(() => undefined)
+                  .then(() => onImageReady?.(image));
+              }}
+              onError={() => onImageReady?.(style.image!)}
+            />
+          )}
+          {text && <TextLayer text={text} />}
+          {style.border && (
+            <div
+              className="hotspot-border"
+              style={{ border: `${style.border.width}px solid ${style.border.color}` }}
+            />
+          )}
+        </div>
+        {fader && (
+          <FaderLayers
+            fader={fader}
+            value={drag.dragValue ?? faderValue ?? fader.start}
+            length={fader.orientation === 'vertical' ? height : width}
           />
         )}
+        {!fader && (pressEffect === 'highlight' || pressEffect === 'press') && (
+          <div className="press-layer" />
+        )}
+        {ripples.map((ripple) => (
+          <span
+            key={ripple.id}
+            className="ripple"
+            style={{
+              left: ripple.x - ripple.radius,
+              top: ripple.y - ripple.radius,
+              width: ripple.radius * 2,
+              height: ripple.radius * 2,
+            }}
+            onAnimationEnd={() => setRipples((current) => current.filter((r) => r !== ripple))}
+          />
+        ))}
       </div>
-      {fader && (
-        <FaderLayers
-          fader={fader}
-          value={drag.dragValue ?? faderValue ?? fader.start}
-          length={fader.orientation === 'vertical' ? height : width}
-        />
-      )}
-      {!fader && (pressEffect === 'highlight' || pressEffect === 'press') && (
-        <div className="press-layer" />
-      )}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="ripple"
-          style={{
-            left: ripple.x - ripple.radius,
-            top: ripple.y - ripple.radius,
-            width: ripple.radius * 2,
-            height: ripple.radius * 2,
-          }}
-          onAnimationEnd={() => setRipples((current) => current.filter((r) => r !== ripple))}
-        />
-      ))}
-    </div>
+    </>
   );
 }
 
