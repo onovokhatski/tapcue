@@ -164,5 +164,23 @@ describe('page operations (spec PG-1)', () => {
       );
       expect(setBackground(before, 'p_zzzzzz', null)).toBe(before);
     });
+
+    it('sets a web background, and tells addresses, mini-sites and types apart (spec PG-7)', () => {
+      const before = demoProject();
+      const url = { type: 'web' as const, url: 'https://example.com' };
+      const withUrl = setBackground(before, 'p_home00', url);
+      expect(withUrl.pages[0]?.background).toEqual(url);
+      expect(setBackground(withUrl, 'p_home00', { type: 'web', url: 'https://example.com' })).toBe(
+        withUrl,
+      );
+      const other = setBackground(withUrl, 'p_home00', { type: 'web', url: 'https://other.com' });
+      expect(other).not.toBe(withUrl);
+      const site = setBackground(withUrl, 'p_home00', { type: 'web', site: 'assets/sites/a' });
+      expect(site.pages[0]?.background).toEqual({ type: 'web', site: 'assets/sites/a' });
+      // The same file as a video is another background.
+      expect(
+        setBackground(before, 'p_home00', { type: 'video', asset: 'assets/home.jpg' }),
+      ).not.toBe(before);
+    });
   });
 });

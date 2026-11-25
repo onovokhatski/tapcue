@@ -29,6 +29,15 @@ async function renderList(project: Project = demoProject(), compact = false) {
 }
 
 describe('PageList (spec PG-1)', () => {
+  it('says when a page shows a web page, without loading it for a thumbnail', async () => {
+    const project = demoProject();
+    project.pages[1]!.background = { type: 'web', site: 'assets/sites/catalog' };
+    const { row } = await renderList(project);
+    expect(row('Product A')).toHaveTextContent('4 hotspots · Web page');
+    expect(row('Product A').querySelector('img, iframe')).toBeNull();
+    expect(row('Product A').querySelector('[data-icon="external"]')).not.toBeNull();
+  });
+
   it('lists the pages in order with their count, thumbnails and meta', async () => {
     const { row } = await renderList();
     expect(screen.getByRole('heading', { name: 'Pages 4' })).toBeInTheDocument();

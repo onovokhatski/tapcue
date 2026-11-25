@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { errorOf } from '../test/errors';
 import { docExample } from '../test/format-doc';
 import { Canvas } from './canvas';
-import { Action, activeSteps, Hotspot, Page } from './pages';
-import { Project } from './project';
+import { Action, activeSteps, backgroundSource, Hotspot, Page } from './pages';
+import { DEFAULT_WEB_PAGE_SECONDS, Project, webPageSeconds } from './project';
 import { Station } from './stations';
 import { Target } from './targets';
 
@@ -427,6 +427,80 @@ describe('Page', () => {
     expect(errorOf(Page, { ...page, background })).toBeNull();
   });
 
+  describe('web background (spec PG-7, ADR 0024)', () => {
+    const web = (fields: object) =>
+      errorOf(Page, { ...page, background: { type: 'web', ...fields } });
+
+    it.each([
+      ['an https address', { url: 'https://example.com/configurator?lang=en#top' }],
+      ['an http address on the stand network', { url: 'http://192.168.1.20:8080/' }],
+      ['an address in capitals', { url: 'HTTPS://EXAMPLE.COM' }],
+      ['a mini-site', { site: 'assets/sites/catalog' }],
+      ['a mini-site folder with "_" and "-"', { site: 'assets/sites/Hall_B-2026' }],
+    ])('accepts %s', (_, fields) => {
+      expect(web(fields)).toBeNull();
+    });
+
+    it.each([
+      ['another scheme', 'ftp://example.com'],
+      ['no scheme', 'example.com'],
+      ['no host', 'https://'],
+      ['no host before the path', 'https:///path'],
+      ['a space', 'https://example.com/a b'],
+      ['text before the scheme', ' https://example.com'],
+    ])('refuses an address with %s', (_, url) => {
+      expect(web({ url })).toBe(
+        'background.url: Expected an address starting with http:// or https://',
+      );
+    });
+
+    it('refuses an address over 2000 characters, and takes one of exactly 2000', () => {
+      const at = (length: number) => `https://example.com/${'a'.repeat(length - 20)}`;
+      expect(at(2000)).toHaveLength(2000);
+      expect(web({ url: at(2000) })).toBeNull();
+      expect(web({ url: at(2001) })).toBe('background.url: Expected at most 2000 characters');
+    });
+
+    it.each([
+      'assets/catalog',
+      'assets/sites/',
+      'assets/sites/a.b',
+      'assets/sites/../x',
+      'assets/sites/a/b',
+      'sites/catalog',
+    ])('refuses the site path %s', (site) => {
+      expect(web({ site })).toBe(
+        'background.site: Expected "assets/sites/<folder>" using only A–Z, a–z, 0–9, "_" and "-"',
+      );
+    });
+
+    it('needs exactly one of an address and a mini-site', () => {
+      const message =
+        'background: Expected either "url" (an online address) or "site" (a mini-site), not both';
+      expect(web({})).toBe(message);
+      expect(web({ url: 'https://example.com', site: 'assets/sites/catalog' })).toBe(message);
+    });
+
+    it('refuses the fields of another background type', () => {
+      expect(web({ url: 'https://example.com', asset: 'assets/home.jpg' })).toBe(
+        'background: Unrecognized key: "asset"',
+      );
+      expect(
+        errorOf(Page, { ...page, background: { type: 'image', url: 'https://example.com' } }),
+      ).toContain('background');
+    });
+
+    it('names what each background shows', () => {
+      expect(backgroundSource({ type: 'image', asset: 'assets/home.jpg' })).toBe('assets/home.jpg');
+      expect(backgroundSource({ type: 'web', url: 'https://example.com' })).toBe(
+        'https://example.com',
+      );
+      expect(backgroundSource({ type: 'web', site: 'assets/sites/catalog' })).toBe(
+        'assets/sites/catalog',
+      );
+    });
+  });
+
   it('rejects a background of another type', () => {
     expect(
       errorOf(Page, { ...page, background: { type: 'gif', asset: 'assets/a.gif' } }),
@@ -470,6 +544,27 @@ describe('Project', () => {
     expect(errorOf(Project, { ...project, pages: [] })).toBe(
       'pages: A project needs at least one page',
     );
+  });
+
+  describe('web page time (spec PG-10)', () => {
+    it.each([10, 3600])('accepts %s seconds', (seconds) => {
+      expect(errorOf(Project, { ...project, webPageSeconds: seconds })).toBeNull();
+    });
+
+    it.each([9, 3601, 7.5])('refuses %s seconds', (seconds) => {
+      expect(errorOf(Project, { ...project, webPageSeconds: seconds })).toBe(
+        Number.isInteger(seconds)
+          ? 'webPageSeconds: Expected 10 to 3600 seconds'
+          : 'webPageSeconds: Expected a whole number of seconds',
+      );
+    });
+
+    it('is 180 s when the project does not say, as in every project before 0.9', () => {
+      const parsed = Project.parse(project);
+      expect(DEFAULT_WEB_PAGE_SECONDS).toBe(180);
+      expect(webPageSeconds(parsed)).toBe(180);
+      expect(webPageSeconds({ ...parsed, webPageSeconds: 45 })).toBe(45);
+    });
   });
 
   it('accepts a project without targets and stations', () => {

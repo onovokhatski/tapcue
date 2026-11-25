@@ -192,11 +192,16 @@ async function checkProject(dir: string, input: unknown): Promise<ValidationResu
 
 /** The schema cannot see the disk, so the server checks the files (project format §10). */
 async function missingAssets(dir: string, project: Project): Promise<ValidationError[]> {
-  // Every file the project names: page backgrounds and hotspot images (spec HS-9).
+  // Every file the project names: page backgrounds, mini-sites by their index.html (format §9.4)
+  // and hotspot images (spec HS-9).
   const named = project.pages.flatMap((page, p) => [
-    ...(page.background
-      ? [{ path: `pages[${p}].background.asset`, asset: page.background.asset }]
-      : []),
+    ...(page.background?.type === 'web'
+      ? page.background.site
+        ? [{ path: `pages[${p}].background.site`, asset: `${page.background.site}/index.html` }]
+        : []
+      : page.background
+        ? [{ path: `pages[${p}].background.asset`, asset: page.background.asset }]
+        : []),
     ...page.hotspots.flatMap((hotspot, h) =>
       hotspot.style.image
         ? [{ path: `pages[${p}].hotspots[${h}].style.image`, asset: hotspot.style.image }]

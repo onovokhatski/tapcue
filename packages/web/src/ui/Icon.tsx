@@ -162,6 +162,7 @@ export function Icon({ name, className = 'h-4 w-4' }: { name: IconName; classNam
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      data-icon={name}
     >
       {PATHS[name]}
     </svg>

@@ -449,7 +449,10 @@ function Thumbnail({ page }: { page: Page }) {
   // A video is not loaded for a thumbnail: the list stays light however many pages there are.
   return (
     <span className={`${box} flex items-center justify-center border-dashed bg-subtle text-muted`}>
-      <Icon name={page.background ? 'video' : 'image'} className="h-3.5 w-3.5" />
+      <Icon
+        name={!page.background ? 'image' : page.background.type === 'web' ? 'external' : 'video'}
+        className="h-3.5 w-3.5"
+      />
     </span>
   );
 }
@@ -459,9 +462,7 @@ function pageMeta(page: Page, project: Project): string {
   const n = page.hotspots.length;
   const background = !page.background
     ? 'No background'
-    : page.background.type === 'video'
-      ? 'Video'
-      : 'Image';
+    : { image: 'Image', video: 'Video', web: 'Web page' }[page.background.type];
   const start = project.stations.some((s) => s.startPageId === page.id) ? ' · Start' : '';
   return `${n} hotspot${n === 1 ? '' : 's'} · ${background}${start}`;
 }

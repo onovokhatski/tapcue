@@ -1,7 +1,7 @@
 // Page operations: pure functions (project, args) => project, never changing their input
 // (spec PG-1, project format §10, architecture §4.2). An operation that cannot apply returns the
 // same project, so the store saves nothing.
-import type { Background, PageId, Project } from '@tapcue/shared';
+import { type Background, backgroundSource, type PageId, type Project } from '@tapcue/shared';
 import { newId } from './ids';
 
 /** Adds an empty page at the end, named "Page N" with the first free N. Returns its id too. */
@@ -79,9 +79,8 @@ export function setBackground(
 ): Project {
   const page = project.pages.find((p) => p.id === pageId);
   if (!page) return project;
-  const same =
-    page.background?.asset === background?.asset && page.background?.type === background?.type;
-  if (same) return project;
+  const key = (b: Background | null) => (b ? `${b.type} ${backgroundSource(b)}` : null);
+  if (key(page.background) === key(background)) return project;
   return {
     ...project,
     pages: project.pages.map((p) => (p.id === pageId ? { ...p, background } : p)),

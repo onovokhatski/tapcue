@@ -1,5 +1,5 @@
 // Draws one page — background and hotspots — at canvas size, scaled to fill its parent (ADR 0004).
-import type { Background, Canvas, Hotspot, Page } from '@tapcue/shared';
+import type { Canvas, Hotspot, MediaBackground, Page } from '@tapcue/shared';
 import { useEffect, useEffectEvent, useState, type SyntheticEvent } from 'react';
 import { assetUrl } from './assetUrl';
 import { stageGeometry } from './geometry';
@@ -27,9 +27,12 @@ export function PageView({ page, canvas, onTap, onReady, faderValues, onValue }:
   const { scale, offsetX, offsetY } = stageGeometry(canvas, viewport, canvas.scaleMode);
   const ready = useEffectEvent(() => onReady?.());
 
+  // A web background is drawn from v0.9's player work (spec PG-7, issue #258); until then the
+  // page shows the canvas colour under its hotspots.
+  const media = page.background?.type === 'web' ? null : page.background;
   // What has to load before the page is ready: its background and each hotspot's image, by name.
   const needed = [
-    ...(page.background ? [`background ${page.background.asset}`] : []),
+    ...(media ? [`background ${media.asset}`] : []),
     ...page.hotspots.flatMap((h) => (h.style.image ? [`hotspot ${h.id} ${h.style.image}`] : [])),
   ];
   const [loaded, setLoaded] = useState<ReadonlySet<string>>(new Set());
@@ -58,10 +61,10 @@ export function PageView({ page, canvas, onTap, onReady, faderValues, onValue }:
           transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})`,
         }}
       >
-        {page.background && (
+        {media && (
           <BackgroundView
-            background={page.background}
-            onReady={() => markLoaded(`background ${page.background!.asset}`)}
+            background={media}
+            onReady={() => markLoaded(`background ${media.asset}`)}
           />
         )}
         {page.hotspots.map((hotspot) => (
@@ -80,7 +83,7 @@ export function PageView({ page, canvas, onTap, onReady, faderValues, onValue }:
 }
 
 interface BackgroundViewProps {
-  background: Background;
+  background: MediaBackground;
   onReady: () => void;
 }
 

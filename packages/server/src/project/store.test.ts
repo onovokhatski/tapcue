@@ -1,4 +1,4 @@
-import { chmod, cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -141,6 +141,43 @@ describe('save', () => {
       { path: 'pages[0].background.asset', message: 'file "assets/nothing.jpg" does not exist' },
     ]);
     expect(store.revision).toBe(1);
+  });
+
+  describe('mini-site backgrounds (project format §9.4)', () => {
+    async function saveSite(withIndex: boolean) {
+      const dir = await demoCopy();
+      await mkdir(join(dir, 'assets/sites/catalog/img'), { recursive: true });
+      await writeFile(join(dir, 'assets/sites/catalog/img/a.png'), '');
+      if (withIndex) await writeFile(join(dir, 'assets/sites/catalog/index.html'), '<h1>Hi</h1>');
+      const store = await loadProjectStore(dir);
+      const [home, ...rest] = store.project.pages;
+      if (!home) throw new Error('the demo stand has pages');
+      const page = { ...home, background: { type: 'web', site: 'assets/sites/catalog' } };
+      return store.save({ ...store.project, pages: [page, ...rest] });
+    }
+
+    it('saves a mini-site that has its index.html', async () => {
+      expect((await saveSite(true)).ok).toBe(true);
+    });
+
+    it('refuses a mini-site without an index.html', async () => {
+      const result = await saveSite(false);
+      expect(result.ok ? [] : result.errors).toEqual([
+        {
+          path: 'pages[0].background.site',
+          message: 'file "assets/sites/catalog/index.html" does not exist',
+        },
+      ]);
+    });
+
+    it('checks no file for an online address', async () => {
+      const dir = await demoCopy();
+      const store = await loadProjectStore(dir);
+      const [home, ...rest] = store.project.pages;
+      if (!home) throw new Error('the demo stand has pages');
+      const page = { ...home, background: { type: 'web', url: 'https://example.com' } };
+      expect((await store.save({ ...store.project, pages: [page, ...rest] })).ok).toBe(true);
+    });
   });
 
   it('refuses a project whose hotspot image is not in the folder (spec HS-9)', async () => {
