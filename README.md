@@ -11,8 +11,8 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.8.0: undo and redo in the editor, one step per drag, nudge series or field
-> ([changelog](CHANGELOG.md),
+> **Status:** v0.9.0: a page can show a live web page or an uploaded mini-site, with hotspots on
+> top ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
