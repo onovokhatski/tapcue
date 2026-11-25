@@ -1,6 +1,13 @@
 // Where the visitor is and what is on screen: pure transitions for useReducer
 // (spec ACT-3, ST-4, PG-4, PG-5, PLY-5, PLY-6, ADR 0014).
-import type { Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
+import {
+  type Hotspot,
+  type Page,
+  type PageId,
+  pageTransition,
+  type Project,
+  type Station,
+} from '@tapcue/shared';
 
 export interface PlayerState {
   project: Project;
@@ -56,6 +63,23 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
 /** The page the visitor is on. The station's start page exists: the server validated the project. */
 export function currentPage(state: PlayerState): Page | undefined {
   return state.project.pages.find((page) => page.id === state.pageId);
+}
+
+/** How the incoming page comes onto the screen (spec PG-4, ADR 0025). */
+export type Motion = 'fade' | 'slide-from-right' | 'slide-from-left' | 'zoom' | 'none';
+
+/**
+ * The project's transition for the page on its way, with Slide's direction from the page order: a
+ * page further down the page list comes in from the right, one further up from the left. Null when
+ * no page is on its way.
+ */
+export function incomingMotion(state: PlayerState): Motion | null {
+  const next = incoming(state);
+  if (next === null) return null;
+  const transition = pageTransition(state.project);
+  if (transition !== 'slide') return transition;
+  const order = (pageId: PageId) => state.project.pages.findIndex((page) => page.id === pageId);
+  return order(next) > order(state.shown) ? 'slide-from-right' : 'slide-from-left';
 }
 
 /** The page on its way onto the screen, waiting for its background or fading in; null when none. */

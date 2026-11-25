@@ -13,7 +13,7 @@ import {
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
 import { ConnectionIndicator } from './ConnectionIndicator';
-import { incoming, playerReducer, startPlayer } from './playerState';
+import { incoming, incomingMotion, type Motion, playerReducer, startPlayer } from './playerState';
 import { releaseDelay } from './releaseDelay';
 import { useIdleTimer } from './useIdleTimer';
 import type { StationSocket } from './useStationSocket';
@@ -54,6 +54,7 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
   // Only the page on screen and the one on its way are in the DOM: the next page's background
   // starts loading on the tap (ADR 0016).
   const next = incoming(state);
+  const motion = incomingMotion(state);
   const layerOf = (page: Page): Layer | null =>
     page.id === state.shown ? 'shown' : page.id === next ? 'incoming' : null;
 
@@ -77,6 +78,7 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
             canvas={state.project.canvas}
             layer={layer}
             fading={layer === 'incoming' && state.fading}
+            motion={layer === 'incoming' ? motion : null}
             onTap={(hotspot) => tap(page.id, hotspot)}
             faderValues={connection.faderValues}
             onValue={(hotspot, value, final) =>
@@ -104,6 +106,8 @@ interface PageLayerProps {
   canvas: Canvas;
   layer: Layer;
   fading: boolean;
+  /** How this page comes onto the screen, while it is the incoming one. */
+  motion: Motion | null;
   onTap: (hotspot: Hotspot) => void;
   faderValues: Readonly<Record<string, number>>;
   onValue: (hotspot: Hotspot, value: number, final: boolean) => void;
@@ -117,6 +121,7 @@ function PageLayer({
   canvas,
   layer,
   fading,
+  motion,
   onTap,
   faderValues,
   onValue,
@@ -126,6 +131,7 @@ function PageLayer({
 }: PageLayerProps) {
   const [loaded, setLoaded] = useState(false);
   const reportReady = useEffectEvent(onReady);
+  const reportFaded = useEffectEvent(onFaded);
 
   // A page loaded long ago reports ready again the moment it becomes the incoming page: the
   // visitor tapped back to the page underneath while the next one was fading in.
@@ -133,12 +139,18 @@ function PageLayer({
     if (layer === 'incoming' && loaded) reportReady();
   }, [layer, loaded]);
 
+  // With no transition there is no animation to end: the page takes over as soon as it is ready.
+  useEffect(() => {
+    if (fading && motion === 'none') reportFaded();
+  }, [fading, motion]);
+
   return (
     <div
       className="page-layer"
       data-page={page.id}
       data-layer={layer}
       data-fading={fading || undefined}
+      data-motion={motion ?? undefined}
       // The incoming page takes no taps while it is still invisible.
       inert={layer === 'incoming' && !fading}
       onAnimationEnd={(event) => {
