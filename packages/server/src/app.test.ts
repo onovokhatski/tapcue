@@ -7,6 +7,7 @@ import { buildApp } from './app';
 import type { Drivers } from './commands/dispatcher';
 import { DEFAULT_PROJECT_DIR } from './config';
 import { loadProjectStore, type ProjectStore } from './project/store';
+import { sha256 } from './test/bytes';
 
 let store: ProjectStore;
 beforeAll(async () => {
@@ -145,7 +146,7 @@ describe('buildApp', () => {
       const response = await get('/assets/home.jpg');
       expect(response.statusCode).toBe(200);
       expect(response.headers['content-type']).toBe('image/jpeg');
-      expect(response.rawPayload).toEqual(await file('home.jpg'));
+      expect(sha256(response.rawPayload)).toBe(sha256(await file('home.jpg')));
     });
 
     it('serves a video and announces that it accepts byte ranges', async () => {
