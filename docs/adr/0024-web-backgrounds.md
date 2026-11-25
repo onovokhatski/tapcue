@@ -44,10 +44,12 @@ Two limits of the web shape the design:
   - for an online site, counted from opening the page, since taps inside cannot be seen;
   - for a mini-site, counted from the last tap, inside the site or on a hotspot.
   A station without an idle timeout never returns, on web pages too.
-- **The editor checks an online address before it is used.** The server fetches it and reads
-  `X-Frame-Options` (any value blocks embedding) and CSP `frame-ancestors`. A `frame-ancestors`
-  list allows the stand only with `*`, `http:` or `https:`, since the stand's own address is not
-  known in advance. A blocked address is not applied. The check fetches only http and https
+- **The editor checks an online address before it is used.** The server fetches it, following
+  redirects, and reads the headers a browser obeys. A CSP `frame-ancestors` directive decides
+  alone when there is one, as in browsers; it allows the stand only with `*` or `http:`, since the
+  stand's own address is not known in advance and it is served over http. Otherwise
+  `X-Frame-Options: DENY` or `SAMEORIGIN` blocks embedding; browsers ignore other values. The
+  check is refused in demo mode, where a public server would fetch any address on request. A blocked address is not applied. The check fetches only http and https
   addresses and returns a verdict, never the page, so it cannot be used to read other machines on
   the stand's network.
 - **In the editor the site is shown live but inert** (`pointer-events: none`) under the selection

@@ -17,6 +17,7 @@ import { registerLibraryRoutes } from './project/libraryRoutes';
 import type { ProjectStore } from './project/store';
 import { registerSites, type SiteOptions } from './project/sites';
 import { registerUpload, type UploadOptions } from './project/upload';
+import { type EmbedCheckOptions, registerEmbedCheck } from './embedCheck';
 import { type LocalAddress, registerNetwork } from './network';
 import { registerHub } from './realtime/hub';
 import { registerWebApp } from './webApp';
@@ -35,6 +36,8 @@ export interface AppOptions {
   upload?: Omit<UploadOptions, 'dir'>;
   /** Mini-site settings for tests: small size limits, a fixed folder name suffix. */
   sites?: Omit<SiteOptions, 'dir'>;
+  /** Embed check settings for tests: a short timeout. */
+  embedCheck?: EmbedCheckOptions;
   /** Import settings for tests: a small size limit. */
   archive?: Pick<ArchiveOptions, 'maxBytes'>;
   /** The web app's production build (packages/web/dist); left out, only the API is served. */
@@ -57,6 +60,8 @@ const DEMO_REFUSED = new Set([
   'POST /api/projects',
   'POST /api/projects/:id/open',
   'DELETE /api/projects/:id',
+  // A public server fetching any address on request could probe the network it runs in.
+  'GET /api/embed-check',
 ]);
 
 /** The header with the revision an editor's copy was based on, sent with each save (ADR 0021). */
@@ -69,6 +74,7 @@ export function buildApp({
   drivers,
   upload = {},
   sites = {},
+  embedCheck = {},
   addresses,
   archive = {},
   webDir,
@@ -116,6 +122,7 @@ export function buildApp({
   registerUpload(app, { dir: () => store.dir, ...upload });
   registerSites(app, { dir: () => store.dir, ...sites });
   registerNetwork(app, addresses);
+  registerEmbedCheck(app, embedCheck);
 
   // Taps from players → commands to targets, and the log of what was sent (architecture §5.3).
   const log = createCommandLog();

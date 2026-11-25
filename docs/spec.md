@@ -309,7 +309,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
 - **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
   - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;
-  - the server rejects saving, file uploads, project import, and creating, opening or deleting projects;
+  - the server rejects saving, file uploads, project import, creating, opening or deleting projects, and checking online addresses for embedding (PG-9);
   - commands are delivered only to the demo receiver, whatever the targets say;
   - the editor shows a permanent "Demo mode — changes are not saved" notice.
 
