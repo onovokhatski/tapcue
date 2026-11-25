@@ -44,18 +44,27 @@ export function registerArchive(
     if (request.headers['content-type'] !== 'application/zip') {
       return reply.code(415).send({ error: 'Expected a .zip file (application/zip)' });
     }
-    // Next to the project, so the final renames stay on one disk.
+    // Next to the project, so the final renames stay on one disk. Answers are returned rather than
+    // sent, so Fastify sends them after `finally`: once the browser has its answer, nothing of the
+    // import is left next to the project (issue #249).
     const staging = await mkdtemp(join(store.dir, '.import-'));
     try {
       const upload = join(staging, 'upload.zip');
       if (!(await saveUpload(request.body as Readable, upload, maxBytes))) {
-        return reply.code(413).send({ error: tooLarge(maxBytes) });
+        reply.code(413);
+        return { error: tooLarge(maxBytes) };
       }
       const folder = join(staging, 'project');
       const refused = await extractArchive(upload, folder, maxBytes);
-      if (refused) return reply.code(400).send({ errors: [refused] });
+      if (refused) {
+        reply.code(400);
+        return { errors: [refused] };
+      }
       const result = await store.replace(folder);
-      if (!result.ok) return reply.code(400).send({ errors: result.errors });
+      if (!result.ok) {
+        reply.code(400);
+        return { errors: result.errors };
+      }
       onImported(result.revision);
       return { revision: result.revision };
     } finally {

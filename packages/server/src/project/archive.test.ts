@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -10,6 +9,7 @@ import yauzl from 'yauzl';
 import yazl from 'yazl';
 import { buildApp } from '../app';
 import { DEFAULT_PROJECT_DIR } from '../config';
+import { sha256 } from '../test/bytes';
 import { asVersion1, singleCommands } from '../test/version1';
 import { archiveName } from './archive';
 import { loadProjectStore } from './store';
@@ -42,15 +42,11 @@ async function start(maxBytes?: number) {
 
 /** Every file of a project folder, assets as a hash of their bytes, to compare two folders. */
 async function snapshot(dir: string) {
-  const hash = async (file: string) =>
-    createHash('sha256')
-      .update(await readFile(file))
-      .digest('hex');
   const files: Record<string, unknown> = {};
   // Parsed: a save writes the same project with its own formatting.
   files['project.json'] = JSON.parse(await readFile(join(dir, 'project.json'), 'utf8'));
   for (const name of (await readdir(join(dir, 'assets'))).sort()) {
-    files[`assets/${name}`] = await hash(join(dir, 'assets', name));
+    files[`assets/${name}`] = sha256(await readFile(join(dir, 'assets', name)));
   }
   return { files, all: (await readdir(dir)).sort() };
 }
@@ -120,7 +116,9 @@ describe('GET /api/project/export (spec PRJ-3)', () => {
       'assets/product-b.jpg',
     ]);
     expect(JSON.parse(files['project.json']!.toString('utf8'))).toEqual(store.project);
-    expect(files['assets/home.jpg']).toEqual(await readFile(join(dir, 'assets', 'home.jpg')));
+    expect(sha256(files['assets/home.jpg']!)).toBe(
+      sha256(await readFile(join(dir, 'assets', 'home.jpg'))),
+    );
   });
 
   it('leaves out files the project format cannot name, and folders', async () => {
