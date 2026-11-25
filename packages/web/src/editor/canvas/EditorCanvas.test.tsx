@@ -156,6 +156,16 @@ describe('EditorCanvas', () => {
     });
   });
 
+  it('shows a web background live but inert, under the selection layer (ADR 0024)', async () => {
+    const project = demoProject();
+    project.pages[0]!.background = { type: 'web', url: 'https://example.com/' };
+    const { container } = await renderCanvas(project);
+    const frame = container.querySelector('iframe')!;
+    expect(frame).toHaveAttribute('src', 'https://example.com/');
+    expect(frame.style.pointerEvents).toBe('none');
+    expect(screen.queryByText('No background yet')).toBeNull();
+  });
+
   it('shows the empty canvas for a page without a background', async () => {
     const project = demoProject();
     project.pages[0]!.background = null;

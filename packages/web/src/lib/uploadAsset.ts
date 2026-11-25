@@ -1,6 +1,7 @@
-// Uploads one background file to POST /api/assets, with progress and a way to cancel
-// (spec PG-2, PG-6, architecture §5.1). XMLHttpRequest, because fetch reports no upload progress.
-import type { AssetPath } from '@tapcue/shared';
+// Uploads one background file to POST /api/assets, or a mini-site to POST /api/sites, with
+// progress and a way to cancel (spec PG-2, PG-6, PG-7, architecture §5.1). XMLHttpRequest, because
+// fetch reports no upload progress.
+import type { AssetPath, SitePath } from '@tapcue/shared';
 
 /** The same 200 MB as the server (spec PG-6), checked before anything is sent. */
 export const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
@@ -38,9 +39,23 @@ export interface Uploaded {
   type: 'image' | 'video';
 }
 
-export interface Upload {
-  done: Promise<Uploaded>;
+export interface UploadedSite {
+  site: SitePath;
+}
+
+export interface Upload<T = Uploaded> {
+  done: Promise<T>;
   cancel: () => void;
+}
+
+/** Why a file cannot be a mini-site, or null: a .zip of at most 200 MB (spec PG-6, PG-7). */
+export function checkSiteFile(file: { name: string; size: number }): string | null {
+  if (!/\.zip$/i.test(file.name)) return `${file.name} is not a .zip file.`;
+  if (file.size > MAX_UPLOAD_BYTES) {
+    const mb = Math.round(file.size / 1024 / 1024);
+    return `${file.name} is ${mb} MB. The limit is 200 MB.`;
+  }
+  return null;
 }
 
 /** Thrown when the upload was cancelled, so callers can tell it from a failure. */
@@ -48,14 +63,28 @@ export class UploadCancelled extends Error {}
 
 /** `onProgress` gets 0–100. A refusal rejects with the server's own words. */
 export function uploadAsset(file: File, onProgress: (percent: number) => void): Upload {
+  return uploadTo<Uploaded>('/api/assets', file, onProgress);
+}
+
+/** A mini-site as a .zip, unpacked by the server into assets/sites/ (spec PG-7). */
+export function uploadSite(
+  file: File,
+  onProgress: (percent: number) => void,
+): Upload<UploadedSite> {
+  // Some systems give a .zip no type; the server reads the extension and the type, so name it.
+  const zip = file.type ? file : new File([file], file.name, { type: 'application/zip' });
+  return uploadTo<UploadedSite>('/api/sites', zip, onProgress);
+}
+
+function uploadTo<T>(url: string, file: File, onProgress: (percent: number) => void): Upload<T> {
   const request = new XMLHttpRequest();
-  const done = new Promise<Uploaded>((resolve, reject) => {
+  const done = new Promise<T>((resolve, reject) => {
     request.upload.addEventListener('progress', (event) => {
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     });
     request.addEventListener('load', () => {
       if (request.status === 201) {
-        resolve(JSON.parse(request.responseText) as Uploaded);
+        resolve(JSON.parse(request.responseText) as T);
         return;
       }
       reject(
@@ -67,7 +96,7 @@ export function uploadAsset(file: File, onProgress: (percent: number) => void): 
   });
   const form = new FormData();
   form.append('file', file);
-  request.open('POST', '/api/assets');
+  request.open('POST', url);
   request.send(form);
   return { done, cancel: () => request.abort() };
 }

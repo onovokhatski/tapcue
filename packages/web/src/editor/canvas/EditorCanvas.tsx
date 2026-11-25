@@ -166,7 +166,8 @@ function Stage(props: StageProps) {
       data-testid="canvas-page"
     >
       {/* The page box has the canvas's exact aspect ratio, so `fit` leaves no bars inside it. */}
-      <PageView page={page} canvas={{ ...canvas, scaleMode: 'fit' }} />
+      {/* A web background is shown live, but every click selects hotspots (ADR 0024). */}
+      <PageView page={page} canvas={{ ...canvas, scaleMode: 'fit' }} inertWeb />
       {!page.background && <EmptyCanvas />}
       {showSafeArea && (
         <SafeAreaOverlay bands={cropBands(canvas, reference)} reference={reference} scale={scale} />

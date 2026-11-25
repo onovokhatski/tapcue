@@ -1,7 +1,7 @@
 // The Settings tab: the canvas every page is drawn on — its size, background colour and scale mode,
 // with diagrams of each mode on the reference screens — and the project's export and import
-// (spec CNV-1, CNV-2, ED-4, ED-10, PRJ-3, PRJ-4; design: settingsScreen(), frames G1–G3).
-import type { Canvas, Project, ScaleMode } from '@tapcue/shared';
+// (spec CNV-1, CNV-2, ED-4, ED-10, PG-10, PRJ-3, PRJ-4; design: settingsScreen(), frames G1–G3).
+import { type Canvas, type Project, type ScaleMode, webPageSeconds } from '@tapcue/shared';
 import { Banner } from '../../ui/Banner';
 import { ColorField } from '../../ui/ColorField';
 import { Icon } from '../../ui/Icon';
@@ -9,7 +9,7 @@ import { NumberField } from '../../ui/NumberField';
 import { Segmented } from '../../ui/Segmented';
 import { useDraft } from '../../ui/useDraft';
 import type { ReferenceScreen } from '../canvas/safeArea';
-import { checkCanvasSize, updateCanvas } from '../operations/canvas';
+import { checkCanvasSize, setWebPageSeconds, updateCanvas } from '../operations/canvas';
 import { useEditor } from '../useEditor';
 import { ProjectCard } from './ProjectCard';
 import { QuitCard } from './QuitCard';
@@ -35,7 +35,10 @@ export function SettingsTab() {
           </Banner>
         )}
         <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
-          <CanvasCard project={project} />
+          <div className="space-y-6">
+            <CanvasCard project={project} />
+            <WebPagesCard project={project} />
+          </div>
           <div className="space-y-6">
             <ProjectCard />
             <QuitCard />
@@ -96,6 +99,53 @@ function CanvasCard({ project }: { project: Project }) {
           </dl>
         </div>
         <ScaleDiagrams canvas={canvas} />
+      </div>
+    </section>
+  );
+}
+
+/** How long a page with a web background stays before the idle return (spec PG-10). */
+function WebPagesCard({ project }: { project: Project }) {
+  const change = useEditor((state) => state.change);
+  const check = (text: string) => {
+    const seconds = Number(text.trim());
+    return /^\d+$/.test(text.trim()) && seconds >= 10 && seconds <= 3600
+      ? null
+      : 'Expected 10 to 3600 seconds';
+  };
+  const draft = useDraft(String(webPageSeconds(project)), check, (text) =>
+    change((p) => setWebPageSeconds(p, Number(text))),
+  );
+  return (
+    <section aria-label="Web pages" className="rounded-lg border border-default bg-surface">
+      <div className="flex h-12 items-center border-b border-default px-5">
+        <h2 className="text-heading-m">Web pages</h2>
+      </div>
+      <div className="space-y-2 p-5">
+        <p className="text-label-s text-secondary">Web page time</p>
+        <div className="w-[132px]">
+          <NumberField
+            suffix="s"
+            ariaLabel="Web page time"
+            min={10}
+            max={3600}
+            value={draft.text}
+            error={draft.error !== null}
+            onChange={draft.onChange}
+            onBlur={draft.onBlur}
+          />
+        </div>
+        {draft.error && (
+          <p className="flex items-start gap-1 text-body-s text-danger-fg">
+            <Icon name="alert" className="mt-px h-3.5 w-3.5 flex-none" />
+            <span>{draft.error}</span>
+          </p>
+        )}
+        <p className="text-body-s text-muted">
+          On a page with a web background, a tablet goes back to its start page after this time
+          instead of its station&apos;s idle timeout. For an online site it counts from opening the
+          page, since taps inside it cannot be seen; for a mini-site, from the last tap.
+        </p>
       </div>
     </section>
   );

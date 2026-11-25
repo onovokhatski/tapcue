@@ -1,5 +1,5 @@
-// Canvas operations: pure functions (project, args) => project (spec CNV-1, CNV-2, ED-10, project
-// format §3). An operation that cannot apply returns the same project.
+// Canvas and project settings: pure functions (project, args) => project (spec CNV-1, CNV-2, ED-10,
+// PG-10, project format §2, §3). An operation that cannot apply returns the same project.
 import type { Canvas, Project } from '@tapcue/shared';
 
 type Dimension = 'width' | 'height';
@@ -47,4 +47,14 @@ export function updateCanvas(project: Project, change: Partial<Canvas>): Project
     return project;
   if (JSON.stringify(next) === JSON.stringify(project.canvas)) return project;
   return { ...project, canvas: next };
+}
+
+/**
+ * Sets how long a page with a web background stays before the idle return, 10 s to 1 h in whole
+ * seconds (spec PG-10). Anything else changes nothing.
+ */
+export function setWebPageSeconds(project: Project, seconds: number): Project {
+  if (!Number.isInteger(seconds) || seconds < 10 || seconds > 3600) return project;
+  if (project.webPageSeconds === seconds) return project;
+  return { ...project, webPageSeconds: seconds };
 }

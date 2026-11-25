@@ -1,7 +1,7 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { checkCanvasSize, updateCanvas } from './canvas';
+import { checkCanvasSize, setWebPageSeconds, updateCanvas } from './canvas';
 
 const expectValid = (project: Project) =>
   expect(validateProject(project)).toMatchObject({ ok: true });
@@ -74,5 +74,22 @@ describe('checkCanvasSize (spec ED-10)', () => {
       'Expected a whole number of pixels',
     );
     expect(checkCanvasSize(demoProject(), 'width', 8192)).toBeNull();
+  });
+});
+
+describe('setWebPageSeconds (spec PG-10)', () => {
+  it('sets the web page time, from 10 s to 1 h', () => {
+    expect(setWebPageSeconds(demoProject(), 10).webPageSeconds).toBe(10);
+    expect(setWebPageSeconds(demoProject(), 3600).webPageSeconds).toBe(3600);
+  });
+
+  it.each([9, 3601, 7.5, Number.NaN])('changes nothing for %s', (seconds) => {
+    const before = demoProject();
+    expect(setWebPageSeconds(before, seconds)).toBe(before);
+  });
+
+  it('returns the same project when the time is already that', () => {
+    const before = setWebPageSeconds(demoProject(), 45);
+    expect(setWebPageSeconds(before, 45)).toBe(before);
   });
 });

@@ -53,7 +53,9 @@ Two limits of the web shape the design:
   addresses and returns a verdict, never the page, so it cannot be used to read other machines on
   the stand's network.
 - **In the editor the site is shown live but inert** (`pointer-events: none`) under the selection
-  layer, so clicks select and drag hotspots.
+  layer, so clicks select and drag hotspots. It is laid out at half the canvas size, as a tablet
+  with two screen pixels per CSS pixel lays it out (1024 × 768 for a 2048 × 1536 canvas, an iPad),
+  and shrunk to the preview, so hotspots are placed over the layout the tablet will show.
 
 ## Alternatives considered
 - **A web page opened over the page, with a back button.** A second kind of screen with its own
