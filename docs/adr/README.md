@@ -29,6 +29,7 @@ decision gets a new ADR that supersedes the old one.
 | [0021](0021-project-library.md) | A library of projects, one of them active | Accepted |
 | [0022](0022-command-sequences.md) | Command sequences: several commands per tap, with delays | Accepted |
 | [0023](0023-undo-history.md) | Undo history: snapshots of the immutable project | Accepted |
+| [0024](0024-web-backgrounds.md) | Web backgrounds: a site in a frame under the hotspots | Accepted |
 
 ## Template
 
