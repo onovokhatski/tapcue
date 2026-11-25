@@ -4,6 +4,48 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-11-25
+
+A page can show a live web page, with the stand's own hotspots on top. Milestone v0.9 (Web
+backgrounds).
+
+### Added
+
+- **Web pages as page backgrounds:** an online address, or a mini-site uploaded as a `.zip` with
+  an `index.html`, which Tapcue serves itself and which works without internet. Visitors scroll
+  and tap the site; hotspots drawn over it lead back to the stand's pages.
+- **The embed check:** the editor asks the server whether an online address may be shown inside
+  another page. An address that forbids it (`X-Frame-Options` or CSP `frame-ancestors`) is refused
+  with the reason; one that could not be checked can be used anyway.
+- **On the tablet** the site fills the page area at the screen's own size, so its text stays
+  readable, in a sandbox that keeps it from leaving the page, opening windows or downloading. It
+  loads afresh on every visit, and a page change waits at most 3 s for it.
+- **Web page time** (Settings, default 3 min): on a page with a web background, the tablet goes
+  back to its start page after this time instead of its station's idle timeout. It counts from
+  opening for an online site, whose taps cannot be seen, and from the last tap for a mini-site.
+- **In the editor** the site is shown live on the canvas, laid out as on a tablet, under the
+  hotspots; clicks still select and drag them.
+- **Export and import** carry mini-sites with the project.
+- **The demo stand** has a Showroom page with a mini-site, reached from About us.
+
+### Changed
+
+- **Project format:** a background may be `{ "type": "web", "url" }` or
+  `{ "type": "web", "site" }`, and a project may have `webPageSeconds`. The schema version stays
+  2; Tapcue 0.8 and older refuse a project that uses them.
+- **Demo mode** also refuses the embed check, so the public server never fetches an address on
+  request.
+
+### Known limitations
+
+- Many sites forbid being shown inside another page (most large services, YouTube's own pages
+  but not its `/embed/` links). Tapcue says so; it cannot show them.
+- An online site needs internet on the stand.
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: web backgrounds (from 0.9.0), sequences (from 0.5.0), faders (from
+  0.3.0), the stand setup (from 0.1.0) and the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
 ## [0.8.0] - 2026-11-25
 
 A wrong drag, delete or paste is one keystroke from undone. Milestone v0.8 (Undo and redo).

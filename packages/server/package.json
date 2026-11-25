@@ -1,6 +1,6 @@
 {
   "name": "@tapcue/server",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Stores the project, serves the web app and delivers commands to media servers.",
   "type": "module",
