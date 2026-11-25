@@ -30,8 +30,9 @@ field is one step.
 - **An undo is a change like any other:** it is saved after the quiet time and reaches every
   open tablet.
 - **The history is the tab's own.** It is not stored, so a reload starts afresh. A project saved
-  by another editor, opened from the library, or reloaded after a stale save clears it, and the
-  editor says so; undo then never overwrites someone else's work.
+  by another editor, opened from the library, or reloaded after a stale save clears it; undo then
+  never overwrites someone else's work. The editor says so when another editor's change caused
+  it, not when it opened or imported a project itself.
 - **Not in the history:** the selection on its own, folded sections, the command log, the
   clipboard.
 

@@ -847,16 +847,68 @@ describe('editor store', () => {
       expect(state().historyCleared).toBe(false);
     });
 
-    it('is cleared when this editor opens another project', async () => {
+    it('is cleared without a notice when this editor opens another project', async () => {
       const { state } = await loaded();
       state().change(rename('One'));
       state().undo();
       state().projectOpened(7);
       expect(state().future).toEqual([]);
-      expect(state().historyCleared).toBe(true);
-      // Opening one more before the editor said so keeps the notice.
+      expect(state().historyCleared).toBe(false);
+    });
+
+    it('keeps a notice not yet shown when this editor then opens another project', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      state().projectUpdated(3);
+      server.loads[1]!.resolve({ revision: 3, project: demoProject() });
+      await settle();
       state().projectOpened(8);
       expect(state().historyCleared).toBe(true);
+    });
+
+    it('is cleared without a notice after this editor imports a project', async () => {
+      const { state, server, api } = await loaded();
+      vi.spyOn(api, 'importArchive').mockResolvedValue({ ok: true, revision: 3 });
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      const answer = state().importArchive(new Blob(['zip']));
+      await wait(40);
+      expect(state().past).toEqual([]); // at once, before the imported project arrives
+      server.loads[1]!.resolve({ revision: 3, project: { ...demoProject(), name: 'Imported' } });
+      await answer;
+      expect(state().historyCleared).toBe(false);
+    });
+
+    it('keeps the history when an import is refused', async () => {
+      const { state, server, api } = await loaded();
+      vi.spyOn(api, 'importArchive').mockResolvedValue({ ok: false, reason: 'not a zip' });
+      state().change(rename('One'));
+      state().change(rename('Two'));
+      const answer = state().importArchive(new Blob(['zip']));
+      await settle();
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await wait(40);
+      await answer;
+      expect(names(state().past)).toEqual(['Demo stand', 'One']);
+    });
+
+    it('ends the notice with the next change of this editor', async () => {
+      const { state, server } = await loaded();
+      state().change(rename('One'));
+      await wait(SAVE_DELAY_MS);
+      server.saves[0]!.answer.resolve({ ok: true, revision: 2 });
+      await settle();
+      state().projectUpdated(3);
+      server.loads[1]!.resolve({ revision: 3, project: demoProject() });
+      await settle();
+      expect(state().historyCleared).toBe(true);
+      state().change(rename('Mine'));
+      expect(state().historyCleared).toBe(false);
     });
 
     it('is cleared when a save finds another project open on the server', async () => {

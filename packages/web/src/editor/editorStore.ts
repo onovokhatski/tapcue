@@ -161,25 +161,28 @@ export function createEditorStore(api: ProjectApi = projectApi) {
   return createStore<EditorStore>()((set, get) => {
     /**
      * The history emptied, for a project replaced from outside: its steps belong to another copy
-     * and undoing them would bring that copy back over the new one (ADR 0023).
+     * and undoing them would bring that copy back over the new one (ADR 0023). The editor says so
+     * when steps were lost to someone else's change; with `quietly`, this editor replaced the
+     * project itself and knows.
      */
-    function clearedHistory(): Pick<EditorState, 'past' | 'future' | 'historyCleared'> {
+    function clearedHistory(
+      quietly = false,
+    ): Pick<EditorState, 'past' | 'future' | 'historyCleared'> {
       lastGroup = undefined;
       const { past, future, historyCleared } = get();
-      return {
-        past: [],
-        future: [],
-        historyCleared: historyCleared || past.length > 0 || future.length > 0,
-      };
+      const lost = !quietly && (past.length > 0 || future.length > 0);
+      return { past: [], future: [], historyCleared: historyCleared || lost };
     }
 
     /** Shows a new project, then saves it after the quiet time; demo mode keeps it in this tab. */
     function apply(project: Project, selection: Selection, history: Partial<EditorState>) {
       // The selection follows: a deleted page or hotspot is no longer selected.
       const kept = keepSelection(selection, project);
+      // A change of this editor's own ends the notice that the history was cleared (spec ED-27).
+      const state = { project, selection: kept, ...history, historyCleared: false };
       // In demo mode the change stays in this tab; the server would refuse it anyway.
-      if (get().demo) return void set({ project, selection: kept, ...history });
-      set({ project, selection: kept, ...history, save: { state: 'saving' } });
+      if (get().demo) return void set(state);
+      set({ ...state, save: { state: 'saving' } });
       pending = true;
       clearTimeout(timer);
       timer = setTimeout(() => void flush(), SAVE_DELAY_MS);
@@ -391,7 +394,7 @@ export function createEditorStore(api: ProjectApi = projectApi) {
       },
 
       projectOpened(revision) {
-        set({ clipboard: null, ...clearedHistory() });
+        set({ clipboard: null, ...clearedHistory(true) });
         get().projectUpdated(revision);
       },
 
@@ -410,7 +413,11 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         } catch {
           return { ok: false, reason: 'could not be sent: cannot reach the server.' };
         }
-        if (result.ok) await load(true);
+        if (!result.ok) return result;
+        // This editor replaced the project: no notice. A load started by the server's message
+        // about the import may still come first and show it; that is rare and harmless.
+        set(clearedHistory(true));
+        await load(true);
         return result;
       },
 

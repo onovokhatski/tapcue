@@ -279,8 +279,9 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   where they act on the text. Undo and Redo buttons in the top bar are disabled when there is
   nothing to undo or redo, and their tooltips name the shortcut.
 - **ED-27** A project saved by another editor, opened from the library, or reloaded after a save
-  was refused as stale, clears the history, and the editor says so once: undo never overwrites
-  someone else's work.
+  was refused as stale, clears the history: undo never overwrites someone else's work. When steps
+  were lost to another editor's change, the top bar says so until the next change or for a few
+  seconds; opening or importing a project in this editor clears it without a notice.
 
 ### 5.10 Demo receiver
 
