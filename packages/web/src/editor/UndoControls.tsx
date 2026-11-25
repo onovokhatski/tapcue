@@ -13,6 +13,34 @@ export const NOTICE_MS = 5000;
 export const commandKey = (platform = navigator.platform) =>
   /Mac|iPhone|iPad/.test(platform) ? 'Cmd' : 'Ctrl';
 
+/** Fields where typing is text, not a single choice: what is typed there is one step per visit. */
+const TYPED =
+  'textarea, input:not([type="checkbox"], [type="radio"], [type="file"], [type="button"])';
+
+let visits = 0;
+
+/**
+ * Tells the store which text field is being typed in, as a key new for each visit, so typing into
+ * one field is one undo step until the focus leaves it or a pause (spec ED-25).
+ */
+export function useTypingGroups() {
+  const setTypingIn = useEditor((state) => state.setTypingIn);
+  useEffect(() => {
+    const onFocusIn = (event: FocusEvent) => {
+      const typed = event.target instanceof Element && event.target.matches(TYPED);
+      setTypingIn(typed ? `field ${++visits}` : null);
+    };
+    const onFocusOut = () => setTypingIn(null);
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+      setTypingIn(null);
+    };
+  }, [setTypingIn]);
+}
+
 /**
  * What a key press asks of the history, or null. Cmd/Ctrl+Z undoes; Shift+Cmd/Ctrl+Z and Ctrl+Y
  * redo. With Alt it is some other shortcut.

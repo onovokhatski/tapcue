@@ -89,6 +89,11 @@ export interface EditorState {
 /** Options of a change: changes with the same `group` in quick succession are one step (ED-25). */
 export interface ChangeOptions {
   group?: string;
+  /**
+   * The group is one gesture, such as a drag, whose key is never used again: its changes are one
+   * step however long it pauses.
+   */
+  gesture?: boolean;
 }
 
 export interface EditorActions {
@@ -105,6 +110,11 @@ export interface EditorActions {
   redo: () => void;
   /** The editor has said that the history was cleared. */
   dismissHistoryCleared: () => void;
+  /**
+   * The text field being typed in, as a key new for each visit, or null: changes made meanwhile
+   * without a group of their own are one step per visit (spec ED-25).
+   */
+  setTypingIn: (field: string | null) => void;
   select: (selection: Selection) => void;
   /** Copies the selected hotspots into the editor's clipboard (spec ED-17). */
   copy: () => void;
@@ -157,6 +167,8 @@ export function createEditorStore(api: ProjectApi = projectApi) {
   let pending = false;
   /** The group of the last change and when it was made, while its steps may still merge. */
   let lastGroup: { key: string; at: number } | undefined;
+  /** The text field in focus, whose typing is one step. */
+  let typingIn: string | null = null;
 
   return createStore<EditorStore>()((set, get) => {
     /**
@@ -269,7 +281,9 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         void load(false);
       },
 
-      change(operation, { group } = {}) {
+      change(operation, options = {}) {
+        const { gesture = false } = options;
+        const group = options.group ?? typingIn ?? undefined;
         const { project, selection, past } = get();
         if (!project) return;
         const next = operation(project);
@@ -277,7 +291,9 @@ export function createEditorStore(api: ProjectApi = projectApi) {
         const now = Date.now();
         // A drag or typing in a field is one step: the project before its first change is kept.
         const merges =
-          group !== undefined && lastGroup?.key === group && now - lastGroup.at <= GROUP_QUIET_MS;
+          group !== undefined &&
+          lastGroup?.key === group &&
+          (gesture || now - lastGroup.at <= GROUP_QUIET_MS);
         lastGroup = group === undefined ? undefined : { key: group, at: now };
         // A new change ends what could be redone.
         const history = merges
@@ -311,6 +327,10 @@ export function createEditorStore(api: ProjectApi = projectApi) {
 
       dismissHistoryCleared() {
         set({ historyCleared: false });
+      },
+
+      setTypingIn(field) {
+        typingIn = field;
       },
 
       select(selection) {

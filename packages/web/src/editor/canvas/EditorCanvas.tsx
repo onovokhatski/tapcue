@@ -31,8 +31,9 @@ export function EditorCanvas() {
   const paste = useEditor((state) => state.paste);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
-  const place = (rects: Record<HotspotId, Rect>) => {
-    if (page) change((p) => placeHotspots(p, page.id, rects));
+  // A whole drag is one undo step (spec ED-25).
+  const place = (rects: Record<HotspotId, Rect>, drag: string) => {
+    if (page) change((p) => placeHotspots(p, page.id, rects), { group: drag, gesture: true });
   };
   const [deleting, setDeleting] = useState<HotspotId[] | null>(null);
   useCanvasKeys(page ?? null, selection.hotspotIds, setDeleting);
@@ -151,7 +152,7 @@ interface StageProps {
   scale: number;
   selectedIds: HotspotId[];
   onSelect: (hotspotIds: HotspotId[]) => void;
-  onPlace: (rects: Record<HotspotId, Rect>) => void;
+  onPlace: (rects: Record<HotspotId, Rect>, drag: string) => void;
   reference: ReferenceScreen;
   showSafeArea: boolean;
 }
@@ -262,8 +263,10 @@ function useCanvasKeys(
       if (!step || event.altKey || event.metaKey || event.ctrlKey) return;
       event.preventDefault();
       const distance = event.shiftKey ? 10 : 1;
-      change((project) =>
-        nudgeHotspots(project, pageId, ids, step[0] * distance, step[1] * distance),
+      // A series of nudges of one selection is one undo step, until a pause (spec ED-25).
+      change(
+        (project) => nudgeHotspots(project, pageId, ids, step[0] * distance, step[1] * distance),
+        { group: `nudge ${pageId} ${selectedKey}` },
       );
     };
     window.addEventListener('keydown', onKey);

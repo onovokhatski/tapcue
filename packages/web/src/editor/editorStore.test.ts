@@ -927,6 +927,28 @@ describe('editor store', () => {
       expect(state().historyCleared).toBe(true);
     });
 
+    it('makes a gesture one step however long it pauses', async () => {
+      const { state } = await loaded();
+      state().change(rename('A'), { group: 'drag 1', gesture: true });
+      await wait(GROUP_QUIET_MS * 5);
+      state().change(rename('B'), { group: 'drag 1', gesture: true });
+      expect(names(state().past)).toEqual(['Demo stand']);
+    });
+
+    it('groups changes while typing in a field, by the field, unless a change has its own group', async () => {
+      const { state } = await loaded();
+      state().setTypingIn('field 1');
+      state().change(rename('H'));
+      state().change(rename('Ha'));
+      state().change(rename('Moved'), { group: 'nudge' });
+      state().change(rename('Hal'));
+      expect(names(state().past)).toEqual(['Demo stand', 'Ha', 'Moved']);
+      state().setTypingIn(null);
+      state().change(rename('One'));
+      state().change(rename('Two'));
+      expect(names(state().past)).toEqual(['Demo stand', 'Ha', 'Moved', 'Hal', 'One']);
+    });
+
     it('starts a new step after the history was cleared, even in the same group', async () => {
       const { state } = await loaded();
       state().change(rename('A'), { group: 'name' });

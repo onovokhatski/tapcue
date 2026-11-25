@@ -2,15 +2,18 @@ import type { Project } from '@tapcue/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
-import { createEditorStore } from './editorStore';
+import { NumberField } from '../ui/NumberField';
+import { createEditorStore, GROUP_QUIET_MS } from './editorStore';
 import {
   commandKey,
   HistoryNotice,
   historyKey,
   NOTICE_MS,
   UndoButtons,
+  useTypingGroups,
   useUndoKeys,
 } from './UndoControls';
+import { EditorStoreContext as Context, useEditor } from './useEditor';
 import { EditorStoreContext } from './useEditor';
 
 const rename = (name: string) => (project: Project) => ({ ...project, name });
@@ -176,5 +179,130 @@ describe('undo and redo in the editor (spec ED-26, ED-27)', () => {
     act(() => void vi.advanceTimersByTime(1));
     expect(state().historyCleared).toBe(false);
     expect(screen.queryByText(/undo starts here/)).toBeNull();
+  });
+});
+
+/** Fields that change the project at every keystroke, as the panels do, with typing grouped. */
+function TypingFields() {
+  useTypingGroups();
+  const name = useEditor((state) => state.project?.name ?? '');
+  const width = useEditor((state) => String(state.project?.canvas.width ?? ''));
+  const change = useEditor((state) => state.change);
+  const setWidth = (text: string) =>
+    change((p) => ({ ...p, canvas: { ...p.canvas, width: Number(text) } }));
+  return (
+    <>
+      <input aria-label="Name" value={name} onChange={(e) => change(rename(e.target.value))} />
+      <NumberField prefix="W" ariaLabel="Width" value={width} onChange={setWidth} />
+      <input
+        type="checkbox"
+        aria-label="Loud"
+        onChange={(e) => change(rename(e.target.checked ? 'Loud' : 'Quiet'))}
+      />
+    </>
+  );
+}
+
+async function renderTyping() {
+  const store = createEditorStore({
+    load: () => Promise.resolve({ revision: 1, project: demoProject() }),
+    save: () => Promise.resolve({ ok: true, revision: 2 }),
+    testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+    importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
+    quitServer: () => Promise.resolve(false),
+  });
+  store.getState().start();
+  await act(() => Promise.resolve());
+  const view = render(
+    <Context value={store}>
+      <TypingFields />
+    </Context>,
+  );
+  const state = () => store.getState();
+  const field = (name: string) => screen.getByLabelText(name);
+  /** Focuses a field and types into it, one character at a time. */
+  const type = (name: string, text: string) => {
+    act(() => field(name).focus());
+    let value = '';
+    for (const char of text) fireEvent.change(field(name), { target: { value: (value += char) } });
+  };
+  return { state, field, type, view };
+}
+
+describe('typing is one undo step (spec ED-25)', () => {
+  it('makes a name typed letter by letter one step', async () => {
+    const { state, type } = await renderTyping();
+    type('Name', 'Hall B');
+    expect(state().project?.name).toBe('Hall B');
+    expect(state().past).toHaveLength(1);
+    act(() => state().undo());
+    expect(state().project?.name).toBe('Demo stand');
+  });
+
+  it('makes a number typed into a field one step', async () => {
+    const { state, type } = await renderTyping();
+    type('Width', '1920');
+    expect(state().project?.canvas.width).toBe(1920);
+    expect(state().past).toHaveLength(1);
+  });
+
+  it('ends the step when the focus leaves the field', async () => {
+    const { state, field, type } = await renderTyping();
+    type('Name', 'Hall');
+    act(() => field('Name').blur());
+    type('Name', 'Hall B');
+    expect(state().past).toHaveLength(2);
+    // Another field is another visit, so another step.
+    type('Width', '1920');
+    expect(state().past).toHaveLength(3);
+    // Out of every field, changes are steps of their own again.
+    act(() => field('Width').blur());
+    act(() => state().change(rename('One')));
+    act(() => state().change(rename('Two')));
+    expect(state().past).toHaveLength(5);
+  });
+
+  it('ends the step after a pause in typing', async () => {
+    const { state, field, type } = await renderTyping();
+    vi.useFakeTimers();
+    type('Name', 'Hall');
+    act(() => void vi.advanceTimersByTime(GROUP_QUIET_MS + 1));
+    fireEvent.change(field('Name'), { target: { value: 'Hall B' } });
+    expect(state().past).toHaveLength(2);
+  });
+
+  it('keeps each switch of a checkbox a step of its own', async () => {
+    const { state, field } = await renderTyping();
+    act(() => field('Loud').focus());
+    fireEvent.click(field('Loud'));
+    fireEvent.click(field('Loud'));
+    expect(state().past).toHaveLength(2);
+  });
+
+  it('makes a drag of a number field’s handle one step, and leaves the field after it', async () => {
+    const { state, field } = await renderTyping();
+    const handle = screen.getByText('W');
+    fireEvent.pointerDown(handle, { button: 0, clientX: 100 });
+    expect(field('Width')).toHaveFocus(); // the drag is a visit to the field
+    fireEvent.pointerMove(handle, { clientX: 110 });
+    fireEvent.pointerMove(handle, { clientX: 130 });
+    fireEvent.pointerUp(handle);
+    expect(field('Width')).not.toHaveFocus();
+    expect(state().project?.canvas.width).toBe(2078);
+    expect(state().past).toHaveLength(1);
+    // The next drag, at once, is another step.
+    fireEvent.pointerDown(handle, { button: 0, clientX: 100 });
+    fireEvent.pointerMove(handle, { clientX: 101 });
+    fireEvent.pointerUp(handle);
+    expect(state().past).toHaveLength(2);
+  });
+
+  it('stops grouping once the fields are gone', async () => {
+    const { state, type, view } = await renderTyping();
+    type('Name', 'Hall');
+    view.unmount();
+    act(() => state().change(rename('One')));
+    act(() => state().change(rename('Two')));
+    expect(state().past).toHaveLength(3);
   });
 });

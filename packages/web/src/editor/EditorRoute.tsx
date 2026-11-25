@@ -20,7 +20,7 @@ import { StationsTab } from './stations/StationsTab';
 import { TargetsTab } from './targets/TargetsTab';
 import { TooSmall } from './TooSmall';
 import { EditorSkeleton } from './EditorSkeleton';
-import { HistoryNotice, UndoButtons, useUndoKeys } from './UndoControls';
+import { HistoryNotice, UndoButtons, useTypingGroups, useUndoKeys } from './UndoControls';
 import { EditorStoreContext, useEditor } from './useEditor';
 import { editorLayout, useWindowSize } from './useWindowSize';
 
@@ -117,6 +117,7 @@ function TopBar({ connection }: { connection: SocketStatus }) {
   // Before the project arrives there is nothing to save yet (frame E1).
   const loaded = useEditor((state) => state.load === 'ready');
   useUndoKeys();
+  useTypingGroups();
   return (
     <header className="flex h-12 flex-none items-stretch gap-5 border-b border-default bg-surface pr-3 pl-4">
       <div className="flex items-center gap-2">

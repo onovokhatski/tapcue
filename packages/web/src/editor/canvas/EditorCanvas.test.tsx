@@ -2,7 +2,7 @@ import type { Project } from '@tapcue/shared';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { createEditorStore } from '../editorStore';
+import { createEditorStore, GROUP_QUIET_MS } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { EditorCanvas } from './EditorCanvas';
 
@@ -261,6 +261,70 @@ describe('EditorCanvas', () => {
       fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
       fireEvent.pointerUp(screen.getByTestId('selection-layer'));
       expect(store.getState().save).toEqual({ state: 'saved' });
+    });
+
+    describe('undo steps (spec ED-25)', () => {
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('makes a whole drag one step, even with a long pause in it', async () => {
+        const { store, overlay } = await renderCanvas();
+        vi.useFakeTimers();
+        const layer = screen.getByTestId('selection-layer');
+        fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 110, clientY: 100 });
+        act(() => void vi.advanceTimersByTime(GROUP_QUIET_MS * 3));
+        fireEvent.pointerMove(layer, { clientX: 130, clientY: 100 });
+        fireEvent.pointerUp(layer);
+        expect(store.getState().past).toHaveLength(1);
+        // The next drag is a step of its own, however soon it comes.
+        fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 100, clientY: 110 });
+        fireEvent.pointerUp(layer);
+        expect(store.getState().past).toHaveLength(2);
+        act(() => store.getState().undo());
+        expect(cardA(store).x).toBe(204);
+        act(() => store.getState().undo());
+        expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 560, height: 720 });
+      });
+
+      it('makes a resize one step', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        const handle = overlay('h_carda0').querySelector('[data-handle="se"]')!;
+        const layer = screen.getByTestId('selection-layer');
+        fireEvent.pointerDown(handle, { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 110, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 130, clientY: 90 });
+        fireEvent.pointerUp(layer);
+        expect(store.getState().past).toHaveLength(1);
+        act(() => store.getState().undo());
+        expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 560, height: 720 });
+      });
+
+      it('makes a series of nudges one step, and a series after a pause another', async () => {
+        const { store, overlay } = await renderCanvas();
+        vi.useFakeTimers();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        for (let i = 0; i < 3; i++) fireEvent.keyDown(window, { key: 'ArrowRight' });
+        expect(store.getState().past).toHaveLength(1);
+        act(() => void vi.advanceTimersByTime(GROUP_QUIET_MS + 1));
+        fireEvent.keyDown(window, { key: 'ArrowRight', shiftKey: true });
+        fireEvent.keyDown(window, { key: 'ArrowDown' });
+        expect(store.getState().past).toHaveLength(2);
+        act(() => store.getState().undo());
+        expect(box(cardA(store))).toEqual({ x: 147, y: 500, width: 560, height: 720 });
+      });
+
+      it('makes nudges of another selection another step', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        fireEvent.pointerDown(overlay('h_cardb0'));
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        expect(store.getState().past).toHaveLength(2);
+      });
     });
 
     describe('arrow keys', () => {
