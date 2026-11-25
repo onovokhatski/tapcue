@@ -11,8 +11,8 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.7.0: several hotspots are selected, copied, aligned and styled together, and the
-> hotspot panel folds into one line per section ([changelog](CHANGELOG.md),
+> **Status:** v0.8.0: undo and redo in the editor, one step per drag, nudge series or field
+> ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
@@ -81,6 +81,8 @@ the commands.
   switched off without deleting them.
 - **Quick layout:** select several hotspots, move, copy them to another page, align, distribute
   and style them together; the editor's panels fold so the canvas has room.
+- **Undo and redo:** Cmd/Ctrl + Z and the top-bar buttons take back a drag, a delete or a typed
+  name in one step, on the editor and every open tablet.
 - **Targets:** where commands go — OSC over UDP, UDP or HTTP — with a log of every command sent.
 - **Stations:** an entry point per tablet with its own start page and idle return, opened by
   scanning its QR code.

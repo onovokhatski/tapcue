@@ -4,6 +4,35 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-11-25
+
+A wrong drag, delete or paste is one keystroke from undone. Milestone v0.8 (Undo and redo).
+
+### Added
+
+- **Undo and redo** in the editor: Cmd/Ctrl + Z undoes, Shift + Cmd/Ctrl + Z or Ctrl + Y redoes,
+  and Undo and Redo buttons sit in the top bar, with the shortcut in their tooltips. An undo is
+  saved like any change, so every open tablet follows it within a second. Up to 100 steps are
+  kept while the editor tab is open.
+- **One step per action:** a whole drag or resize on the canvas, a series of arrow nudges, or
+  typing into one field is one step; each switch, choice or button is a step of its own.
+- **Inside a text field** the shortcuts undo the typing, as the browser does, and leave the
+  project alone.
+
+### Changed
+
+- **A change from another editor clears the history**, and the top bar says "Changed in another
+  editor: undo starts here", so undo never overwrites someone else's work. Opening or importing a
+  project in this editor clears it without a notice.
+
+### Known limitations
+
+- The history is not kept when the editor tab is reloaded.
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: sequences (from 0.5.0), faders (from 0.3.0), the stand setup (from
+  0.1.0) and the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
 ## [0.7.0] - 2026-11-24
 
 The editor gets out of the way on a busy stand. Several hotspots are selected, copied to another
