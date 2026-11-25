@@ -3,7 +3,7 @@ import { errorOf } from '../test/errors';
 import { docExample } from '../test/format-doc';
 import { Canvas } from './canvas';
 import { Action, activeSteps, backgroundSource, Hotspot, Page } from './pages';
-import { DEFAULT_WEB_PAGE_SECONDS, Project, webPageSeconds } from './project';
+import { DEFAULT_WEB_PAGE_SECONDS, pageTransition, Project, webPageSeconds } from './project';
 import { Station } from './stations';
 import { Target } from './targets';
 
@@ -416,6 +416,12 @@ describe('Hotspot', () => {
   });
 });
 
+describe('press effects (spec HS-5, ADR 0025)', () => {
+  it.each(['none', 'highlight', 'press', 'ripple', 'pop', 'glow'])('accepts %s', (pressEffect) => {
+    expect(errorOf(Hotspot, { ...hotspot, pressEffect })).toBeNull();
+  });
+});
+
 describe('Page', () => {
   const page = { id: 'p_h8x2kq', name: 'Home', background: null, hotspots: [hotspot] };
 
@@ -529,6 +535,20 @@ describe('Station', () => {
   it.each([3, 3601, 7.5])('rejects an idle timeout of %s', (idleTimeoutSeconds) => {
     expect(errorOf(Station, { ...station, idleTimeoutSeconds })).toContain('idleTimeoutSeconds');
   });
+
+  it('invites taps while idle when it says so, and is off without the field (spec ST-7)', () => {
+    expect(errorOf(Station, { ...station, inviteTaps: true })).toBeNull();
+    expect(errorOf(Station, station)).toBeNull();
+  });
+
+  it.each([false, 'yes', 1])(
+    'refuses inviteTaps: %j, since off is written as no field',
+    (value) => {
+      expect(errorOf(Station, { ...station, inviteTaps: value })).toBe(
+        'inviteTaps: Expected true, or no field for off',
+      );
+    },
+  );
 });
 
 describe('Project', () => {
@@ -544,6 +564,22 @@ describe('Project', () => {
     expect(errorOf(Project, { ...project, pages: [] })).toBe(
       'pages: A project needs at least one page',
     );
+  });
+
+  describe('page transition (spec PG-4, ADR 0025)', () => {
+    it.each(['fade', 'slide', 'zoom', 'none'])('accepts %s', (transition) => {
+      expect(errorOf(Project, { ...project, transition })).toBeNull();
+    });
+
+    it.each(['wipe', 'Slide', ''])('refuses %j', (transition) => {
+      expect(errorOf(Project, { ...project, transition })).toContain('transition: ');
+    });
+
+    it('is a fade when the project does not say, as in every project before 0.10', () => {
+      const parsed = Project.parse(project);
+      expect(pageTransition(parsed)).toBe('fade');
+      expect(pageTransition({ ...parsed, transition: 'slide' })).toBe('slide');
+    });
   });
 
   describe('web page time (spec PG-10)', () => {

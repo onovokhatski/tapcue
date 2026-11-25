@@ -11,6 +11,10 @@ const RELEASE_MS: Record<PressEffect, number> = {
   highlight: 160,
   press: 120,
   ripple: 0,
+  // Pop and glow are drawn by the player from v0.10's player work (issue #273); until then they
+  // show nothing, so nothing waits for them.
+  pop: 0,
+  glow: 0,
 };
 
 export function releaseDelay(effect: PressEffect): number {
