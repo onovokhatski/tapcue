@@ -1,7 +1,7 @@
 import type { Canvas, Hotspot, Page } from '@tapcue/shared';
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PageView, WEB_READY_LIMIT_MS } from './PageView';
+import { PageView, PREVIEW_PIXEL_RATIO, WEB_READY_LIMIT_MS } from './PageView';
 
 const canvas: Canvas = { width: 2048, height: 1536, scaleMode: 'fit', backgroundColor: '#102030' };
 
@@ -349,6 +349,22 @@ describe('PageView', () => {
       unmount();
       view.dispatchEvent(new Event('pointerdown'));
       expect(onActivity).not.toHaveBeenCalled();
+    });
+
+    it('takes no click or focus in the editor, which passes inertWeb (ADR 0024)', () => {
+      const { frame } = renderWeb(online);
+      expect(frame.style.pointerEvents).toBe('');
+      expect(frame).not.toHaveAttribute('tabindex');
+      stubViewport(1024, 768);
+      const { container } = render(<PageView page={online} canvas={canvas} inertWeb />, {
+        container: document.body.appendChild(document.createElement('div')),
+      });
+      const inert = container.querySelector('iframe')!;
+      expect(inert.style.pointerEvents).toBe('none');
+      expect(inert).toHaveAttribute('tabindex', '-1');
+      // Laid out at the tablet's size, 1024 × 768 for this canvas, and shrunk to the 0.5 preview.
+      expect(inert).toHaveStyle({ width: '1024px', height: '768px', transform: 'scale(1)' });
+      expect(PREVIEW_PIXEL_RATIO).toBe(2);
     });
 
     it("cannot hear an online site's touches, and is ready all the same", () => {

@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { checkFile, MAX_UPLOAD_BYTES, UploadCancelled, uploadAsset } from './uploadAsset';
+import {
+  checkFile,
+  checkSiteFile,
+  MAX_UPLOAD_BYTES,
+  UploadCancelled,
+  uploadAsset,
+  uploadSite,
+} from './uploadAsset';
 
 describe('checkFile', () => {
   it.each([
@@ -128,5 +135,45 @@ describe('uploadAsset', () => {
     const { upload } = start();
     upload.cancel();
     await expect(upload.done).rejects.toBeInstanceOf(UploadCancelled);
+  });
+});
+
+describe('checkSiteFile (spec PG-7)', () => {
+  it('takes a .zip up to 200 MB, whatever case its extension has', () => {
+    expect(checkSiteFile({ name: 'catalog.zip', size: 1000 })).toBeNull();
+    expect(checkSiteFile({ name: 'CATALOG.ZIP', size: MAX_UPLOAD_BYTES })).toBeNull();
+  });
+
+  it('refuses another file, or one over 200 MB, naming it', () => {
+    expect(checkSiteFile({ name: 'catalog.rar', size: 1000 })).toBe(
+      'catalog.rar is not a .zip file.',
+    );
+    expect(checkSiteFile({ name: 'big.zip', size: MAX_UPLOAD_BYTES + 1024 * 1024 })).toBe(
+      'big.zip is 201 MB. The limit is 200 MB.',
+    );
+  });
+});
+
+describe('uploadSite (spec PG-7)', () => {
+  it('posts the .zip to /api/sites and resolves with the site folder', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    const upload = uploadSite(
+      new File(['zip'], 'catalog.zip', { type: 'application/zip' }),
+      () => {},
+    );
+    const xhr = FakeXhr.last;
+    expect([xhr.method, xhr.url]).toEqual(['POST', '/api/sites']);
+    xhr.respond(201, { site: 'assets/sites/catalog-3f9a1c2b' });
+    await expect(upload.done).resolves.toEqual({ site: 'assets/sites/catalog-3f9a1c2b' });
+  });
+
+  it('names a .zip the system gave no type, as the server expects one', () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    uploadSite(new File(['zip'], 'catalog.zip'), () => {});
+    expect(((FakeXhr.last.body as FormData).get('file') as File).type).toBe('application/zip');
+    uploadSite(new File(['zip'], 'a.zip', { type: 'application/x-zip-compressed' }), () => {});
+    expect(((FakeXhr.last.body as FormData).get('file') as File).type).toBe(
+      'application/x-zip-compressed',
+    );
   });
 });

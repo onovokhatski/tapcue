@@ -20,7 +20,10 @@ async function renderTab(demo = false) {
       <SettingsTab />
     </EditorStoreContext>,
   );
-  return { canvas: () => store.getState().project!.canvas };
+  return {
+    canvas: () => store.getState().project!.canvas,
+    project: () => store.getState().project!,
+  };
 }
 
 const type = (name: string, value: string) =>
@@ -107,6 +110,31 @@ describe('SettingsTab (spec CNV-1, CNV-2, ED-10)', () => {
     );
     expect(screen.getByText('The 2560 × 1600 page is 8:5.')).toBeInTheDocument();
   });
+});
+
+describe('web page time (spec PG-10)', () => {
+  it('shows the default of 180 s for a project that sets none', async () => {
+    await renderTab();
+    const card = screen.getByRole('region', { name: 'Web pages' });
+    expect(within(card).getByRole('textbox', { name: 'Web page time' })).toHaveValue('180');
+    expect(card).toHaveTextContent('For an online site it counts from opening the page');
+  });
+
+  it('sets the time as it is typed', async () => {
+    const { project } = await renderTab();
+    type('Web page time', '45');
+    expect(project().webPageSeconds).toBe(45);
+  });
+
+  it.each(['9', '3601', '1.5', 'abc'])(
+    'refuses %s with the range, and changes nothing',
+    async (text) => {
+      const { project } = await renderTab();
+      type('Web page time', text);
+      expect(screen.getByText('Expected 10 to 3600 seconds')).toBeInTheDocument();
+      expect(project().webPageSeconds).toBeUndefined();
+    },
+  );
 });
 
 describe('SettingsTab in demo mode (spec DEMO-3, frame G4)', () => {

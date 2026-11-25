@@ -1,15 +1,18 @@
-// The properties panel of the selected page: its name, its background (upload, replace, remove),
-// its hotspots and the stations that start on it (spec PG-1, PG-2, PG-6; design: pageProps()).
-import { backgroundSource, type Page, type PageId, type Project } from '@tapcue/shared';
+// The properties panel of the selected page: its name, its background (an uploaded image or video,
+// or a web page; replace, remove), its hotspots and the stations that start on it (spec PG-1, PG-2,
+// PG-6, PG-7; design: pageProps()).
+import type { Page, PageId, Project } from '@tapcue/shared';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { checkFile, type Upload, UploadCancelled, uploadAsset } from '../../lib/uploadAsset';
 import { assetUrl } from '../../stage/assetUrl';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { Segmented } from '../../ui/Segmented';
 import { TextField } from '../../ui/TextField';
 import { renamePage, setBackground } from '../operations/pages';
 import { FileRow } from './FileRow';
+import { WebBackgroundChooser, WebBackgroundRow } from './WebBackground';
 import { useEditor } from '../useEditor';
 
 export function PagePanel() {
@@ -93,6 +96,10 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
   const offline = useEditor((state) => state.connection === 'closed');
   const [upload, setUpload] = useState<UploadState>({ state: 'idle' });
   const picker = useRef<HTMLInputElement>(null);
+  // What a page without a background gets: a file, or a web page (spec PG-7).
+  const [kind, setKind] = useState<'file' | 'web'>('file');
+  // The page whose web background is being replaced, so the choice shows again.
+  const [replacing, setReplacing] = useState<PageId | null>(null);
 
   // An upload still running when the editor closes is cancelled, so nothing lands later.
   const running = upload.state === 'uploading' ? upload.upload : null;
@@ -166,12 +173,22 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
     </Banner>
   );
 
-  if (!page.background) {
+  const remove = () => change((project) => setBackground(project, page.id, null));
+
+  if (!page.background || replacing === page.id) {
     return (
       <>
         {input}
         {failed}
-        {demo ? (
+        <Segmented label="Background type" options={KINDS} value={kind} onChange={setKind} />
+        {kind === 'web' ? (
+          // Keyed by page: an answer or an upload in progress never lands on another page.
+          <WebBackgroundChooser
+            key={page.id}
+            pageId={page.id}
+            onChosen={() => setReplacing(null)}
+          />
+        ) : demo ? (
           <DemoDropzone />
         ) : (
           <Dropzone
@@ -182,26 +199,29 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
             onFile={start}
           />
         )}
+        {replacing === page.id && (
+          <Button
+            variant="ghost"
+            size="s"
+            label="Keep the current one"
+            onClick={() => setReplacing(null)}
+          />
+        )}
       </>
     );
   }
 
   const { background } = page;
   if (background.type === 'web') {
-    // Choosing a web background comes with issue #259; until then one from a hand-edited project
-    // is named and can be removed.
     return (
-      <>
-        {input}
-        {failed}
-        <p className="text-body-s text-secondary">Web page: {backgroundSource(background)}</p>
-        <Button
-          variant="ghost"
-          size="s"
-          label="Remove"
-          onClick={() => change((project) => setBackground(project, page.id, null))}
-        />
-      </>
+      <WebBackgroundRow
+        background={background}
+        onReplace={() => {
+          setKind('web');
+          setReplacing(page.id);
+        }}
+        onRemove={remove}
+      />
     );
   }
   const src = assetUrl(background.asset);
@@ -240,18 +260,18 @@ function BackgroundSection({ page, canvas }: { page: Page; canvas: Project['canv
               title={demo ? 'Uploads are off in demo mode' : offline ? OFFLINE_UPLOADS : undefined}
               onClick={choose}
             />
-            <Button
-              variant="ghost"
-              size="s"
-              label="Remove"
-              onClick={() => change((project) => setBackground(project, page.id, null))}
-            />
+            <Button variant="ghost" size="s" label="Remove" onClick={remove} />
           </div>
         }
       />
     </>
   );
 }
+
+const KINDS: { value: 'file' | 'web'; label: string }[] = [
+  { value: 'file', label: 'Image or video' },
+  { value: 'web', label: 'Web page' },
+];
 
 const OFFLINE_UPLOADS = 'Uploads are paused until the connection to the server is back.';
 
