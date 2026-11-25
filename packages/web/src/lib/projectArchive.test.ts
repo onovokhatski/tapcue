@@ -6,7 +6,7 @@ describe('readArchive (spec PRJ-4)', () => {
   it('says what an exported project holds', async () => {
     expect(await readArchive(await demoZip())).toEqual({
       ok: true,
-      summary: { name: 'Demo stand', pages: 4, targets: 3, stations: 2 },
+      summary: { name: 'Demo stand', pages: 5, targets: 3, stations: 2 },
     });
   });
 

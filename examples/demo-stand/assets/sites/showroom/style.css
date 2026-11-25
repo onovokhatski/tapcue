@@ -1,0 +1,80 @@
+/* The demo stand's mini-site (spec PG-7): plain HTML and CSS, laid out for a 1024 px tablet. The
+   bottom-left corner stays clear for the stand's own "Back" hotspot. */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 56px 64px 160px;
+  font:
+    20px/1.5 -apple-system,
+    system-ui,
+    sans-serif;
+  color: #1c1b1a;
+  background: #f6efe6;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+header span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1c1b1a;
+}
+h1 {
+  margin: 40px 0 8px;
+  font:
+    600 56px/1.1 Georgia,
+    serif;
+}
+.lead {
+  margin: 0 0 40px;
+  color: #5c574f;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.card {
+  padding: 24px;
+  border-radius: 20px;
+  background: #fff;
+}
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+.card p {
+  margin: 0;
+  color: #5c574f;
+  font-size: 16px;
+}
+a.more {
+  display: inline-block;
+  margin-top: 40px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: #1c1b1a;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+}
+th,
+td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid #ece4d8;
+}

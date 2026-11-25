@@ -79,14 +79,17 @@ describe('POST /api/sites (spec PG-7)', () => {
     app = buildApp({ store, sites: { suffix: () => '3f9a1c2b', ...sites } });
     await app.listen({ port: 0, host: '127.0.0.1' });
     const base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
-    /** Everything in assets/sites/, uploads in progress included. */
-    const sitesFolder = async () => {
+    const everything = async () => {
       try {
         return (await readdir(join(dir, 'assets', 'sites'))).sort();
       } catch {
         return [];
       }
     };
+    // The demo stand has a site of its own (the showroom); only what an upload adds counts.
+    const before = await everything();
+    /** What is in assets/sites/ now and was not at the start, uploads in progress included. */
+    const sitesFolder = async () => (await everything()).filter((name) => !before.includes(name));
     return { dir, base, store, sitesFolder };
   }
 

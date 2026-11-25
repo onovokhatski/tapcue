@@ -11,12 +11,12 @@ const expectValid = (project: Project) =>
 describe('page operations (spec PG-1)', () => {
   describe('addPage', () => {
     it('adds an empty page at the end with a new id and the next free name', () => {
-      const before = demoProject(); // four pages
+      const before = demoProject(); // five pages
       const { project, pageId } = addPage(before);
       expect(ids(project)).toEqual([...ids(before), pageId]);
       expect(project.pages.at(-1)).toEqual({
         id: pageId,
-        name: 'Page 5',
+        name: 'Page 6',
         background: null,
         hotspots: [],
       });
@@ -62,25 +62,28 @@ describe('page operations (spec PG-1)', () => {
 
   describe('movePage', () => {
     it('moves a page down and up', () => {
-      const before = demoProject(); // home, proda, prodb, about
+      const before = demoProject(); // home, proda, prodb, about, showroom
       expect(ids(movePage(before, 'p_home00', 2))).toEqual([
         'p_proda0',
         'p_prodb0',
         'p_home00',
         'p_about0',
+        'p_shwrm0',
       ]);
       expect(ids(movePage(before, 'p_about0', 0))).toEqual([
         'p_about0',
         'p_home00',
         'p_proda0',
         'p_prodb0',
+        'p_shwrm0',
       ]);
     });
 
     it('clamps to the list, and keeps the project when nothing moves', () => {
       const before = demoProject();
       expect(ids(movePage(before, 'p_about0', 99)).at(-1)).toBe('p_about0');
-      expect(movePage(before, 'p_about0', 99)).toBe(before);
+      // The last page moved past the end stays where it is.
+      expect(movePage(before, 'p_shwrm0', 99)).toBe(before);
       expect(movePage(before, 'p_home00', -1)).toBe(before);
     });
   });

@@ -305,7 +305,7 @@ describe('editor shell', () => {
 
     it('keeps the full page list from 1440 px', async () => {
       renderAt('/edit/pages');
-      expect(await screen.findByRole('heading', { name: 'Pages 4' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Pages 5' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Show page list' })).toBeNull();
     });
   });

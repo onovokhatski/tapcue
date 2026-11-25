@@ -51,7 +51,7 @@ test('an exported project, imported again after a change, runs in the player as 
   await editor.getByTestId('import-file').setInputFiles(exported);
   const dialog = editor.getByRole('dialog', { name: 'Replace the current project?' });
   await expect(dialog).toContainText(
-    'has 4 pages, 3 targets and 2 stations. Everything in “Changed stand” will be replaced',
+    'has 5 pages, 3 targets and 2 stations. Everything in “Changed stand” will be replaced',
   );
   await dialog.getByRole('button', { name: 'Replace project' }).click();
 

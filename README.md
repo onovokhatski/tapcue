@@ -70,6 +70,9 @@ the commands.
 
 - **Pages** with image or looping video backgrounds, `fit` or `fill` scaling, and a safe-area
   overlay that shows what a 16:10 or 16:9 screen crops.
+- **Web pages as backgrounds:** a live site, checked in the editor for whether it may be shown
+  inside another page, or a mini-site uploaded as a `.zip` that works without internet. Visitors
+  scroll and tap the site; hotspots on top lead back to the stand's own pages.
 - **Hotspots:** rectangles and ellipses, invisible or styled, with press effects; each one opens
   a page, sends a command, or both. "Send test" fires a command from the editor.
 - **Hotspot content:** a frosted-glass backdrop, a translucent fill, an image and a text label,

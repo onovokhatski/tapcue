@@ -49,9 +49,13 @@ async function snapshot(dir: string) {
   const files: Record<string, unknown> = {};
   // Parsed: a save writes the same project with its own formatting.
   files['project.json'] = JSON.parse(await readFile(join(dir, 'project.json'), 'utf8'));
-  for (const name of (await readdir(join(dir, 'assets'))).sort()) {
-    files[`assets/${name}`] = await hash(join(dir, 'assets', name));
-  }
+  // Every file, mini-sites' included (project format §9.4).
+  const entries = await readdir(join(dir, 'assets'), { recursive: true, withFileTypes: true });
+  const names = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name).slice(join(dir, 'assets').length + 1))
+    .sort();
+  for (const name of names) files[`assets/${name}`] = await hash(join(dir, 'assets', name));
   return { files, all: (await readdir(dir)).sort() };
 }
 
@@ -118,6 +122,9 @@ describe('GET /api/project/export (spec PRJ-3)', () => {
       'assets/home.jpg',
       'assets/product-a.jpg',
       'assets/product-b.jpg',
+      'assets/sites/showroom/index.html',
+      'assets/sites/showroom/speakers.html',
+      'assets/sites/showroom/style.css',
     ]);
     expect(JSON.parse(files['project.json']!.toString('utf8'))).toEqual(store.project);
     expect(files['assets/home.jpg']).toEqual(await readFile(join(dir, 'assets', 'home.jpg')));
@@ -157,6 +164,10 @@ describe('mini-sites in an archive (project format §9.4)', () => {
     expect(Object.keys(files).filter((name) => name.startsWith('assets/sites/'))).toEqual([
       'assets/sites/catalog/img/a.png',
       'assets/sites/catalog/index.html',
+      // The demo stand's own showroom (spec PG-7).
+      'assets/sites/showroom/index.html',
+      'assets/sites/showroom/speakers.html',
+      'assets/sites/showroom/style.css',
     ]);
     expect(files['assets/sites/catalog/index.html']!.toString()).toBe('<h1>Catalog</h1>');
   });
@@ -321,15 +332,19 @@ describe('POST /api/project/import (spec PRJ-4)', () => {
       JSON.parse(await readFile(join(DEFAULT_PROJECT_DIR, 'project.json'), 'utf8')) as {
         name: string;
       };
-    const demoAssets = async (): Promise<[string, Buffer][]> =>
-      Promise.all(
-        (await readdir(join(DEFAULT_PROJECT_DIR, 'assets'))).map(
-          async (name): Promise<[string, Buffer]> => [
-            `assets/${name}`,
-            await readFile(join(DEFAULT_PROJECT_DIR, 'assets', name)),
-          ],
-        ),
+    /** The demo stand's assets, mini-site files included, as an archive names them. */
+    const demoAssets = async (): Promise<[string, Buffer][]> => {
+      const assets = join(DEFAULT_PROJECT_DIR, 'assets');
+      const entries = await readdir(assets, { recursive: true, withFileTypes: true });
+      return Promise.all(
+        entries
+          .filter((entry) => entry.isFile())
+          .map(async (entry): Promise<[string, Buffer]> => {
+            const path = join(entry.parentPath, entry.name);
+            return [`assets/${path.slice(assets.length + 1)}`, await readFile(path)];
+          }),
       );
+    };
 
     it('without project.json', async () => {
       await expectRefused(await makeZip(await demoAssets()), 400, {

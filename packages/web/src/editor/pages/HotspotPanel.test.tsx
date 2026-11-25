@@ -604,6 +604,7 @@ describe('HotspotPanel', () => {
           'Product A',
           'Product B',
           'About us',
+          'Showroom',
         ]);
         fireEvent.change(page, { target: { value: 'p_about0' } });
         expect(cardA().action.goTo).toBe('p_about0');
