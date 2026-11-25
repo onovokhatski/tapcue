@@ -10,6 +10,10 @@ import { Name } from './values';
 /** Version 2 since v0.5: an action's `command` became `commands` (ADR 0022, upgrade.ts). */
 export const SCHEMA_VERSION = 2;
 
+/** How every page change looks (spec PG-4, ADR 0025); fade when the project does not say. */
+export const Transition = z.enum(['fade', 'slide', 'zoom', 'none']);
+export type Transition = z.infer<typeof Transition>;
+
 /** How long a page with a web background stays when the project does not say (spec PG-10). */
 export const DEFAULT_WEB_PAGE_SECONDS = 180;
 
@@ -29,8 +33,12 @@ export const Project = z.strictObject({
     .min(10, 'Expected 10 to 3600 seconds')
     .max(3600, 'Expected 10 to 3600 seconds')
     .optional(),
+  transition: Transition.optional(),
 });
 export type Project = z.infer<typeof Project>;
+
+/** The project's page transition, fade when it has none. */
+export const pageTransition = (project: Project): Transition => project.transition ?? 'fade';
 
 /** The project's web page time, or the default when it has none. */
 export const webPageSeconds = (project: Project) =>

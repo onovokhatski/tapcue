@@ -398,6 +398,11 @@ describe('validateProject', () => {
         [{ path: `${at}.pressEffect`, message: 'a fader has no press effect' }],
       ],
       [
+        'a pop or glow, the new press effects (ADR 0025)',
+        (p) => (fader(p).pressEffect = 'glow'),
+        [{ path: `${at}.pressEffect`, message: 'a fader has no press effect' }],
+      ],
+      [
         'UDP text without {value}',
         (p) =>
           (fader(p).action.commands[0]!.command = {

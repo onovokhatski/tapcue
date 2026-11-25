@@ -90,7 +90,8 @@ export const FaderSettings = z.strictObject({
 });
 export type FaderSettings = z.infer<typeof FaderSettings>;
 
-export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple']);
+/** What a tap looks like (spec HS-5); pop and glow since v0.10 (ADR 0025). */
+export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple', 'pop', 'glow']);
 export type PressEffect = z.infer<typeof PressEffect>;
 
 /** At most this many commands per tap, and this long a pause before one (ADR 0022). */
