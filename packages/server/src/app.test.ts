@@ -295,6 +295,7 @@ describe('buildApp', () => {
     it.each([
       ['PUT', '/api/project'],
       ['POST', '/api/assets'],
+      ['POST', '/api/sites'],
       ['POST', '/api/project/import'],
     ] as const)('refuses %s %s with 403 and writes nothing', async (method, url) => {
       const { app, copy, dir } = await demoApp();

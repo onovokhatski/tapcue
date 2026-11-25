@@ -134,6 +134,87 @@ describe('GET /api/project/export (spec PRJ-3)', () => {
   });
 });
 
+describe('mini-sites in an archive (project format §9.4)', () => {
+  /** A project whose Home page shows a mini-site with a nested file. */
+  async function withSite() {
+    const source = await start();
+    await mkdir(join(source.dir, 'assets/sites/catalog/img'), { recursive: true });
+    await writeFile(join(source.dir, 'assets/sites/catalog/index.html'), '<h1>Catalog</h1>');
+    await writeFile(join(source.dir, 'assets/sites/catalog/img/a.png'), 'png');
+    // An upload in progress is no site, and is never exported.
+    await mkdir(join(source.dir, 'assets/sites/.upload-x'));
+    await writeFile(join(source.dir, 'assets/sites/.upload-x/upload.zip'), 'zip');
+    const [home, ...rest] = source.store.project.pages;
+    const page = { ...home!, background: { type: 'web' as const, site: 'assets/sites/catalog' } };
+    const saved = await source.store.save({ ...source.store.project, pages: [page, ...rest] });
+    expect(saved.ok).toBe(true);
+    return source;
+  }
+
+  it('exports every file of every mini-site, and nothing else under sites/', async () => {
+    const source = await withSite();
+    const files = await unzip(await exportZip(source.app));
+    expect(Object.keys(files).filter((name) => name.startsWith('assets/sites/'))).toEqual([
+      'assets/sites/catalog/img/a.png',
+      'assets/sites/catalog/index.html',
+    ]);
+    expect(files['assets/sites/catalog/index.html']!.toString()).toBe('<h1>Catalog</h1>');
+  });
+
+  it('imports them again, so the site is served by the other server', async () => {
+    const source = await withSite();
+    const target = await start();
+    const response = await importZip(target.app, await exportZip(source.app));
+    expect(response.statusCode).toBe(200);
+    expect(target.store.project.pages[0]!.background).toEqual({
+      type: 'web',
+      site: 'assets/sites/catalog',
+    });
+    const served = await target.app.inject({
+      method: 'GET',
+      url: '/assets/sites/catalog/img/a.png',
+    });
+    expect(served.statusCode).toBe(200);
+    expect(served.body).toBe('png');
+  });
+
+  it('imports folder entries of a site, as zip tools write them', async () => {
+    const source = await withSite();
+    const files = await unzip(await exportZip(source.app));
+    const zip = await makeZip([
+      ['assets/sites/', ''],
+      ['assets/sites/catalog/', ''],
+      ['assets/sites/catalog/img/', ''],
+      ...Object.entries(files),
+    ]);
+    const target = await start();
+    expect((await importZip(target.app, zip)).statusCode).toBe(200);
+  });
+
+  it.each([
+    ['a folder name the format does not allow', 'assets/sites/my.site/index.html'],
+    ['a file directly in sites/', 'assets/sites/index.html'],
+    ['an empty part', 'assets/sites/catalog//index.html'],
+  ])('refuses %s', async (_, name) => {
+    const target = await start();
+    const zip = await makeZip([
+      ['project.json', JSON.stringify(target.store.project)],
+      [name, 'x'],
+    ]);
+    const response = await importZip(target.app, zip);
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      errors: [
+        {
+          path: name,
+          message:
+            'only project.json, files in assets/ and mini-sites in assets/sites/ can be imported',
+        },
+      ],
+    });
+  });
+});
+
 describe('POST /api/project/import (spec PRJ-4)', () => {
   it('replaces the project and its files with the exported ones', async () => {
     const source = await start();
@@ -261,7 +342,8 @@ describe('POST /api/project/import (spec PRJ-4)', () => {
         errors: [
           {
             path: 'demo-stand/project.json',
-            message: 'only project.json and files in assets/ can be imported',
+            message:
+              'only project.json, files in assets/ and mini-sites in assets/sites/ can be imported',
           },
         ],
       });
@@ -327,7 +409,8 @@ describe('POST /api/project/import (spec PRJ-4)', () => {
           errors: [
             {
               path: 'notes.txt',
-              message: 'only project.json and files in assets/ can be imported',
+              message:
+                'only project.json, files in assets/ and mini-sites in assets/sites/ can be imported',
             },
           ],
         },

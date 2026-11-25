@@ -15,6 +15,7 @@ import { type ArchiveOptions, registerArchive } from './project/archive';
 import type { Library } from './project/library';
 import { registerLibraryRoutes } from './project/libraryRoutes';
 import type { ProjectStore } from './project/store';
+import { registerSites, type SiteOptions } from './project/sites';
 import { registerUpload, type UploadOptions } from './project/upload';
 import { type LocalAddress, registerNetwork } from './network';
 import { registerHub } from './realtime/hub';
@@ -32,6 +33,8 @@ export interface AppOptions {
   addresses?: () => LocalAddress[];
   /** Upload settings for tests: a small size limit, a fixed file name suffix. */
   upload?: Omit<UploadOptions, 'dir'>;
+  /** Mini-site settings for tests: small size limits, a fixed folder name suffix. */
+  sites?: Omit<SiteOptions, 'dir'>;
   /** Import settings for tests: a small size limit. */
   archive?: Pick<ArchiveOptions, 'maxBytes'>;
   /** The web app's production build (packages/web/dist); left out, only the API is served. */
@@ -49,6 +52,7 @@ export interface AppOptions {
 const DEMO_REFUSED = new Set([
   'PUT /api/project',
   'POST /api/assets',
+  'POST /api/sites',
   'POST /api/project/import',
   'POST /api/projects',
   'POST /api/projects/:id/open',
@@ -64,6 +68,7 @@ export function buildApp({
   logger = false,
   drivers,
   upload = {},
+  sites = {},
   addresses,
   archive = {},
   webDir,
@@ -101,14 +106,15 @@ export function buildApp({
     });
   }
 
-  // Images and videos of the active project, looked up on each request: another project may have
-  // been opened since the start (ADR 0021). @fastify/static answers Range requests (Safari needs
+  // Images, videos and mini-sites (assets/sites/) of the active project, looked up on each request:
+  // another project may have been opened since the start (ADR 0021). @fastify/static answers Range requests (Safari needs
   // them to play video) and refuses paths that leave the assets folder.
   void app.register(fastifyStatic, { root: join(store.dir, 'assets'), serve: false });
   app.get<{ Params: { '*': string } }>('/assets/*', (request, reply) =>
     reply.sendFile(request.params['*'], join(store.dir, 'assets')),
   );
   registerUpload(app, { dir: () => store.dir, ...upload });
+  registerSites(app, { dir: () => store.dir, ...sites });
   registerNetwork(app, addresses);
 
   // Taps from players → commands to targets, and the log of what was sent (architecture §5.3).

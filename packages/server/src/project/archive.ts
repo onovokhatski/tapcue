@@ -4,13 +4,14 @@
 // directory, which stays reliable for any file content, unlike reading a zip as a stream.
 import { createWriteStream } from 'node:fs';
 import { mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { AssetPath, type ValidationError } from '@tapcue/shared';
 import type { FastifyInstance } from 'fastify';
 import yauzl from 'yauzl';
 import yazl from 'yazl';
+import { isSiteEntry, nextEntry, siteFiles } from './sites';
 import { PROJECT_FILE, type ProjectStore } from './store';
 
 /** 2 GB: room for many 200 MB videos (spec PG-6), and a stop for archives that unpack forever. */
@@ -64,13 +65,20 @@ export function registerArchive(
   });
 }
 
-/** project.json as it is in memory, and every file in assets/ that the project format can name. */
+/**
+ * project.json as it is in memory, every file in assets/ that the project format can name, and
+ * every file of its mini-sites (format §9.4).
+ */
 export async function exportArchive(store: ProjectStore): Promise<Readable> {
   const zip = new yazl.ZipFile();
   zip.addBuffer(Buffer.from(`${JSON.stringify(store.project, null, 2)}\n`), PROJECT_FILE);
   for (const name of await assetFiles(store.dir)) {
     // Images and videos are compressed already; storing them as they are is faster.
     zip.addFile(join(store.dir, 'assets', name), `assets/${name}`, { compress: false });
+  }
+  // A site's HTML, scripts and styles are text, which compresses well.
+  for (const name of await siteFiles(store.dir)) {
+    zip.addFile(join(store.dir, 'assets', name), `assets/${name}`);
   }
   zip.end();
   return zip.outputStream as Readable;
@@ -122,8 +130,9 @@ async function saveUpload(body: Readable, file: string, maxBytes: number): Promi
 }
 
 /**
- * Unpacks an archive into `target`, or says why it cannot be imported: only project.json and files
- * in assets/ with names the project format allows, each once, at most `maxBytes` unpacked.
+ * Unpacks an archive into `target`, or says why it cannot be imported: only project.json, files in
+ * assets/ with names the project format allows and the files of mini-sites, each once, at most
+ * `maxBytes` unpacked.
  */
 export async function extractArchive(
   file: string,
@@ -143,14 +152,22 @@ export async function extractArchive(
     for (let entry = await nextEntry(zip); entry; entry = await nextEntry(zip)) {
       const name = entry.fileName;
       if (name === 'assets/') continue; // the folder itself
-      if (name !== PROJECT_FILE && !AssetPath.safeParse(name).success) {
-        return { path: name, message: 'only project.json and files in assets/ can be imported' };
+      const site = isSiteEntry(name);
+      if (name !== PROJECT_FILE && !AssetPath.safeParse(name).success && !site) {
+        return {
+          path: name,
+          message:
+            'only project.json, files in assets/ and mini-sites in assets/sites/ can be imported',
+        };
       }
       if (seen.has(name)) return { path: name, message: 'is in the archive twice' };
       seen.add(name);
+      if (name.endsWith('/')) continue; // a folder of a site, made with its files
       bytes += entry.uncompressedSize;
       if (bytes > maxBytes) return { path: 'archive', message: tooLarge(maxBytes) };
-      await pipeline(await zip.openReadStreamPromise(entry), createWriteStream(join(target, name)));
+      const path = join(target, name);
+      if (site) await mkdir(dirname(path), { recursive: true });
+      await pipeline(await zip.openReadStreamPromise(entry), createWriteStream(path));
     }
     if (!seen.has(PROJECT_FILE)) {
       return { path: PROJECT_FILE, message: 'the archive has no project.json at its root' };
@@ -162,21 +179,6 @@ export async function extractArchive(
   } finally {
     zip.close();
   }
-}
-
-/** The next entry of an archive opened with `lazyEntries`, or null after the last one. */
-function nextEntry(zip: yauzl.ZipFile): Promise<yauzl.Entry | null> {
-  return new Promise((resolve, reject) => {
-    const settle = (fn: () => void) => {
-      zip.off('entry', onEntry).off('end', onEnd).off('error', onError);
-      fn();
-    };
-    const onEntry = (entry: yauzl.Entry) => settle(() => resolve(entry));
-    const onEnd = () => settle(() => resolve(null));
-    const onError = (error: Error) => settle(() => reject(error));
-    zip.on('entry', onEntry).on('end', onEnd).on('error', onError);
-    zip.readEntry();
-  });
 }
 
 const tooLarge = (maxBytes: number) =>
