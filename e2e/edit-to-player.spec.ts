@@ -67,6 +67,28 @@ test('a hotspot moved in the editor moves on the open player within a second', a
   await expect(player.locator('[data-layer="shown"]')).toHaveAttribute('data-page', 'p_home00');
 });
 
+test('a move undone in the editor goes back on the open player, and redo moves it again (spec ED-24, ED-26)', async ({
+  page,
+}) => {
+  const { player, editor } = await playerAndEditor(page);
+  const card = player.locator('[data-layer="shown"] [data-hotspot="h_carda0"]');
+  await expect(card).toHaveCSS('left', '144px');
+
+  await editor
+    .getByRole('region', { name: 'Canvas' })
+    .getByRole('button', { name: 'Product A card' })
+    .click();
+  await editor.keyboard.press('Shift+ArrowRight');
+  await expect(card).toHaveCSS('left', '154px', { timeout: FOLLOW_WITHIN_MS });
+
+  await editor.keyboard.press('ControlOrMeta+z');
+  await expect(card).toHaveCSS('left', '144px', { timeout: FOLLOW_WITHIN_MS });
+
+  await editor.getByRole('banner').getByRole('button', { name: 'Redo' }).click();
+  await expect(card).toHaveCSS('left', '154px', { timeout: FOLLOW_WITHIN_MS });
+  await expect(editor.getByRole('banner').getByRole('button', { name: 'Redo' })).toBeDisabled();
+});
+
 test('three hotspots selected on the canvas move together on the open player (spec ED-16)', async ({
   page,
 }) => {
