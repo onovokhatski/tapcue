@@ -7,6 +7,11 @@ describe('releaseDelay (spec ACT-2)', () => {
     expect(releaseDelay('press')).toBe(120);
   });
 
+  it('waits for pop to settle back (240 ms) and glow to fade (160 ms)', () => {
+    expect(releaseDelay('pop')).toBe(240);
+    expect(releaseDelay('glow')).toBe(160);
+  });
+
   it('never delays a page change for a ripple or no effect', () => {
     expect(releaseDelay('ripple')).toBe(0);
     expect(releaseDelay('none')).toBe(0);
