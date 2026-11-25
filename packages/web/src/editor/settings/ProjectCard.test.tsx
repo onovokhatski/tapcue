@@ -72,7 +72,7 @@ describe('ProjectCard (spec PRJ-3, PRJ-4)', () => {
     await choose(await demoZip('backup-1027.zip'));
     const dialog = screen.getByRole('dialog', { name: 'Replace the current project?' });
     expect(dialog).toHaveTextContent(
-      'backup-1027.zip has 4 pages, 3 targets and 2 stations. Everything in “Demo stand” will be replaced, including background files.',
+      'backup-1027.zip has 5 pages, 3 targets and 2 stations. Everything in “Demo stand” will be replaced, including background files.',
     );
     expect(dialog).toHaveTextContent('Export first if you may need the current version.');
   });

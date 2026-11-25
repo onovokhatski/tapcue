@@ -649,7 +649,12 @@ describe('EditorCanvas', () => {
       );
       show(store, 'p_about0');
       fireEvent.keyDown(window, { key: 'V', ctrlKey: true });
-      expect(names(store, 'p_about0')).toEqual(['Back', 'Product A card', 'Call our team']);
+      expect(names(store, 'p_about0')).toEqual([
+        'Back',
+        'Visit the showroom',
+        'Product A card',
+        'Call our team',
+      ]);
       expect(store.getState().selection.hotspotIds).toHaveLength(2);
     });
 

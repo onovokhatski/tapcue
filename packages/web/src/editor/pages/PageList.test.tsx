@@ -40,13 +40,14 @@ describe('PageList (spec PG-1)', () => {
 
   it('lists the pages in order with their count, thumbnails and meta', async () => {
     const { row } = await renderList();
-    expect(screen.getByRole('heading', { name: 'Pages 4' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pages 5' })).toBeInTheDocument();
     const items = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(items.map((li) => li.querySelector('.text-label-m')?.textContent)).toEqual([
       'Home',
       'Product A',
       'Product B',
       'About us',
+      'Showroom',
     ]);
     expect(row('Home')).toHaveTextContent('5 hotspots · Image · Start');
     expect(row('Home').querySelector('img')).toHaveAttribute('src', '/assets/home.jpg');
@@ -66,7 +67,7 @@ describe('PageList (spec PG-1)', () => {
   it('adds a page at the end and selects it', async () => {
     const { state, names } = await renderList();
     fireEvent.click(screen.getByRole('button', { name: 'Add page' }));
-    expect(names().at(-1)).toBe('Page 5');
+    expect(names().at(-1)).toBe('Page 6');
     expect(state().selection.pageId).toBe(state().project!.pages.at(-1)!.id);
     expect(state().save).toEqual({ state: 'saving' });
   });
@@ -106,12 +107,12 @@ describe('PageList (spec PG-1)', () => {
       const { names } = await renderList();
       const grip = screen.getByRole('button', { name: 'Reorder Home' });
       fireEvent.keyDown(grip, { key: 'ArrowDown', altKey: true });
-      expect(names()).toEqual(['Product A', 'Home', 'Product B', 'About us']);
+      expect(names()).toEqual(['Product A', 'Home', 'Product B', 'About us', 'Showroom']);
       fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder Home' }), {
         key: 'ArrowUp',
         altKey: true,
       });
-      expect(names()).toEqual(['Home', 'Product A', 'Product B', 'About us']);
+      expect(names()).toEqual(['Home', 'Product A', 'Product B', 'About us', 'Showroom']);
     });
 
     it('ignores the arrows without Alt', async () => {
@@ -129,17 +130,17 @@ describe('PageList (spec PG-1)', () => {
       expect(row('Product B').querySelector('[data-drop-line]')).toBeNull();
       expect(row('About us').querySelector('[data-drop-line="top"]')).toBeInTheDocument();
       fireEvent.drop(row('Product B'));
-      expect(names()).toEqual(['Product A', 'Product B', 'Home', 'About us']);
+      expect(names()).toEqual(['Product A', 'Product B', 'Home', 'About us', 'Showroom']);
       expect(document.querySelector('[data-drop-line]')).toBeNull();
     });
 
     it('drops at the end when dragged below the last page', async () => {
       const { names, row } = await renderList();
       fireEvent.dragStart(row('Home'));
-      fireEvent.dragOver(row('About us'), { clientY: 10 });
-      expect(row('About us').querySelector('[data-drop-line="bottom"]')).toBeInTheDocument();
-      fireEvent.drop(row('About us'));
-      expect(names()).toEqual(['Product A', 'Product B', 'About us', 'Home']);
+      fireEvent.dragOver(row('Showroom'), { clientY: 10 });
+      expect(row('Showroom').querySelector('[data-drop-line="bottom"]')).toBeInTheDocument();
+      fireEvent.drop(row('Showroom'));
+      expect(names()).toEqual(['Product A', 'Product B', 'About us', 'Showroom', 'Home']);
     });
   });
 
@@ -163,7 +164,7 @@ describe('PageList (spec PG-1)', () => {
       fireEvent.click(screen.getByText('Product B'));
       fireEvent.click(screen.getByRole('button', { name: 'Delete page Product B' }));
       fireEvent.click(screen.getByRole('button', { name: 'Delete page' }));
-      expect(names()).toEqual(['Home', 'Product A', 'About us']);
+      expect(names()).toEqual(['Home', 'Product A', 'About us', 'Showroom']);
       expect(state().selection.pageId).toBe('p_home00');
       expect(screen.queryByRole('alertdialog')).toBeNull();
     });
@@ -174,7 +175,7 @@ describe('PageList (spec PG-1)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       fireEvent.click(screen.getByRole('button', { name: 'Delete page Home' }));
       fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' });
-      expect(names()).toHaveLength(4);
+      expect(names()).toHaveLength(5);
       expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
@@ -199,6 +200,7 @@ describe('PageList (spec PG-1)', () => {
         'Product A',
         'Product B',
         'About us',
+        'Showroom',
       ]);
       expect(
         within(rail()).getByRole('button', { name: 'Home, 5 hotspots · Image · Start' }),
@@ -210,7 +212,7 @@ describe('PageList (spec PG-1)', () => {
       fireEvent.click(within(rail()).getByRole('button', { name: /^Product B,/ }));
       expect(state().selection.pageId).toBe('p_prodb0');
       fireEvent.click(within(rail()).getByRole('button', { name: 'Add page' }));
-      expect(names().at(-1)).toBe('Page 5');
+      expect(names().at(-1)).toBe('Page 6');
       expect(state().selection.pageId).toBe(state().project!.pages.at(-1)!.id);
     });
 
@@ -260,7 +262,7 @@ describe('PageList (spec PG-1)', () => {
       fireEvent.click(screen.getByRole('button', { name: /^Product B,/ }));
       expect(state().selection).toEqual({ pageId: 'p_prodb0', hotspotIds: [] });
       fireEvent.click(screen.getByRole('button', { name: 'Add page' }));
-      expect(names().at(-1)).toBe('Page 5');
+      expect(names().at(-1)).toBe('Page 6');
     });
 
     it('remembers the choice in this browser', async () => {

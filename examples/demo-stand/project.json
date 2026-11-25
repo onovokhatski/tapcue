@@ -302,6 +302,55 @@
           "style": { "fill": null, "border": null, "opacity": 1 },
           "pressEffect": "highlight",
           "action": { "goTo": "p_home00", "commands": [] }
+        },
+        {
+          "id": "h_abtsr0",
+          "name": "Visit the showroom",
+          "x": 1480,
+          "y": 1260,
+          "width": 408,
+          "height": 112,
+          "shape": { "type": "rect", "cornerRadius": 56 },
+          "style": { "fill": "#1C1B1A", "border": null, "opacity": 1, "fillOpacity": 0.9 },
+          "text": {
+            "content": "Visit the showroom",
+            "size": 36,
+            "weight": "medium",
+            "color": "#FFFFFF",
+            "align": "center",
+            "verticalAlign": "middle",
+            "padding": 16
+          },
+          "pressEffect": "press",
+          "action": { "goTo": "p_shwrm0", "commands": [] }
+        }
+      ]
+    },
+    {
+      "id": "p_shwrm0",
+      "name": "Showroom",
+      "background": { "type": "web", "site": "assets/sites/showroom" },
+      "hotspots": [
+        {
+          "id": "h_shbck0",
+          "name": "Back to the stand",
+          "x": 64,
+          "y": 1260,
+          "width": 400,
+          "height": 112,
+          "shape": { "type": "rect", "cornerRadius": 56 },
+          "style": { "fill": "#1C1B1A", "border": null, "opacity": 1, "fillOpacity": 0.9 },
+          "text": {
+            "content": "Back to the stand",
+            "size": 36,
+            "weight": "medium",
+            "color": "#FFFFFF",
+            "align": "center",
+            "verticalAlign": "middle",
+            "padding": 16
+          },
+          "pressEffect": "press",
+          "action": { "goTo": "p_about0", "commands": [] }
         }
       ]
     }
