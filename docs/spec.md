@@ -90,7 +90,9 @@ IDs are referenced from issues and tests.
 - **PG-1** The integrator can create, rename, reorder and delete pages.
 - **PG-2** A page background is an image (JPEG, PNG, WebP) or a video (MP4/H.264), uploaded by the integrator, or a web page (PG-7).
 - **PG-3** A video background plays muted, looped and starts automatically.
-- **PG-4** Page changes use a fade transition.
+- **PG-4** Page changes use the project's transition: Fade (default), Slide, Zoom or None. Slide
+  comes in from the right to a page further down the page list and from the left to one further
+  up ([ADR 0025](adr/0025-motion.md)).
 - **PG-5** A page change never shows a blank frame: the next background is ready before the fade starts.
 - **PG-6** Uploaded files are limited to 200 MB each (see [Appendix A](#appendix-a-recommended-media)).
 - **PG-7** A page background can be a web page: an online address (http or https), or a mini-site
@@ -115,7 +117,7 @@ IDs are referenced from issues and tests.
 - **HS-3** Shape: rectangle (with optional corner radius) or ellipse.
 - **HS-4** Style: invisible, or fill colour and its own opacity, border colour and width, and the
   opacity of the whole hotspot.
-- **HS-5** Press effect: none, highlight, press-in, or ripple.
+- **HS-5** Press effect: none, highlight, press-in, ripple, pop (the hotspot grows a little on release and settles back) or glow (its shape lights up while pressed).
 - **HS-6** Hotspots can be deleted and their stacking order changed.
 - **HS-7** A hotspot can be duplicated: the copy gets a new id, the same properties and a small
   offset, clamped to the canvas, and becomes the selection.
@@ -205,6 +207,11 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **ST-4** After the idle timeout with no taps, the player returns to the station's start page. On a page with a web background the web page time applies instead (PG-10).
 - **ST-5** Taps from different tablets are not coordinated: each tap sends its command; the last one wins on the media server.
 - **ST-6** The editor shows each station's URL, built from the server's local network address, and a QR code that opens it, so a tablet is set up by scanning instead of typing an IP address.
+- **ST-7** A station can invite taps while idle: after 15 s without a touch on its start page, the
+  hotspots of that page that go to a page or send a command pulse softly one after another, in
+  page order, in a loop, until the next touch ([ADR 0025](adr/0025-motion.md)). Faders and other
+  pages stay still. An attract screen needs no more: a start page with a looping video and one
+  large "Touch to start" hotspot.
 
 ### 5.8 Player
 
@@ -323,7 +330,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 | Editor — Pages | Integrator | Page list, canvas with hotspots, properties panel |
 | Editor — Targets | Integrator | Manage command destinations |
 | Editor — Stations | Integrator | Manage stations, their URLs and QR codes |
-| Editor — Settings | Integrator | Canvas size and scale mode, web page time, import/export |
+| Editor — Settings | Integrator | Canvas size and scale mode, page transition, web page time, import/export |
 | Command log (panel in every editor tab) | Integrator | Sent commands and errors |
 | Player | Visitor | Full-screen station, nothing else |
 | Station not found | Integrator | Unknown station id, links to existing stations |
@@ -389,10 +396,9 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 - Manual zoom and panning on the editor canvas.
 - Editor password.
 - A command sent when a station returns to its start page after the idle timeout.
-- Image-based hotspot states (a separate "pressed" image).
 - OSC over TCP, raw TCP.
 - Command templates for QLab and Resolume.
-- Idle ("attract") animations, more transitions and press effects, polygon hotspots.
+- Polygon hotspots.
 - Import from Figma.
 - Feedback from media servers (what is currently playing).
 
