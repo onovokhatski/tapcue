@@ -1,7 +1,14 @@
-import type { Hotspot } from '@tapcue/shared';
+import type { Hotspot, Transition } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../test/demoProject';
-import { currentPage, incoming, playerReducer, startPlayer, type PlayerState } from './playerState';
+import {
+  currentPage,
+  incoming,
+  incomingMotion,
+  playerReducer,
+  startPlayer,
+  type PlayerState,
+} from './playerState';
 
 const project = demoProject();
 const main = project.stations.find((s) => s.id === 'main')!;
@@ -182,5 +189,36 @@ describe('a new project from the editor (spec PLY-5, PLY-6)', () => {
     const fading = ready(tap(onProductA(), 'h_anext0'), 'p_prodb0');
     const state = apply(fading, without('p_proda0'));
     expect(state).toMatchObject({ pageId: 'p_prodb0', shown: 'p_prodb0', fading: false });
+  });
+});
+
+describe('incomingMotion (spec PG-4, ADR 0025)', () => {
+  const withTransition = (transition?: Transition) =>
+    startPlayer({
+      project: transition === undefined ? project : { ...project, transition },
+      station: main,
+    });
+
+  it('is null while no page is on its way', () => {
+    expect(incomingMotion(withTransition('slide'))).toBeNull();
+  });
+
+  it("is the project's transition, a fade when it has none", () => {
+    expect(incomingMotion(tap(withTransition(), 'h_carda0'))).toBe('fade');
+    expect(incomingMotion(tap(withTransition('fade'), 'h_carda0'))).toBe('fade');
+    expect(incomingMotion(tap(withTransition('zoom'), 'h_carda0'))).toBe('zoom');
+    expect(incomingMotion(tap(withTransition('none'), 'h_carda0'))).toBe('none');
+  });
+
+  it('slides in from the right to a page further down the list, from the left to one further up', () => {
+    const toProductA = tap(withTransition('slide'), 'h_carda0'); // Home (1st) → Product A (2nd)
+    expect(incomingMotion(toProductA)).toBe('slide-from-right');
+    const onProductA = faded(ready(toProductA, 'p_proda0'), 'p_proda0');
+    expect(incomingMotion(tap(onProductA, 'h_aback0'))).toBe('slide-from-left'); // back to Home
+    // Two steps down at once, and the idle return two steps up.
+    const toAbout = tap(withTransition('slide'), 'h_about0');
+    expect(incomingMotion(toAbout)).toBe('slide-from-right');
+    const onAbout = faded(ready(toAbout, 'p_about0'), 'p_about0');
+    expect(incomingMotion(playerReducer(onAbout, { type: 'idle' }))).toBe('slide-from-left');
   });
 });

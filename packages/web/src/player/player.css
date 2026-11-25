@@ -37,8 +37,27 @@ html:has(.player) {
   opacity: 0;
 }
 
-.page-layer[data-fading] {
+/* How the incoming page comes in: the project's transition (spec PG-4, ADR 0025). Transforms and
+   opacity only, which the iPad composites without delaying a tap. None has no animation: the
+   player swaps the page itself. */
+.page-layer[data-fading][data-motion='fade'] {
   animation: page-fade-in var(--duration-page-fade) var(--easing-out) both;
+}
+
+.page-layer[data-fading][data-motion='slide-from-right'] {
+  animation: page-slide-from-right var(--duration-page-slide) var(--easing-standard) both;
+}
+
+.page-layer[data-fading][data-motion='slide-from-left'] {
+  animation: page-slide-from-left var(--duration-page-slide) var(--easing-standard) both;
+}
+
+.page-layer[data-fading][data-motion='zoom'] {
+  animation: page-zoom-in var(--duration-page-zoom) var(--easing-out) both;
+}
+
+.page-layer[data-fading][data-motion='none'] {
+  opacity: 1;
 }
 
 @keyframes page-fade-in {
@@ -47,6 +66,39 @@ html:has(.player) {
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes page-slide-from-right {
+  from {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes page-slide-from-left {
+  from {
+    opacity: 1;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes page-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 

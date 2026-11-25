@@ -206,5 +206,7 @@
   --duration-press-out: 160ms; /* highlight release (press-in: 120ms = --duration-fast) */
   --duration-ripple: 400ms;
   --duration-page-fade: 300ms; /* new page fades in over the old one */
+  --duration-page-slide: 360ms; /* new page slides in over the old one (ADR 0025) */
+  --duration-page-zoom: 300ms; /* new page grows and fades in over the old one */
   --duration-flash: 2000ms; /* "Copied", "Just changed", "New" markers */
 }

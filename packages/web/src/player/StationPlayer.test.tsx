@@ -1,5 +1,5 @@
 import type { Project, Station } from '@tapcue/shared';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
@@ -520,6 +520,67 @@ describe('StationPlayer', () => {
       advance(3_600_000);
       expect(layer('incoming')).toBeNull();
     });
+  });
+});
+
+describe('page transitions (spec PG-4, ADR 0025)', () => {
+  function withTransition(transition: Project['transition']) {
+    const p = { ...demoProject(), transition };
+    const station = p.stations.find((s) => s.id === 'main')!;
+    const { container } = render(<Connected project={p} station={station} />);
+    const layer = (role: 'shown' | 'incoming') =>
+      container.querySelector<HTMLElement>(`[data-layer="${role}"]`);
+    const tapOn = (hotspotId: string) => {
+      const el = container.querySelector(`[data-layer="shown"] [data-hotspot="${hotspotId}"]`)!;
+      fireEvent.pointerDown(el, { pointerId: 1, button: 0 });
+      fireEvent.pointerUp(el, { pointerId: 1, button: 0 });
+      advance(200);
+    };
+    const load = async () => {
+      const media = layer('incoming')!.querySelector('img, video')!;
+      await act(async () => {
+        if (media instanceof HTMLVideoElement) fireEvent.loadedData(media);
+        else fireEvent.load(media);
+        await Promise.resolve();
+      });
+    };
+    return { layer, tapOn, load };
+  }
+
+  it('marks the incoming page with how it comes in, and only that one', async () => {
+    const { layer, tapOn, load } = withTransition('slide');
+    expect(layer('shown')).not.toHaveAttribute('data-motion');
+    tapOn('h_carda0');
+    expect(layer('incoming')).toHaveAttribute('data-motion', 'slide-from-right');
+    await load();
+    expect(layer('incoming')).toHaveAttribute('data-fading');
+    // The shown page stays underneath until the transition ends.
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_home00');
+    expect(layer('shown')).not.toHaveAttribute('data-motion');
+    fireEvent.animationEnd(layer('incoming')!);
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    expect(layer('shown')).not.toHaveAttribute('data-motion');
+    tapOn('h_aback0');
+    expect(layer('incoming')).toHaveAttribute('data-motion', 'slide-from-left');
+  });
+
+  it('fades by default, and zooms when the project says so', () => {
+    const fade = withTransition(undefined);
+    fade.tapOn('h_carda0');
+    expect(fade.layer('incoming')).toHaveAttribute('data-motion', 'fade');
+    cleanup();
+    const zoom = withTransition('zoom');
+    zoom.tapOn('h_carda0');
+    expect(zoom.layer('incoming')).toHaveAttribute('data-motion', 'zoom');
+  });
+
+  it('swaps the page as soon as it is ready with None, with no animation to wait for', async () => {
+    const { layer, tapOn, load } = withTransition('none');
+    tapOn('h_carda0');
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_home00'); // not before it is ready
+    await load();
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    expect(layer('incoming')).toBeNull();
   });
 });
 
