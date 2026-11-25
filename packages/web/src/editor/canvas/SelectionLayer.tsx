@@ -22,8 +22,11 @@ interface SelectionLayerProps {
   canvas: Size;
   selectedIds: HotspotId[];
   onSelect: (hotspotIds: HotspotId[]) => void;
-  /** The hotspots' new boxes while they are dragged or resized, in canvas pixels. */
-  onPlace: (rects: Record<HotspotId, Rect>) => void;
+  /**
+   * The hotspots' new boxes while they are dragged or resized, in canvas pixels, with a key that
+   * names this drag alone.
+   */
+  onPlace: (rects: Record<HotspotId, Rect>, drag: string) => void;
   /** Whether `fill` mode crops part of the hotspot on the reference screen (spec ED-3). */
   isCropped?: (hotspot: Hotspot) => boolean;
 }
@@ -52,7 +55,11 @@ interface Drag {
   startY: number;
   starts: Record<HotspotId, Rect>;
   moved: boolean;
+  /** Names this drag, so its moves are one undo step. */
+  key: string;
 }
+
+let drags = 0;
 
 /** A selection rectangle in progress, in canvas pixels from where the press started. */
 interface Marquee {
@@ -121,6 +128,7 @@ export function SelectionLayer({
       startY: event.clientY,
       starts,
       moved: false,
+      key: `drag ${++drags}`,
     };
     // Moves outside the hotspot, or outside the canvas, still belong to this drag.
     layer.current?.setPointerCapture?.(event.pointerId);
@@ -150,10 +158,13 @@ export function SelectionLayer({
     const dy = (event.clientY - current.startY) / scale;
     if (dx !== 0 || dy !== 0) current.moved = true;
     if (current.mode === 'move') {
-      onPlace(moveGroup(current.starts, dx, dy, canvas));
+      onPlace(moveGroup(current.starts, dx, dy, canvas), current.key);
     } else {
       const start = current.starts[current.hotspotId]!;
-      onPlace({ [current.hotspotId]: resizeRect(start, current.mode, dx, dy, canvas) });
+      onPlace(
+        { [current.hotspotId]: resizeRect(start, current.mode, dx, dy, canvas) },
+        current.key,
+      );
     }
   }
 

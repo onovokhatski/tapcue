@@ -3,8 +3,9 @@
 //
 // As in Figma, the prefix (or, without one, the unit) is a handle: dragging it left or right
 // changes the value by one step per pixel (1 unless the field says otherwise, e.g. 0.01), ten
-// with Shift. Arrow up and down in the field step it the same way. Each step goes through onChange like typed text, kept within min and max, and the end of a
-// drag counts as leaving the field (onBlur).
+// with Shift. Arrow up and down in the field step it the same way. Each step goes through onChange
+// like typed text, kept within min and max. A drag focuses the field while it lasts and leaves it at
+// the end, so it is one visit to the field, as typing is (one undo step, spec ED-25).
 import { useRef } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 
@@ -58,6 +59,7 @@ export function NumberField({
 }: NumberFieldProps) {
   // The drag in progress: where the pointer went down, and the value it started from.
   const drag = useRef<{ x: number; start: string } | null>(null);
+  const input = useRef<HTMLInputElement>(null);
 
   function step(steps: number) {
     const next = stepValue(value, steps, min, max, size);
@@ -69,6 +71,7 @@ export function NumberField({
     event.preventDefault(); // no text selection while dragging
     event.currentTarget.setPointerCapture?.(event.pointerId);
     drag.current = { x: event.clientX, start: value };
+    input.current?.focus();
   }
 
   function pointerMove(event: PointerEvent<HTMLSpanElement>) {
@@ -82,7 +85,9 @@ export function NumberField({
     if (!drag.current) return;
     drag.current = null;
     event.currentTarget.releasePointerCapture?.(event.pointerId);
-    onBlur?.();
+    // Leaving the field calls onBlur; one that could not take the focus is left all the same.
+    if (document.activeElement === input.current) input.current?.blur();
+    else onBlur?.();
   }
 
   function keyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -117,6 +122,7 @@ export function NumberField({
         </span>
       )}
       <input
+        ref={input}
         aria-label={ariaLabel}
         aria-invalid={error || undefined}
         inputMode={decimal ? 'decimal' : 'numeric'}
