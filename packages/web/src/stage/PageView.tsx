@@ -1,6 +1,7 @@
 // Draws one page — background and hotspots — at canvas size, scaled to fill its parent (ADR 0004).
-import type { Canvas, Hotspot, MediaBackground, Page } from '@tapcue/shared';
-import { useEffect, useEffectEvent, useState, type SyntheticEvent } from 'react';
+// A web background is a frame under the hotspots, in real screen pixels (ADR 0024).
+import type { Canvas, Hotspot, MediaBackground, Page, WebBackground } from '@tapcue/shared';
+import { useEffect, useEffectEvent, useRef, useState, type SyntheticEvent } from 'react';
 import { assetUrl } from './assetUrl';
 import { stageGeometry } from './geometry';
 import { HotspotView } from './HotspotView';
@@ -20,19 +21,32 @@ interface PageViewProps {
   faderValues?: Readonly<Record<string, number>>;
   /** A fader's new value while it is dragged, and the last one with `final` (spec FD-2). */
   onValue?: (hotspot: Hotspot, value: number, final: boolean) => void;
+  /** A touch inside a mini-site's frame, which the page's own handlers never see (spec PG-10). */
+  onActivity?: () => void;
 }
 
-export function PageView({ page, canvas, onTap, onReady, faderValues, onValue }: PageViewProps) {
+/** A slow site must not freeze the stand: the page fades in after this, loaded or not (ADR 0024). */
+export const WEB_READY_LIMIT_MS = 3000;
+
+export function PageView({
+  page,
+  canvas,
+  onTap,
+  onReady,
+  faderValues,
+  onValue,
+  onActivity,
+}: PageViewProps) {
   const [ref, viewport] = useElementSize<HTMLDivElement>();
   const { scale, offsetX, offsetY } = stageGeometry(canvas, viewport, canvas.scaleMode);
   const ready = useEffectEvent(() => onReady?.());
 
-  // A web background is drawn from v0.9's player work (spec PG-7, issue #258); until then the
-  // page shows the canvas colour under its hotspots.
+  const web = page.background?.type === 'web' ? page.background : null;
   const media = page.background?.type === 'web' ? null : page.background;
   // What has to load before the page is ready: its background and each hotspot's image, by name.
   const needed = [
     ...(media ? [`background ${media.asset}`] : []),
+    ...(web ? ['web'] : []),
     ...page.hotspots.flatMap((h) => (h.style.image ? [`hotspot ${h.id} ${h.style.image}`] : [])),
   ];
   const [loaded, setLoaded] = useState<ReadonlySet<string>>(new Set());
@@ -51,10 +65,24 @@ export function PageView({ page, canvas, onTap, onReady, faderValues, onValue }:
       className="relative h-full w-full overflow-hidden"
       style={{ backgroundColor: canvas.backgroundColor }}
     >
-      {/* Everything inside is laid out in canvas pixels; one transform scales it as a whole. */}
+      {web && (
+        <WebBackgroundView
+          background={web}
+          box={{
+            left: offsetX,
+            top: offsetY,
+            width: canvas.width * scale,
+            height: canvas.height * scale,
+          }}
+          onReady={() => markLoaded('web')}
+          onActivity={onActivity}
+        />
+      )}
+      {/* Everything inside is laid out in canvas pixels; one transform scales it as a whole. Over a
+          site, only the hotspots take taps: the rest of the page goes through to the site. */}
       <div
         data-testid="page-canvas"
-        className="absolute top-0 left-0 origin-top-left"
+        className={`absolute top-0 left-0 origin-top-left ${web ? 'pointer-events-none *:pointer-events-auto' : ''}`}
         style={{
           width: canvas.width,
           height: canvas.height,
@@ -118,4 +146,66 @@ function BackgroundView({ background, onReady }: BackgroundViewProps) {
   };
   // Decorative: the page's meaning is in its hotspots, not in a description of the artwork.
   return <img className={className} src={src} alt="" onLoad={decoded} onError={onReady} />;
+}
+
+interface WebBackgroundViewProps {
+  background: WebBackground;
+  /** The page area on screen, in screen pixels. */
+  box: { left: number; top: number; width: number; height: number };
+  onReady: () => void;
+  onActivity?: (() => void) | undefined;
+}
+
+/**
+ * The site in a frame of the page area's real size, not scaled with the canvas, so its text stays
+ * readable (ADR 0024). The sandbox keeps it from taking the player away from its page, opening
+ * windows or downloading. Each visit creates the frame afresh (spec PG-8): the layer that holds it
+ * exists only while its page is on screen.
+ */
+function WebBackgroundView({ background, box, onReady, onActivity }: WebBackgroundViewProps) {
+  const src = background.url ?? `${assetUrl(background.site ?? '')}/index.html`;
+  const ready = useEffectEvent(onReady);
+  const activity = useEffectEvent(() => onActivity?.());
+  const frame = useRef<HTMLIFrameElement>(null);
+  // Each load of a document in the frame: the first page, then each link followed inside it.
+  const [loads, setLoads] = useState(0);
+
+  // Loaded or not, the page is ready after the limit, so a slow site never freezes the stand.
+  useEffect(() => {
+    const timer = setTimeout(ready, WEB_READY_LIMIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (loads === 0) return;
+    ready();
+    // A mini-site comes from this server, so its touches can be heard (spec PG-10). Another
+    // origin's document cannot be reached, and the browser says so by throwing.
+    const view = frame.current?.contentWindow;
+    try {
+      view?.addEventListener('pointerdown', activity, { capture: true });
+    } catch {
+      return; // an online site: its touches stay its own
+    }
+    return () => {
+      try {
+        view?.removeEventListener('pointerdown', activity, { capture: true });
+      } catch {
+        // the frame moved to another origin meanwhile
+      }
+    };
+  }, [loads]);
+
+  return (
+    <iframe
+      ref={frame}
+      title="Web page"
+      src={src}
+      sandbox="allow-scripts allow-same-origin allow-forms"
+      allow="autoplay; fullscreen"
+      className="absolute border-0"
+      style={box}
+      onLoad={() => setLoads((n) => n + 1)}
+    />
+  );
 }

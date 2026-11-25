@@ -1,7 +1,15 @@
 // One station on a tablet: taps sent to the server, navigation, the idle return, page changes
 // that fade without a blank frame, kiosk behaviour and a screen that stays on where it can
 // (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-4, PLY-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
-import type { Canvas, Hotspot, Page, PageId, Project, Station } from '@tapcue/shared';
+import {
+  type Canvas,
+  type Hotspot,
+  type Page,
+  type PageId,
+  type Project,
+  type Station,
+  webPageSeconds,
+} from '@tapcue/shared';
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react';
 import { PageView } from '../stage/PageView';
 import { ConnectionIndicator } from './ConnectionIndicator';
@@ -28,7 +36,9 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
   if (project !== state.project || station !== state.station) {
     dispatch({ type: 'project', project, station });
   }
-  const touched = useIdleTimer(station.idleTimeoutSeconds, () => dispatch({ type: 'idle' }));
+  const touched = useIdleTimer(idleSeconds(state.project, station, state.shown), () =>
+    dispatch({ type: 'idle' }),
+  );
   const later = useLater();
   useNoPinchZoom();
   useWakeLock();
@@ -79,6 +89,7 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
               })
             }
             onReady={() => dispatch({ type: 'ready', pageId: page.id })}
+            onActivity={touched}
             onFaded={() => dispatch({ type: 'faded', pageId: page.id })}
           />
         );
@@ -98,6 +109,7 @@ interface PageLayerProps {
   onValue: (hotspot: Hotspot, value: number, final: boolean) => void;
   onReady: () => void;
   onFaded: () => void;
+  onActivity: () => void;
 }
 
 function PageLayer({
@@ -110,6 +122,7 @@ function PageLayer({
   onValue,
   onReady,
   onFaded,
+  onActivity,
 }: PageLayerProps) {
   const [loaded, setLoaded] = useState(false);
   const reportReady = useEffectEvent(onReady);
@@ -140,9 +153,22 @@ function PageLayer({
         faderValues={faderValues}
         onValue={onValue}
         onReady={() => setLoaded(true)}
+        onActivity={onActivity}
       />
     </div>
   );
+}
+
+/**
+ * How long the player waits without a tap before going back to the start page (spec ST-4). On a
+ * page with a web background the project's web page time applies (PG-10): the timer starts again
+ * when such a page is shown, so for an online site, whose touches are unseen, it counts from
+ * opening it. A station without an idle return never returns.
+ */
+export function idleSeconds(project: Project, station: Station, shown: PageId): number | null {
+  if (station.idleTimeoutSeconds === null) return null;
+  const page = project.pages.find((p) => p.id === shown);
+  return page?.background?.type === 'web' ? webPageSeconds(project) : station.idleTimeoutSeconds;
 }
 
 /** Runs a function after a delay (at once for 0); pending calls are dropped when the player closes. */

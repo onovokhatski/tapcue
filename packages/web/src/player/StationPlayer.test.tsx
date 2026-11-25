@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
-import { StationPlayer } from './StationPlayer';
+import { idleSeconds, StationPlayer } from './StationPlayer';
 import { useStationSocket } from './useStationSocket';
 
 const project = demoProject();
@@ -520,6 +520,63 @@ describe('StationPlayer', () => {
       advance(3_600_000);
       expect(layer('incoming')).toBeNull();
     });
+  });
+});
+
+describe('web pages (spec PG-7, PG-10)', () => {
+  /** The demo stand with Product A showing a mini-site, and a web page time (null: not set). */
+  function webProject(seconds: number | null = 30): Project {
+    const p = demoProject();
+    p.pages[1]!.background = { type: 'web', site: 'assets/sites/catalog' };
+    if (seconds !== null) p.webPageSeconds = seconds;
+    return p;
+  }
+
+  it('uses the web page time on a page with a web background, the station timeout elsewhere', () => {
+    const p = webProject();
+    expect(idleSeconds(p, main, 'p_proda0')).toBe(30);
+    expect(idleSeconds(p, main, 'p_home00')).toBe(90);
+    expect(idleSeconds(webProject(null), main, 'p_proda0')).toBe(180);
+    expect(idleSeconds(p, { ...main, idleTimeoutSeconds: null }, 'p_proda0')).toBeNull();
+    expect(idleSeconds(p, main, 'p_zzzzzz')).toBe(90); // a page just deleted
+  });
+
+  /** Taps to Product A and lets its frame load, with a same-origin window to hear touches in. */
+  function openWebPage() {
+    const p = webProject();
+    const station = p.stations.find((s) => s.id === 'main')!;
+    const { container } = render(<Connected project={p} station={station} />);
+    const layer = (role: 'shown' | 'incoming') =>
+      container.querySelector<HTMLElement>(`[data-layer="${role}"]`);
+    const el = container.querySelector('[data-layer="shown"] [data-hotspot="h_carda0"]')!;
+    fireEvent.pointerDown(el, { pointerId: 1, button: 0 });
+    fireEvent.pointerUp(el, { pointerId: 1, button: 0 });
+    advance(200);
+    const frame = layer('incoming')!.querySelector('iframe')!;
+    const inside = new EventTarget();
+    Object.defineProperty(frame, 'contentWindow', { configurable: true, get: () => inside });
+    fireEvent.load(frame);
+    fireEvent.animationEnd(layer('incoming')!);
+    return { layer, inside };
+  }
+
+  it('returns to the start page after the web page time', () => {
+    const { layer } = openWebPage();
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    advance(30_000 - 100);
+    expect(layer('incoming')).toBeNull();
+    advance(200);
+    expect(layer('incoming')).toHaveAttribute('data-page', 'p_home00');
+  });
+
+  it("counts touches inside a mini-site's frame as activity", () => {
+    const { layer, inside } = openWebPage();
+    advance(20_000);
+    act(() => void inside.dispatchEvent(new Event('pointerdown')));
+    advance(20_000);
+    expect(layer('incoming')).toBeNull();
+    advance(10_100);
+    expect(layer('incoming')).toHaveAttribute('data-page', 'p_home00');
   });
 });
 
