@@ -213,15 +213,24 @@ A page can show a live site, with the stand's own hotspots on top.
   after the web page time the tablet is back on the station's start page. An online address that
   forbids embedding is refused in the editor with the reason.
 
+### v0.10 — Motion
+
+The stand comes alive with little to set.
+
+- **Requirements:** PG-4, HS-5 and ST-7 ([ADR 0025](adr/0025-motion.md))
+- **Decided** (2026-11-25): presets, not parameters, one choice per place: a page transition for
+  the project (Fade, Slide, Zoom, None; Slide's direction from the page order), Pop and Glow in
+  the press effect list, and an "Invite taps when idle" switch per station. Image-based pressed
+  states were dropped: too many settings for what they add.
+- **Done when:** with Slide chosen in Settings, the open tablet slides to a page further down
+  from the right and back from the left; with the main station inviting taps, its start page's
+  buttons pulse in turn after 15 s untouched and stop at the first touch.
+
 ## 6. After MVP
 
-Each becomes its own milestone when started.
-
-**Next, in this order** (set on 2026-11-23; undo/redo became v0.8 on 2026-11-24, web backgrounds
-v0.9 on 2026-11-25):
-
-1. Image-based hotspot states (a "pressed" image)
-2. Idle ("attract") animations, more press effects and transitions
+Each becomes its own milestone when started. (Set on 2026-11-23; undo/redo became v0.8 on
+2026-11-24, web backgrounds v0.9 and motion v0.10 on 2026-11-25. Image-based hotspot states were
+dropped on 2026-11-25.)
 
 **Later:**
 

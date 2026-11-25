@@ -49,7 +49,8 @@ Tapcue/
   "pages": [ ... ],
   "targets": [ ... ],
   "stations": [ ... ],
-  "webPageSeconds": 180
+  "webPageSeconds": 180,
+  "transition": "slide"
 }
 ```
 
@@ -62,6 +63,7 @@ Tapcue/
 | `targets` | [Target](#6-target)[] | May be empty. |
 | `stations` | [Station](#8-station)[] | May be empty (nothing can be played until one exists). |
 | `webPageSeconds` | integer, optional | 10–3600; absent means 180. On a page with a web background, the idle return uses this instead of the station's timeout ([spec PG-10](spec.md#53-pages)). |
+| `transition` | `"fade"` \| `"slide"` \| `"zoom"` \| `"none"`, optional | How every page change looks; absent means `"fade"` ([spec PG-4](spec.md#53-pages), [ADR 0025](adr/0025-motion.md)). |
 
 ## 3. Canvas
 
@@ -139,7 +141,7 @@ A `web` background has exactly one of `url` and `site`.
 | `text` | Text, optional | A label drawn on the hotspot. See below. Absent = no text. |
 | `kind` | `"button"` \| `"fader"`, optional | Absent = `"button"`. A fader sends a value while it is dragged ([ADR 0020](adr/0020-faders.md)). |
 | `fader` | Fader, optional | Required for a fader, not allowed otherwise. See below. |
-| `pressEffect` | `"none"` \| `"highlight"` \| `"press"` \| `"ripple"` | Animation on tap. |
+| `pressEffect` | `"none"` \| `"highlight"` \| `"press"` \| `"ripple"` \| `"pop"` \| `"glow"` | Animation on tap ([spec HS-5](spec.md#54-hotspots)). |
 | `action` | [Action](#7-action) | |
 
 **Shape** — one of:
@@ -287,6 +289,7 @@ Example OSC arguments:
 | `name` | string | 1–100 characters. |
 | `startPageId` | page [Id](#92-ids) | Must reference an existing page. |
 | `idleTimeoutSeconds` | integer \| `null` | 5–3600. `null` = never return automatically. |
+| `inviteTaps` | `true`, optional | Absent = off. While idle on its start page, the station invites taps ([spec ST-7](spec.md#57-stations)). |
 
 ## 9. Common types
 
@@ -430,3 +433,6 @@ document gets a changelog section.
   `{ "type": "web", "url" }` or `{ "type": "web", "site" }`, and the project may have
   `webPageSeconds`. A project without them is unchanged, so the version stays 2; Tapcue 0.8 and
   older refuse a project that uses them.
+- **Version 2, Tapcue 0.10** ([ADR 0025](adr/0025-motion.md)): a project may have `transition`, a
+  hotspot's `pressEffect` may be `"pop"` or `"glow"`, and a station may have `inviteTaps`. The
+  version stays 2; Tapcue 0.9 and older refuse a project that uses them.
