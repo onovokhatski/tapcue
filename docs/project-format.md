@@ -18,7 +18,7 @@ my-stand/
 ```
 
 - `project.json` — the whole description, UTF-8 JSON.
-- `assets/` — every image and video referenced by the project. Nothing outside this folder is referenced.
+- `assets/` — every image and video referenced by the project, and mini-sites in `assets/sites/` ([§9.4](#94-site-paths)). Nothing outside this folder is referenced.
 - For transfer, the folder is packed into a `.zip` with the same layout at its root.
 
 Projects live side by side in a **library** folder ([ADR 0021](adr/0021-project-library.md)),
@@ -48,7 +48,8 @@ Tapcue/
   "canvas": { ... },
   "pages": [ ... ],
   "targets": [ ... ],
-  "stations": [ ... ]
+  "stations": [ ... ],
+  "webPageSeconds": 180
 }
 ```
 
@@ -60,6 +61,7 @@ Tapcue/
 | `pages` | [Page](#4-page)[] | At least one. Array order is the order in the editor. |
 | `targets` | [Target](#6-target)[] | May be empty. |
 | `stations` | [Station](#8-station)[] | May be empty (nothing can be played until one exists). |
+| `webPageSeconds` | integer, optional | 10–3600; absent means 180. On a page with a web background, the idle return uses this instead of the station's timeout ([spec PG-10](spec.md#53-pages)). |
 
 ## 3. Canvas
 
@@ -91,12 +93,20 @@ Tapcue/
 | `background` | Background \| `null` | `null` shows `canvas.backgroundColor`. |
 | `hotspots` | [Hotspot](#5-hotspot)[] | Array order is stacking order: later hotspots are on top. |
 
-**Background**
+**Background**, one of:
 
-| Field | Type | Rules |
+| Form | Fields | Rules |
 |---|---|---|
-| `type` | `"image"` \| `"video"` | Video always plays muted and looped. |
-| `asset` | [Asset path](#93-asset-paths) | |
+| Image or video | `type`: `"image"` \| `"video"`, `asset`: [Asset path](#93-asset-paths) | Video always plays muted and looped. |
+| Online web page | `type`: `"web"`, `url`: string | An absolute `http://` or `https://` address, up to 2000 characters ([ADR 0024](adr/0024-web-backgrounds.md)). |
+| Mini-site | `type`: `"web"`, `site`: [Site path](#94-site-paths) | A folder of the assets with an `index.html`. |
+
+A `web` background has exactly one of `url` and `site`.
+
+```json
+{ "type": "web", "url": "https://example.com/configurator" }
+{ "type": "web", "site": "assets/sites/catalog" }
+```
 
 ## 5. Hotspot
 
@@ -297,6 +307,23 @@ slugs because they appear in URLs.
 `"assets/<file name>"`. The file name contains only `A–Z a–z 0–9 . _ -`, no folders, no
 `..`. The server checks that the file exists when the project is loaded or saved.
 
+### 9.4 Site paths
+
+`"assets/sites/<folder name>"`: a mini-site unpacked from a .zip. The folder name follows the asset
+file name rules, without `.`; the folder holds an `index.html` and the site's own files and
+subfolders. The server checks that `index.html` exists when the project is loaded or saved.
+
+```
+my-stand/
+  assets/
+    home.jpg
+    sites/
+      catalog/
+        index.html
+        app.js
+        img/...
+```
+
 ## 10. Validation
 
 Validation happens in two layers:
@@ -309,7 +336,7 @@ Validation happens in two layers:
    - every step's `command.targetId` points to an existing target, and `command.type` matches that target's `protocol`;
    - a fader has at most one step, and it has no delay;
    - every hotspot lies inside the canvas;
-   - every asset path points to an existing file *(server only — the file system is not visible to the schema)*.
+   - every asset path points to an existing file, and every site path to a folder with an `index.html` *(server only — the file system is not visible to the schema)*.
 
 An invalid project is never saved. Errors name the exact place, e.g.
 `pages[2].hotspots[0].action.goTo: page "p_zz0000" does not exist`.
@@ -399,3 +426,7 @@ document gets a changelog section.
   Tapcue 0.4 and older refuse a version 2 project.
 - **Version 2, Tapcue 0.6:** a step may have a `name` and `enabled` (both optional, so the version
   stays 2). Tapcue 0.5 refuses a project that uses them, since a step has no other fields there.
+- **Version 2, Tapcue 0.9** ([ADR 0024](adr/0024-web-backgrounds.md)): a background may be
+  `{ "type": "web", "url" }` or `{ "type": "web", "site" }`, and the project may have
+  `webPageSeconds`. A project without them is unchanged, so the version stays 2; Tapcue 0.8 and
+  older refuse a project that uses them.

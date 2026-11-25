@@ -200,11 +200,25 @@ A wrong drag, delete or paste is one keystroke from undone.
   presses of Cmd + Z, on the editor and on every open tablet; Shift + Cmd + Z brings the changes
   back.
 
+### v0.9 — Web backgrounds
+
+A page can show a live site, with the stand's own hotspots on top.
+
+- **Requirements:** PG-7 to PG-10 ([ADR 0024](adr/0024-web-backgrounds.md))
+- **Decided** (2026-11-25): an online address or a mini-site uploaded as a .zip; the site loads
+  afresh on every visit; on such a page the idle return uses a project-wide web page time
+  (Settings tab), from opening for an online site and from the last tap for a mini-site.
+- **Done when:** a mini-site uploaded as a page background in the editor appears on the open
+  tablet within a second; a link inside it works; a hotspot over it goes to another page; and
+  after the web page time the tablet is back on the station's start page. An online address that
+  forbids embedding is refused in the editor with the reason.
+
 ## 6. After MVP
 
 Each becomes its own milestone when started.
 
-**Next, in this order** (set on 2026-11-23; undo/redo became v0.8 on 2026-11-24):
+**Next, in this order** (set on 2026-11-23; undo/redo became v0.8 on 2026-11-24, web backgrounds
+v0.9 on 2026-11-25):
 
 1. Image-based hotspot states (a "pressed" image)
 2. Idle ("attract") animations, more press effects and transitions

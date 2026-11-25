@@ -166,7 +166,9 @@ shape crops. The reference screen and whether the bands are shown are kept in th
 ### 4.3 Player runtime
 
 - Holds the current page and an idle timer; any tap resets the timer
-  ([spec ST-4](spec.md#57-stations)).
+  ([spec ST-4](spec.md#57-stations)). On a page with a web background the timer uses the
+  project's web page time, from opening for an online site and from the last tap, inside the
+  frame too, for a mini-site ([spec PG-10](spec.md#53-pages), [ADR 0024](adr/0024-web-backgrounds.md)).
 - **Load on tap** ([spec PG-5](spec.md#53-pages), [ADR 0016](adr/0016-load-next-page-on-tap.md)):
   only the page on screen and the incoming page are in the DOM. The incoming page's background
   starts loading on the tap, and the page stays invisible until its image is decoded or its

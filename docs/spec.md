@@ -88,11 +88,25 @@ IDs are referenced from issues and tests.
 ### 5.3 Pages
 
 - **PG-1** The integrator can create, rename, reorder and delete pages.
-- **PG-2** A page background is an image (JPEG, PNG, WebP) or a video (MP4/H.264), uploaded by the integrator.
+- **PG-2** A page background is an image (JPEG, PNG, WebP) or a video (MP4/H.264), uploaded by the integrator, or a web page (PG-7).
 - **PG-3** A video background plays muted, looped and starts automatically.
 - **PG-4** Page changes use a fade transition.
 - **PG-5** A page change never shows a blank frame: the next background is ready before the fade starts.
 - **PG-6** Uploaded files are limited to 200 MB each (see [Appendix A](#appendix-a-recommended-media)).
+- **PG-7** A page background can be a web page: an online address (http or https), or a mini-site
+  uploaded as a .zip with an `index.html` and served by the Tapcue server. Hotspots sit on top as
+  on any page; a tap outside them reaches the site, which can be scrolled and used
+  ([ADR 0024](adr/0024-web-backgrounds.md)).
+- **PG-8** The site is loaded afresh on every visit to its page, so a visitor never finds someone
+  else's scroll position or form.
+- **PG-9** The editor checks whether an online address may be embedded and says so before it is
+  used. A site that forbids it (`X-Frame-Options` or CSP `frame-ancestors`) cannot be a
+  background. The editor notes that an online site needs internet on the stand.
+- **PG-10** On a page with a web background, the station's idle return (ST-4) uses the project's
+  web page time (Settings tab, 10 s to 60 min, default 3 min) instead of the station's timeout:
+  for an online site counted from opening the page, since the player cannot see taps inside it;
+  for a mini-site, from the last tap, inside the site or not. A station without an idle timeout
+  never returns.
 
 ### 5.4 Hotspots
 
@@ -188,7 +202,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **ST-1** The integrator manages stations: name, start page, idle timeout (seconds, or off).
 - **ST-2** A tablet opens a station by URL: `/play/<station-id>`.
 - **ST-3** Any number of tablets can open the same station (duplicate or backup tablets).
-- **ST-4** After the idle timeout with no taps, the player returns to the station's start page.
+- **ST-4** After the idle timeout with no taps, the player returns to the station's start page. On a page with a web background the web page time applies instead (PG-10).
 - **ST-5** Taps from different tablets are not coordinated: each tap sends its command; the last one wins on the media server.
 - **ST-6** The editor shows each station's URL, built from the server's local network address, and a QR code that opens it, so a tablet is set up by scanning instead of typing an IP address.
 
@@ -309,7 +323,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 | Editor — Pages | Integrator | Page list, canvas with hotspots, properties panel |
 | Editor — Targets | Integrator | Manage command destinations |
 | Editor — Stations | Integrator | Manage stations, their URLs and QR codes |
-| Editor — Settings | Integrator | Canvas size and scale mode, import/export |
+| Editor — Settings | Integrator | Canvas size and scale mode, web page time, import/export |
 | Command log (panel in every editor tab) | Integrator | Sent commands and errors |
 | Player | Visitor | Full-screen station, nothing else |
 | Station not found | Integrator | Unknown station id, links to existing stations |
@@ -372,7 +386,6 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 
 ## 9. Out of scope for MVP (planned later)
 
-- Undo/redo in the editor (the architecture must allow adding it).
 - Manual zoom and panning on the editor canvas.
 - Editor password.
 - A command sent when a station returns to its start page after the idle timeout.
