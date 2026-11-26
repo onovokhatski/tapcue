@@ -1,11 +1,12 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
-import { demoProject } from '../../test/demoProject';
+import { demoProject, plainDemoProject } from '../../test/demoProject';
 import {
   addStation,
   changeStationId,
   checkStationId,
   deleteStation,
+  setInviteTaps,
   updateStation,
 } from './stations';
 
@@ -45,6 +46,7 @@ describe('station operations (spec ST-1)', () => {
       name: 'Entrance',
       startPageId: 'p_about0',
       idleTimeoutSeconds: null,
+      inviteTaps: true,
     });
     expectValid(project);
   });
@@ -86,5 +88,26 @@ describe('station operations (spec ST-1)', () => {
     expect(project.stations).toEqual([]);
     expectValid(project);
     expect(deleteStation(project, 'small')).toBe(project);
+  });
+});
+
+describe('setInviteTaps (spec ST-7)', () => {
+  it('switches it on as true, and off as no field', () => {
+    const on = setInviteTaps(plainDemoProject(), 'main', true);
+    expect(on.stations.find((s) => s.id === 'main')?.inviteTaps).toBe(true);
+    expect(on.stations.find((s) => s.id === 'small')).not.toHaveProperty('inviteTaps');
+    expectValid(on);
+
+    const off = setInviteTaps(on, 'main', false);
+    expect(off.stations.find((s) => s.id === 'main')).not.toHaveProperty('inviteTaps');
+    expectValid(off);
+  });
+
+  it('returns the same project when nothing changes or the station does not exist', () => {
+    const before = plainDemoProject();
+    expect(setInviteTaps(before, 'main', false)).toBe(before);
+    expect(setInviteTaps(before, 'nowhere', true)).toBe(before);
+    const on = setInviteTaps(before, 'main', true);
+    expect(setInviteTaps(on, 'main', true)).toBe(on);
   });
 });

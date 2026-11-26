@@ -193,6 +193,10 @@
   --duration-press-in: 80ms;     /* highlight / press-in on touch-down */
   --duration-press-out: 160ms;   /* highlight release (press-in: 120ms = --duration-fast) */
   --duration-ripple: 400ms;
+  --duration-pop: 240ms; /* pop: grows on release and settles back (ADR 0025) */
+  --duration-invite: 1600ms; /* one idle invitation pulse, then the next hotspot (ADR 0025) */
   --duration-page-fade: 300ms;   /* new page fades in over the old one */
+  --duration-page-slide: 360ms;  /* new page slides in over the old one (ADR 0025) */
+  --duration-page-zoom: 300ms;   /* new page grows and fades in over the old one */
   --duration-flash: 2000ms;      /* "Copied", "Just changed", "New" markers */
 }

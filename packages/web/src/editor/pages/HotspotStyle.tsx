@@ -1,6 +1,8 @@
-// A hotspot's shape, style and press effect in its properties panel (spec HS-3, HS-4, HS-5, ED-10;
-// design: hotspotProps(), "Position and size" and "Style").
-import type { Hotspot, PageId, PressEffect } from '@tapcue/shared';
+// The shape, style and press effect of the selected hotspots in the properties panel (spec HS-3,
+// HS-4, HS-5, ED-10, ED-19; design: hotspotProps(), "Position and size" and "Style"). One hotspot
+// or several: a setting they share shows its value, one that differs shows as "Mixed", and a
+// change applies to all of them.
+import type { Hotspot, PageId, PressEffect, Project, Style } from '@tapcue/shared';
 import type { ReactNode } from 'react';
 import { ColorField } from '../../ui/ColorField';
 import { Icon } from '../../ui/Icon';
@@ -8,13 +10,15 @@ import { NumberField } from '../../ui/NumberField';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { useDraft } from '../../ui/useDraft';
-import { setPressEffect, setShape, setStyle } from '../operations/hotspots';
+import { forEachHotspot, setPressEffect, setShape, setStyle } from '../operations/hotspots';
 import { useEditor } from '../useEditor';
 import { HotspotImage } from './HotspotImage';
+import { MIXED, shared, sharedText } from './mixed';
 
 interface Props {
   pageId: PageId;
-  hotspot: Hotspot;
+  /** The selected hotspots, in page order: one, or several (spec ED-19). */
+  hotspots: Hotspot[];
 }
 
 /** A whole number from min to max, or the reason it is not one. */
@@ -24,15 +28,29 @@ const wholeNumber = (min: number, max: number) => (text: string) => {
   return value < min || value > max ? `${min} to ${max}` : null;
 };
 
-/** Rectangle or ellipse, and the rectangle's corner radius in canvas pixels (spec HS-3). */
-export function ShapeRow({ pageId, hotspot }: Props) {
+/** Applies `operation` to every selected hotspot as one change. */
+function useEach(pageId: PageId, hotspots: Hotspot[]) {
   const change = useEditor((state) => state.change);
-  const { shape } = hotspot;
-  const radius = useDraft(
-    shape.type === 'rect' ? String(shape.cornerRadius) : '',
-    wholeNumber(0, 10_000),
-    (text) =>
-      change((p) => setShape(p, pageId, hotspot.id, { type: 'rect', cornerRadius: Number(text) })),
+  const ids = hotspots.map((h) => h.id);
+  return (operation: (project: Project, hotspot: Hotspot) => Project) =>
+    change((p) => forEachHotspot(p, pageId, ids, operation));
+}
+
+/** Rectangle or ellipse, and the rectangle's corner radius in canvas pixels (spec HS-3). */
+export function ShapeRow({ pageId, hotspots }: Props) {
+  const each = useEach(pageId, hotspots);
+  const type = shared(hotspots.map((h) => h.shape.type));
+  const rects = hotspots.filter((h) => h.shape.type === 'rect');
+  const radiusValue = shared(
+    rects.map((h) => (h.shape.type === 'rect' ? h.shape.cornerRadius : 0)),
+  );
+  // A radius is given to the rectangles; an ellipse fills its box, so it has no corners.
+  const radius = useDraft(sharedText(radiusValue, String), wholeNumber(0, 10_000), (text) =>
+    each((p, h) =>
+      h.shape.type === 'rect'
+        ? setShape(p, pageId, h.id, { type: 'rect', cornerRadius: Number(text) })
+        : p,
+    ),
   );
   return (
     <>
@@ -43,14 +61,20 @@ export function ShapeRow({ pageId, hotspot }: Props) {
             { value: 'rect', label: 'Rectangle' },
             { value: 'ellipse', label: 'Ellipse' },
           ]}
-          value={shape.type}
-          onChange={(type) =>
-            change((p) =>
+          value={type === MIXED ? null : type}
+          onChange={(next) =>
+            each((p, h) =>
               setShape(
                 p,
                 pageId,
-                hotspot.id,
-                type === 'ellipse' ? { type } : { type, cornerRadius: 0 },
+                h.id,
+                next === 'ellipse'
+                  ? { type: next }
+                  : // A rectangle keeps its own radius; one made from an ellipse starts square.
+                    {
+                      type: next,
+                      cornerRadius: h.shape.type === 'rect' ? h.shape.cornerRadius : 0,
+                    },
               ),
             )
           }
@@ -62,9 +86,9 @@ export function ShapeRow({ pageId, hotspot }: Props) {
             ariaLabel="Corner radius"
             min={0}
             max={10_000}
-            // An ellipse fills its box, so it has no corners.
-            value={shape.type === 'ellipse' ? '–' : radius.text}
-            disabled={shape.type === 'ellipse'}
+            value={rects.length === 0 ? '–' : radius.text}
+            placeholder="Mixed"
+            disabled={rects.length === 0}
             error={radius.error !== null}
             onChange={radius.onChange}
             onBlur={radius.onBlur}
@@ -81,33 +105,55 @@ const EFFECTS: { value: PressEffect; label: string }[] = [
   { value: 'highlight', label: 'Highlight' },
   { value: 'press', label: 'Press-in' },
   { value: 'ripple', label: 'Ripple' },
+  { value: 'pop', label: 'Pop' },
+  { value: 'glow', label: 'Glow' },
 ];
 
-/** Fill and its opacity, border, the hotspot's opacity, frost, image and press effect (spec HS-4, HS-5, HS-8, HS-9). */
-export function StyleFields({ pageId, hotspot }: Props) {
-  const change = useEditor((state) => state.change);
-  const { style } = hotspot;
-  const restyle = (patch: Parameters<typeof setStyle>[3]) =>
-    change((p) => setStyle(p, pageId, hotspot.id, patch));
-  const opacity = useDraft(String(Math.round(style.opacity * 100)), wholeNumber(0, 100), (text) =>
-    restyle({ opacity: Number(text) / 100 }),
-  );
-  const borderWidth = useDraft(
-    style.border ? String(style.border.width) : '',
-    wholeNumber(1, 100),
-    (text) => {
-      if (style.border) restyle({ border: { ...style.border, width: Number(text) } });
-    },
-  );
-  // The fill's own opacity in percent (spec HS-4); 100 % is stored as no field.
-  const fillOpacity = useDraft(
-    String(Math.round((style.fillOpacity ?? 1) * 100)),
+/**
+ * Fill and its opacity, border, opacity, frost, and the press effect (spec HS-4, HS-5, HS-8); for
+ * one hotspot its image too (HS-9), which is its own and not shared.
+ */
+export function StyleFields({ pageId, hotspots }: Props) {
+  const each = useEach(pageId, hotspots);
+  /** A style change per hotspot; null leaves that hotspot as it is. */
+  const restyle = (patch: (style: Style) => Partial<Style> | null) =>
+    each((p, h) => {
+      const next = patch(h.style);
+      return next ? setStyle(p, pageId, h.id, next) : p;
+    });
+  const styles = hotspots.map((h) => h.style);
+  const fill = shared(styles.map((s) => s.fill));
+  const border = shared(styles.map((s) => s.border?.color ?? null));
+  const filled = styles.filter((s) => s.fill);
+  const bordered = styles.filter((s) => s.border);
+  const percent = (value: number) => String(Math.round(value * 100));
+
+  const opacity = useDraft(
+    sharedText(shared(styles.map((s) => s.opacity)), percent),
     wholeNumber(0, 100),
-    (text) => restyle({ fillOpacity: Number(text) / 100 }),
+    (text) => restyle(() => ({ opacity: Number(text) / 100 })),
+  );
+  // A width is given to the hotspots that have a border.
+  const borderWidth = useDraft(
+    sharedText(shared(bordered.map((s) => s.border?.width ?? 0)), String),
+    wholeNumber(1, 100),
+    (text) =>
+      restyle((style) =>
+        style.border ? { border: { ...style.border, width: Number(text) } } : null,
+      ),
+  );
+  // The fill's own opacity in percent (spec HS-4); 100 % is stored as no field. Given to the
+  // hotspots that have a fill.
+  const fillOpacity = useDraft(
+    sharedText(shared(filled.map((s) => s.fillOpacity ?? 1)), percent),
+    wholeNumber(0, 100),
+    (text) => restyle((style) => (style.fill ? { fillOpacity: Number(text) / 100 } : null)),
   );
   // Frost (spec HS-8): 0 is no blur, stored as no field.
-  const frost = useDraft(String(style.backdropBlur ?? 0), wholeNumber(0, 100), (text) =>
-    restyle({ backdropBlur: Number(text) }),
+  const frost = useDraft(
+    sharedText(shared(styles.map((s) => s.backdropBlur ?? 0)), String),
+    wholeNumber(0, 100),
+    (text) => restyle(() => ({ backdropBlur: Number(text) })),
   );
   const errors = [
     fillOpacity.error && `Fill opacity: ${fillOpacity.error}`,
@@ -115,6 +161,9 @@ export function StyleFields({ pageId, hotspot }: Props) {
     borderWidth.error && `Border width: ${borderWidth.error}`,
     frost.error && `Frost: ${frost.error}`,
   ].filter(Boolean);
+  const single = hotspots.length === 1 ? hotspots[0] : undefined;
+  const buttons = hotspots.filter((h) => h.kind !== 'fader');
+  const effect = shared(buttons.map((h) => h.pressEffect));
 
   return (
     <>
@@ -124,8 +173,9 @@ export function StyleFields({ pageId, hotspot }: Props) {
           <ColorField
             ariaLabel="fill"
             allowNone
-            value={style.fill}
-            onChange={(fill) => restyle({ fill })}
+            value={fill === MIXED ? null : fill}
+            mixed={fill === MIXED}
+            onChange={(next) => restyle(() => ({ fill: next }))}
           />
         </div>
         <div className="space-y-1">
@@ -135,8 +185,9 @@ export function StyleFields({ pageId, hotspot }: Props) {
             ariaLabel="Fill opacity"
             min={0}
             max={100}
-            value={style.fill ? fillOpacity.text : '–'}
-            disabled={!style.fill}
+            value={filled.length > 0 ? fillOpacity.text : '–'}
+            placeholder="Mixed"
+            disabled={filled.length === 0}
             error={fillOpacity.error !== null}
             onChange={fillOpacity.onChange}
             onBlur={fillOpacity.onBlur}
@@ -147,10 +198,13 @@ export function StyleFields({ pageId, hotspot }: Props) {
           <ColorField
             ariaLabel="border"
             allowNone
-            value={style.border?.color ?? null}
+            value={border === MIXED ? null : border}
+            mixed={border === MIXED}
             // A border keeps its width when its colour changes; a new one starts at 2 px.
             onChange={(color) =>
-              restyle({ border: color ? { color, width: style.border?.width ?? 2 } : null })
+              restyle((style) => ({
+                border: color ? { color, width: style.border?.width ?? 2 } : null,
+              }))
             }
           />
         </div>
@@ -161,8 +215,9 @@ export function StyleFields({ pageId, hotspot }: Props) {
             ariaLabel="Border width"
             min={1}
             max={100}
-            value={style.border ? borderWidth.text : '–'}
-            disabled={!style.border}
+            value={bordered.length > 0 ? borderWidth.text : '–'}
+            placeholder="Mixed"
+            disabled={bordered.length === 0}
             error={borderWidth.error !== null}
             onChange={borderWidth.onChange}
             onBlur={borderWidth.onBlur}
@@ -176,6 +231,7 @@ export function StyleFields({ pageId, hotspot }: Props) {
             min={0}
             max={100}
             value={opacity.text}
+            placeholder="Mixed"
             error={opacity.error !== null}
             onChange={opacity.onChange}
             onBlur={opacity.onBlur}
@@ -189,6 +245,7 @@ export function StyleFields({ pageId, hotspot }: Props) {
             min={0}
             max={100}
             value={frost.text}
+            placeholder="Mixed"
             error={frost.error !== null}
             onChange={frost.onChange}
             onBlur={frost.onBlur}
@@ -198,23 +255,38 @@ export function StyleFields({ pageId, hotspot }: Props) {
       {errors.map((error) => (
         <FieldError key={error}>{error}</FieldError>
       ))}
-      <HotspotImage pageId={pageId} hotspot={hotspot} />
-      {!style.fill && !style.border && !style.backdropBlur && !style.image && !hotspot.text && (
-        <p className="text-body-s text-muted">
-          No fill and no border: visitors see only the artwork.
-        </p>
-      )}
-      {/* A fader is dragged, not pressed (ADR 0020). */}
-      {hotspot.kind !== 'fader' && (
+      {single && <HotspotImage pageId={pageId} hotspot={single} />}
+      {single &&
+        !single.style.fill &&
+        !single.style.border &&
+        !single.style.backdropBlur &&
+        !single.style.image &&
+        !single.text && (
+          <p className="text-body-s text-muted">
+            No fill and no border: visitors see only the artwork.
+          </p>
+        )}
+      {/* A fader is dragged, not pressed (ADR 0020): it keeps no press effect. */}
+      {buttons.length > 0 && (
         <Select
           label="Press effect"
           size="s"
-          value={hotspot.pressEffect}
+          {...(effect === MIXED ? { placeholder: 'Mixed' } : {})}
+          value={effect === MIXED ? null : effect}
           options={EFFECTS}
-          onChange={(effect) => {
-            if (effect) change((p) => setPressEffect(p, pageId, hotspot.id, effect as PressEffect));
+          onChange={(next) => {
+            if (!next) return;
+            each((p, h) =>
+              h.kind === 'fader' ? p : setPressEffect(p, pageId, h.id, next as PressEffect),
+            );
           }}
         />
+      )}
+      {buttons.length > 0 && buttons.length < hotspots.length && (
+        <p className="text-body-s text-muted">
+          Faders have no press effect: it applies to the {buttons.length}{' '}
+          {buttons.length === 1 ? 'button' : 'buttons'}.
+        </p>
       )}
     </>
   );

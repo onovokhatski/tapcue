@@ -102,7 +102,7 @@ describe('TargetsTab (spec TGT-1, ED-4)', () => {
     const { state, router } = await renderTab();
     expect(screen.getByRole('heading', { name: /^Used by \d+ hotspots?$/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Product A card on Home/ }));
-    expect(state().selection).toEqual({ pageId: 'p_home00', hotspotId: 'h_carda0' });
+    expect(state().selection).toEqual({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
     expect(router.state.location.pathname).toBe('/edit/pages');
   });
 
@@ -120,7 +120,7 @@ describe('TargetsTab (spec TGT-1, ED-4)', () => {
     expect(target('t_resolm')).toMatchObject({ protocol: 'udp' });
     const commands = state()
       .project!.pages.flatMap((p) => p.hotspots)
-      .filter((h) => h.action.command?.targetId === 't_resolm');
+      .filter((h) => h.action.commands[0]?.command?.targetId === 't_resolm');
     expect(commands).toEqual([]);
   });
 

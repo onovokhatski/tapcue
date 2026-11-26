@@ -145,19 +145,101 @@ tablet; feedback from media servers stays out of scope.
 - **Done when:** a fader on an iPad changes a Resolume layer's opacity smoothly over OSC, two
   tablets show the same position, and the editor sets a fader up without code.
 
+### v0.4 — Project library
+
+One server keeps several stands and runs one of them; the editor's Projects tab creates, opens and
+deletes them ([ADR 0021](adr/0021-project-library.md)).
+
+- **Requirements:** PRJ-1, PRJ-5 to PRJ-8
+- **Done when:** a new stand is started, opened on every tablet and an old one deleted from the
+  editor, without touching the file system or restarting the server.
+
+### v0.5 — Command sequences
+
+A tap sends several commands one after another, each with an optional delay before it, to the
+same or different targets ([ADR 0022](adr/0022-command-sequences.md)). The server runs the
+sequence; a new tap on the same hotspot starts it over.
+
+- **Requirements:** ACT-1, ACT-4 to ACT-8, TGT-4
+- **Done when:** one button on an iPad starts a Resolume clip and, 2.5 seconds later, a QLab cue;
+  the editor sets this up in seconds without code; projects from 0.4.0 open unchanged.
+
+### v0.6 — Editor tidy-up
+
+The editor gets out of the way on a busy stand: the page list and command cards fold away,
+commands have names and an on/off switch, hotspots get unique names, and several hotspots are
+selected, copied to another page, aligned, distributed and edited together.
+
+- **Requirements:** ED-13 to ED-19, ACT-9
+- **Done when:** a page of 20 buttons is laid out in a grid, renamed and given a common style in
+  a minute; a set of buttons is copied to another page in two keystrokes; a sequence's steps are
+  named and switched off without deleting them.
+
+### v0.7 — Properties panel
+
+The hotspot panel reads at a glance: every section folds and sums up its state in one line, the
+sections go from how a hotspot looks to what it does, position values fit their fields, and
+"Go to page" is one of the commands.
+
+- **Requirements:** ED-20 to ED-23
+- **Decided** (2026-11-24): Go to page changes only the editor, not the project format; the
+  order is Name, Type, Position and size, Style, Text, On tap, Stacking; one set of folded
+  sections for every hotspot, kept in the browser; done before undo/redo.
+- **Done when:** with every section folded, the panel of a hotspot fits a 900 px-high window
+  and still says its size, style, text and what a tap does; a page link is added from Add
+  command; 2048 and 1536 show in full in the position fields.
+
+### v0.8 — Undo and redo
+
+A wrong drag, delete or paste is one keystroke from undone.
+
+- **Requirements:** ED-24 to ED-27 ([ADR 0023](adr/0023-undo-history.md))
+- **Decided** (2026-11-24): the history lasts while the tab is open, 100 steps; a save from
+  another editor clears it; a drag, a series of nudges or typing into one field is one step.
+- **Done when:** a hotspot dragged across the page, renamed and deleted comes back in three
+  presses of Cmd + Z, on the editor and on every open tablet; Shift + Cmd + Z brings the changes
+  back.
+
+### v0.9 — Web backgrounds
+
+A page can show a live site, with the stand's own hotspots on top.
+
+- **Requirements:** PG-7 to PG-10 ([ADR 0024](adr/0024-web-backgrounds.md))
+- **Decided** (2026-11-25): an online address or a mini-site uploaded as a .zip; the site loads
+  afresh on every visit; on such a page the idle return uses a project-wide web page time
+  (Settings tab), from opening for an online site and from the last tap for a mini-site.
+- **Done when:** a mini-site uploaded as a page background in the editor appears on the open
+  tablet within a second; a link inside it works; a hotspot over it goes to another page; and
+  after the web page time the tablet is back on the station's start page. An online address that
+  forbids embedding is refused in the editor with the reason.
+
+### v0.10 — Motion
+
+The stand comes alive with little to set.
+
+- **Requirements:** PG-4, HS-5 and ST-7 ([ADR 0025](adr/0025-motion.md))
+- **Decided** (2026-11-25): presets, not parameters, one choice per place: a page transition for
+  the project (Fade, Slide, Zoom, None; Slide's direction from the page order), Pop and Glow in
+  the press effect list, and an "Invite taps when idle" switch per station. Image-based pressed
+  states were dropped: too many settings for what they add.
+- **Done when:** with Slide chosen in Settings, the open tablet slides to a page further down
+  from the right and back from the left; with the main station inviting taps, its start page's
+  buttons pulse in turn after 15 s untouched and stop at the first touch.
+
 ## 6. After MVP
 
-In order of value; each becomes its own milestone when started.
+Each becomes its own milestone when started. (Set on 2026-11-23; undo/redo became v0.8 on
+2026-11-24, web backgrounds v0.9 and motion v0.10 on 2026-11-25. Image-based hotspot states were
+dropped on 2026-11-25.)
 
-1. Undo / redo in the editor
-2. Image-based hotspot states (a "pressed" image)
-3. OSC over TCP and raw TCP drivers
-4. Command templates for QLab and Resolume
-5. Editor password
-6. Idle ("attract") animations, more press effects and transitions
-7. Polygon hotspots
-8. Import from Figma
-9. Feedback from media servers (what is currently playing)
+**Later:**
+
+- OSC over TCP and raw TCP drivers
+- Command templates for QLab and Resolume
+- Editor password
+- Polygon hotspots
+- Import from Figma
+- Feedback from media servers (what is currently playing)
 
 ## 7. Open questions
 

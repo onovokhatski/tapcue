@@ -1,8 +1,9 @@
 // The single entry point for checking a project (docs/project-format.md §10):
 // first the shape of every field, then the references between objects.
 import { VALUE_PLACEHOLDER } from './fader';
-import type { Hotspot } from './pages';
+import { firstCommand, type Hotspot } from './pages';
 import { Project } from './project';
+import { upgradeProject } from './upgrade';
 
 /** One problem, with the exact place in project.json, e.g. `pages[2].hotspots[0].action.goTo`. */
 export interface ValidationError {
@@ -13,9 +14,13 @@ export interface ValidationError {
 export type ValidationResult =
   { ok: true; project: Project } | { ok: false; errors: ValidationError[] };
 
-/** Never throws: invalid input is an expected case (a hand-edited file, an editor save). */
+/**
+ * Never throws: invalid input is an expected case (a hand-edited file, an editor save). A project
+ * in an older format is upgraded first, so every reader (load, import, the library) gets the
+ * current one (project format §12).
+ */
 export function validateProject(input: unknown): ValidationResult {
-  const shape = Project.safeParse(input);
+  const shape = Project.safeParse(upgradeProject(input));
   if (!shape.success) {
     // References cannot be checked reliably while the shape is wrong, so stop at the shape errors.
     return {
@@ -81,21 +86,22 @@ function referenceErrors(project: Project): ValidationError[] {
 
       faderErrors(hotspot, path).forEach(({ path: at, message }) => error(at, message));
 
-      const { goTo, command } = hotspot.action;
+      const { goTo, commands } = hotspot.action;
       if (goTo !== null && !pageIds.has(goTo)) {
         error(`${path}.action.goTo`, `page "${goTo}" does not exist`);
       }
-      if (command !== null) {
+      commands.forEach(({ command }, c) => {
+        const at = `${path}.action.commands[${c}].command`;
         const target = targets.get(command.targetId);
         if (!target) {
-          error(`${path}.action.command.targetId`, `target "${command.targetId}" does not exist`);
+          error(`${at}.targetId`, `target "${command.targetId}" does not exist`);
         } else if (target.protocol !== command.type) {
           error(
-            `${path}.action.command.type`,
+            `${at}.type`,
             `a "${command.type}" command cannot be sent to target "${target.name}", which uses "${target.protocol}"`,
           );
         }
-      }
+      });
     });
   });
 
@@ -104,8 +110,9 @@ function referenceErrors(project: Project): ValidationError[] {
 
 /**
  * A fader and its settings go together, its numbers fit, it changes no page and plays no press
- * effect, and its command has a place for the value: an OSC argument position within the
- * arguments, or {value} in UDP text or an HTTP path or body (spec FD-1, FD-2, ADR 0020).
+ * effect, it sends one command with no delay (ADR 0022), and that command has a place for the
+ * value: an OSC argument position within the arguments, or {value} in UDP text or an HTTP path or
+ * body (spec FD-1, FD-2, ADR 0020).
  */
 function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -117,7 +124,12 @@ function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
   }
 
   const { fader } = hotspot;
-  const { command } = hotspot.action;
+  const { commands } = hotspot.action;
+  const command = firstCommand(hotspot.action);
+  if (commands.length > 1) error('.action.commands', 'a fader sends one command, not a sequence');
+  if ((commands[0]?.delayMs ?? 0) > 0) {
+    error('.action.commands[0].delayMs', "a fader's command is sent at once, with no delay");
+  }
   if (!fader) {
     error('.fader', 'a fader needs its settings: orientation, min, max, step, start and value');
   } else {
@@ -142,7 +154,10 @@ function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
   if (hotspot.pressEffect !== 'none') error('.pressEffect', 'a fader has no press effect');
   // UDP text and HTTP have no arguments: a placeholder marks where the value goes.
   if (command?.type === 'udp' && !command.text.includes(VALUE_PLACEHOLDER)) {
-    error('.action.command.text', `expected ${VALUE_PLACEHOLDER} where the fader's value goes`);
+    error(
+      '.action.commands[0].command.text',
+      `expected ${VALUE_PLACEHOLDER} where the fader's value goes`,
+    );
   }
   if (
     command?.type === 'http' &&
@@ -150,7 +165,7 @@ function faderErrors(hotspot: Hotspot, path: string): ValidationError[] {
     !(command.body ?? '').includes(VALUE_PLACEHOLDER)
   ) {
     error(
-      '.action.command.path',
+      '.action.commands[0].command.path',
       `expected ${VALUE_PLACEHOLDER} in the path or the body, where the fader's value goes`,
     );
   }

@@ -3,14 +3,16 @@ import type { PressEffect } from '@tapcue/shared';
 
 /**
  * Milliseconds, matching the release timings in tokens.css; keep both in sync.
- * highlight: --duration-press-out; press-in: --duration-fast. A ripple keeps playing over the
- * transition and never delays it.
+ * highlight and glow: --duration-press-out; press-in: --duration-fast; pop: --duration-pop. A
+ * ripple keeps playing over the transition and never delays it.
  */
 const RELEASE_MS: Record<PressEffect, number> = {
   none: 0,
   highlight: 160,
   press: 120,
   ripple: 0,
+  pop: 240,
+  glow: 160,
 };
 
 export function releaseDelay(effect: PressEffect): number {

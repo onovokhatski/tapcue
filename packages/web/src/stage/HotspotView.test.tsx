@@ -13,7 +13,7 @@ const hotspot: Hotspot = {
   shape: { type: 'rect', cornerRadius: 24 },
   style: { fill: null, border: null, opacity: 1 },
   pressEffect: 'highlight',
-  action: { goTo: null, command: null },
+  action: { goTo: null, commands: [] },
 };
 
 function renderHotspot(pressEffect: PressEffect = 'highlight') {
@@ -364,5 +364,64 @@ describe('HotspotView', () => {
       fireEvent.animationEnd(el.querySelector('.ripple')!);
       expect(el.querySelectorAll('.ripple')).toHaveLength(1);
     });
+
+    it('pop: plays after a tap, not on touch-down, and stops when its own animation ends', () => {
+      const { el } = renderHotspot('pop');
+      expect(el.querySelector('.press-layer, .ripple')).toBeNull();
+      fireEvent.pointerDown(el, finger(1));
+      expect(el).not.toHaveAttribute('data-popping');
+      fireEvent.pointerUp(el, finger(1));
+      expect(el).toHaveAttribute('data-popping');
+
+      // An animation inside the hotspot ending is not the pop ending.
+      fireEvent.animationEnd(el.querySelector('.hotspot-style')!);
+      expect(el).toHaveAttribute('data-popping');
+      fireEvent.animationEnd(el);
+      expect(el).not.toHaveAttribute('data-popping');
+    });
+
+    it('pop: a finger that slides off is not a tap and does not pop', () => {
+      const { el, onTap } = renderHotspot('pop');
+      fireEvent.pointerDown(el, finger(1));
+      fireEvent.pointerLeave(el, finger(1));
+      expect(onTap).not.toHaveBeenCalled();
+      expect(el).not.toHaveAttribute('data-popping');
+    });
+
+    it('glow: a light under the hotspot, in its box and shape, lit while pressed', () => {
+      const { container } = render(
+        <HotspotView hotspot={{ ...hotspot, shape: { type: 'ellipse' }, pressEffect: 'glow' }} />,
+      );
+      const el = container.querySelector<HTMLElement>('[data-hotspot]')!;
+      const glow = container.querySelector<HTMLElement>('.hotspot-glow')!;
+      // Beside the hotspot, not in it, which would clip the light; before it, so drawn under it.
+      expect(glow.nextElementSibling).toBe(el);
+      expect(glow.style).toMatchObject({
+        left: '100px',
+        top: '200px',
+        width: '400px',
+        height: '200px',
+        borderRadius: '50%',
+      });
+      expect(el.querySelector('.press-layer')).toBeNull();
+
+      expect(glow).not.toHaveAttribute('data-pressed');
+      fireEvent.pointerDown(el, finger(1));
+      expect(glow).toHaveAttribute('data-pressed');
+      fireEvent.pointerUp(el, finger(1));
+      expect(glow).not.toHaveAttribute('data-pressed');
+      expect(el).not.toHaveAttribute('data-popping');
+    });
+
+    it.each(['none', 'highlight', 'press', 'ripple'] as const)(
+      '%s: neither glows nor pops',
+      (effect) => {
+        const { el } = renderHotspot(effect);
+        fireEvent.pointerDown(el, finger(1));
+        fireEvent.pointerUp(el, finger(1));
+        expect(el).not.toHaveAttribute('data-popping');
+        expect(el.parentElement!.querySelector('.hotspot-glow')).toBeNull();
+      },
+    );
   });
 });

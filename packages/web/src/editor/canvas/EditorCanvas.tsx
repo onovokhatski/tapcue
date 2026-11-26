@@ -1,15 +1,16 @@
 // The centre of the Pages tab: the selected page drawn by the player's own PageView, always scaled
 // to fit, with the selection layer on top, "Add hotspot" and the safe area of `fill` mode
-// (spec ED-2, ED-3, ED-8, HS-1, HS-2; design: canvasToolbar(), canvasStage()).
-import type { Canvas, HotspotId, Page, PageId } from '@tapcue/shared';
-import { useEffect } from 'react';
+// (spec ED-2, ED-3, ED-8, ED-16, ED-17, HS-1, HS-2; design: canvasToolbar(), canvasStage()).
+import type { Canvas, HotspotId, Page } from '@tapcue/shared';
+import { useEffect, useState } from 'react';
 import { PageView } from '../../stage/PageView';
 import { stageGeometry } from '../../stage/geometry';
 import { useElementSize } from '../../stage/useElementSize';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import type { Rect } from '../operations/geometry';
-import { addHotspot, deleteHotspot, nudgeHotspot, placeHotspot } from '../operations/hotspots';
+import { addHotspot, deleteHotspots, nudgeHotspots, placeHotspots } from '../operations/hotspots';
+import { DeleteHotspotsDialog } from '../pages/GroupPanel';
 import { useEditor } from '../useEditor';
 import { SafeAreaOverlay } from './SafeAreaOverlay';
 import { cropBands, croppedBy, REFERENCE_SCREENS, type ReferenceScreen } from './safeArea';
@@ -26,13 +27,16 @@ export function EditorCanvas() {
   const change = useEditor((state) => state.change);
   const safeArea = useEditor((state) => state.safeArea);
   const setSafeArea = useEditor((state) => state.setSafeArea);
+  const clipboard = useEditor((state) => state.clipboard);
+  const paste = useEditor((state) => state.paste);
   const page = project?.pages.find((p) => p.id === selection.pageId);
   const [stageRef, stage] = useElementSize<HTMLDivElement>();
-  const selected = page?.hotspots.find((h) => h.id === selection.hotspotId);
-  const place = (hotspotId: HotspotId, rect: Rect) => {
-    if (page) change((p) => placeHotspot(p, page.id, hotspotId, rect));
+  // A whole drag is one undo step (spec ED-25).
+  const place = (rects: Record<HotspotId, Rect>, drag: string) => {
+    if (page) change((p) => placeHotspots(p, page.id, rects), { group: drag, gesture: true });
   };
-  useArrowNudge(page && selected ? { pageId: page.id, hotspotId: selected.id } : null);
+  const [deleting, setDeleting] = useState<HotspotId[] | null>(null);
+  useCanvasKeys(page ?? null, selection.hotspotIds, setDeleting);
   if (!project || !page) return null;
 
   const { canvas } = project;
@@ -55,9 +59,16 @@ export function EditorCanvas() {
             const added = addHotspot(project, page.id);
             if (!added.hotspotId) return;
             change(() => added.project);
-            select({ pageId: page.id, hotspotId: added.hotspotId });
+            select({ pageId: page.id, hotspotIds: [added.hotspotId] });
           }}
         />
+        {clipboard && (
+          <Button
+            label="Paste"
+            title={`Paste ${hotspotCount(clipboard.hotspots.length)} (Cmd/Ctrl + V)`}
+            onClick={paste}
+          />
+        )}
         <span className="mx-1 h-5 w-px bg-pressed" aria-hidden="true" />
         <Button
           icon="crop"
@@ -105,8 +116,8 @@ export function EditorCanvas() {
             page={page}
             canvas={canvas}
             scale={scale}
-            selectedId={selection.hotspotId}
-            onSelect={(hotspotId) => select({ pageId: page.id, hotspotId })}
+            selectedIds={selection.hotspotIds}
+            onSelect={(hotspotIds) => select({ pageId: page.id, hotspotIds })}
             onPlace={place}
             reference={safeArea.reference}
             showSafeArea={fill && safeArea.show}
@@ -116,23 +127,38 @@ export function EditorCanvas() {
           {canvas.width} × {canvas.height}
         </span>
       </div>
+      {deleting && (
+        <DeleteHotspotsDialog
+          count={deleting.length}
+          onConfirm={() => {
+            change((p) => deleteHotspots(p, page.id, deleting));
+            setDeleting(null);
+          }}
+          onCancel={() => setDeleting(null)}
+        />
+      )}
     </section>
   );
+}
+
+/** "1 hotspot", "3 hotspots". */
+export function hotspotCount(n: number): string {
+  return `${n} ${n === 1 ? 'hotspot' : 'hotspots'}`;
 }
 
 interface StageProps {
   page: Page;
   canvas: Canvas;
   scale: number;
-  selectedId: HotspotId | null;
-  onSelect: (hotspotId: HotspotId | null) => void;
-  onPlace: (hotspotId: HotspotId, rect: Rect) => void;
+  selectedIds: HotspotId[];
+  onSelect: (hotspotIds: HotspotId[]) => void;
+  onPlace: (rects: Record<HotspotId, Rect>, drag: string) => void;
   reference: ReferenceScreen;
   showSafeArea: boolean;
 }
 
 function Stage(props: StageProps) {
-  const { page, canvas, scale, selectedId, onSelect, onPlace, reference, showSafeArea } = props;
+  const { page, canvas, scale, selectedIds, onSelect, onPlace, reference, showSafeArea } = props;
   return (
     <div
       className="relative shadow-2"
@@ -140,7 +166,8 @@ function Stage(props: StageProps) {
       data-testid="canvas-page"
     >
       {/* The page box has the canvas's exact aspect ratio, so `fit` leaves no bars inside it. */}
-      <PageView page={page} canvas={{ ...canvas, scaleMode: 'fit' }} />
+      {/* A web background is shown live, but every click selects hotspots (ADR 0024). */}
+      <PageView page={page} canvas={{ ...canvas, scaleMode: 'fit' }} inertWeb />
       {!page.background && <EmptyCanvas />}
       {showSafeArea && (
         <SafeAreaOverlay bands={cropBands(canvas, reference)} reference={reference} scale={scale} />
@@ -150,7 +177,7 @@ function Stage(props: StageProps) {
         hotspots={page.hotspots}
         scale={scale}
         canvas={canvas}
-        selectedId={selectedId}
+        selectedIds={selectedIds}
         onSelect={onSelect}
         onPlace={onPlace}
         isCropped={(hotspot) => croppedBy(hotspot, canvas, reference) !== null}
@@ -179,34 +206,71 @@ const NUDGE: Record<string, [number, number]> = {
 };
 
 /**
- * Keys for the selected hotspot, unless the focus is in a field, where they edit text. The arrows
- * move it by 1 canvas pixel, with Shift by 10; each step starts from the hotspot as the store has
- * it at that moment, so fast repeats never undo one another. Delete and Backspace delete it.
+ * Keys on the canvas, unless the focus is in a field, where they edit text, or in a dialog
+ * (spec HS-2, ED-16). The arrows move the selection by 1 canvas pixel, with Shift by 10; each step
+ * starts from the hotspots as the store has them at that moment, so fast repeats never undo one
+ * another. Delete and Backspace delete one hotspot at once, and ask first for several (`onDelete`).
+ * Cmd/Ctrl+A selects every hotspot of the page, Escape none. Cmd/Ctrl+C copies the selection into
+ * the editor's clipboard, unless text on the page is selected, and Cmd/Ctrl+V pastes it (ED-17).
  */
-function useArrowNudge(target: { pageId: PageId; hotspotId: HotspotId } | null) {
+function useCanvasKeys(
+  page: Page | null,
+  selectedIds: HotspotId[],
+  onDelete: (ids: HotspotId[]) => void,
+) {
   const change = useEditor((state) => state.change);
-  const pageId = target?.pageId;
-  const hotspotId = target?.hotspotId;
+  const select = useEditor((state) => state.select);
+  const copy = useEditor((state) => state.copy);
+  const paste = useEditor((state) => state.paste);
+  const pageId = page?.id;
+  const allIds = page?.hotspots.map((h) => h.id).join(' ') ?? '';
+  const selectedKey = selectedIds.join(' ');
   useEffect(() => {
-    if (!pageId || !hotspotId) return;
+    if (!pageId) return;
+    const ids = selectedKey === '' ? [] : selectedKey.split(' ');
     const onKey = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select')) {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (target?.closest('input, textarea, select, [role="dialog"], [role="alertdialog"]')) return;
+      const command = event.metaKey || event.ctrlKey;
+      const key = event.key.toLowerCase();
+      if (command && key === 'a') {
+        event.preventDefault();
+        select({ pageId, hotspotIds: allIds === '' ? [] : allIds.split(' ') });
+        return;
+      }
+      if (command && key === 'v') {
+        event.preventDefault();
+        paste();
+        return;
+      }
+      // Text selected on the page is the browser's to copy.
+      if (command && key === 'c' && ids.length > 0 && !document.getSelection()?.toString()) {
+        event.preventDefault();
+        copy();
+        return;
+      }
+      if (ids.length === 0) return;
+      if (event.key === 'Escape') {
+        select({ pageId, hotspotIds: [] });
         return;
       }
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
-        change((project) => deleteHotspot(project, pageId, hotspotId));
+        if (ids.length === 1) change((project) => deleteHotspots(project, pageId, ids));
+        else onDelete(ids);
         return;
       }
       const step = NUDGE[event.key];
       if (!step || event.altKey || event.metaKey || event.ctrlKey) return;
       event.preventDefault();
       const distance = event.shiftKey ? 10 : 1;
-      change((project) =>
-        nudgeHotspot(project, pageId, hotspotId, step[0] * distance, step[1] * distance),
+      // A series of nudges of one selection is one undo step, until a pause (spec ED-25).
+      change(
+        (project) => nudgeHotspots(project, pageId, ids, step[0] * distance, step[1] * distance),
+        { group: `nudge ${pageId} ${selectedKey}` },
       );
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [change, pageId, hotspotId]);
+  }, [change, select, copy, paste, onDelete, pageId, allIds, selectedKey]);
 }

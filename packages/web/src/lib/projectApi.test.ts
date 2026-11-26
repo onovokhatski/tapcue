@@ -21,9 +21,19 @@ describe('projectApi', () => {
     await expect(projectApi.load()).rejects.toThrow('HTTP 500');
   });
 
-  it('saves the whole project with PUT and returns the new revision', async () => {
+  it('saves the whole project with PUT, naming the revision it is based on', async () => {
     respond(200, { revision: 2 });
-    expect(await projectApi.save(demoProject())).toEqual({ ok: true, revision: 2 });
+    expect(await projectApi.save(demoProject(), 1)).toEqual({ ok: true, revision: 2 });
+    expect(fetch).toHaveBeenCalledWith('/api/project', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', 'x-tapcue-revision': '1' },
+      body: JSON.stringify(demoProject()),
+    });
+  });
+
+  it('names no revision before one is known', async () => {
+    respond(200, { revision: 2 });
+    await projectApi.save(demoProject(), null);
     expect(fetch).toHaveBeenCalledWith('/api/project', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
@@ -31,10 +41,20 @@ describe('projectApi', () => {
     });
   });
 
+  it('says when the copy saved is of a project no longer open (ADR 0021)', async () => {
+    respond(409, { error: 'Another project was opened since this copy was loaded' });
+    expect(await projectApi.save(demoProject(), 1)).toEqual({
+      ok: false,
+      reason: 'Another project was opened on the server.',
+      errors: [],
+      stale: true,
+    });
+  });
+
   it('returns the field errors of an invalid project', async () => {
     const errors = [{ path: 'name', message: 'Expected a name' }];
     respond(400, { errors });
-    expect(await projectApi.save(demoProject())).toEqual({
+    expect(await projectApi.save(demoProject(), 1)).toEqual({
       ok: false,
       reason: 'The project has invalid values.',
       errors,
@@ -43,7 +63,7 @@ describe('projectApi', () => {
 
   it('returns a refusal for any other error answer', async () => {
     respond(500, {});
-    expect(await projectApi.save(demoProject())).toEqual({
+    expect(await projectApi.save(demoProject(), 1)).toEqual({
       ok: false,
       reason: 'The server could not save it (HTTP 500).',
       errors: [],
@@ -52,7 +72,7 @@ describe('projectApi', () => {
 
   it('rejects when the server cannot be reached', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
-    await expect(projectApi.save(demoProject())).rejects.toThrow('Failed to fetch');
+    await expect(projectApi.save(demoProject(), 1)).rejects.toThrow('Failed to fetch');
   });
 
   describe('testSend (spec ACT-4)', () => {
@@ -65,6 +85,11 @@ describe('projectApi', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ pageId: 'p_home00', hotspotId: 'h_carda0' }),
       });
+    });
+
+    it('passes on a null entry: the first command of a sequence waits (ADR 0022)', async () => {
+      respond(200, { entry: null });
+      expect(await projectApi.testSend('p_home00', 'h_carda0')).toEqual({ ok: true, entry: null });
     });
 
     it("returns the server's reason for a refusal", async () => {

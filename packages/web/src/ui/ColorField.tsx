@@ -14,6 +14,8 @@ interface ColorFieldProps {
   /** Whether "None" is a choice (a hotspot's fill may be none; the canvas colour may not). */
   allowNone?: boolean;
   disabled?: boolean;
+  /** The colours of several hotspots differ: the field is empty and says "Mixed" (spec ED-19). */
+  mixed?: boolean;
 }
 
 export function checkHex(text: string): string | null {
@@ -26,6 +28,7 @@ export function ColorField({
   onChange,
   allowNone = false,
   disabled = false,
+  mixed = false,
 }: ColorFieldProps) {
   const draft = useDraft(value ?? '', checkHex, (text) => onChange(text.trim().toUpperCase()));
   const box = `flex h-7 min-w-0 items-center gap-2 rounded border pl-1 ${
@@ -52,7 +55,7 @@ export function ColorField({
     </label>
   );
 
-  if (value === null && draft.error === null && draft.text === '') {
+  if (value === null && !mixed && draft.error === null && draft.text === '') {
     return (
       <div className={`${box} pr-2`}>
         {picker}
@@ -68,8 +71,9 @@ export function ColorField({
         <input
           aria-label={`${ariaLabel} hex`}
           aria-invalid={draft.error ? true : undefined}
-          className="w-full min-w-0 bg-transparent font-mono text-mono-m uppercase outline-none"
+          className="w-full min-w-0 bg-transparent font-mono text-mono-m uppercase outline-none placeholder:normal-case"
           value={draft.text}
+          placeholder={mixed ? 'Mixed' : undefined}
           disabled={disabled}
           onChange={(event) => draft.onChange(event.target.value)}
           onBlur={draft.onBlur}

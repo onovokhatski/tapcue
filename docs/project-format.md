@@ -1,6 +1,6 @@
 # Tapcue — Project Format
 
-Status: **draft** · Last updated: 2026-10-25 · Schema version: **1**
+Status: **draft** · Last updated: 2026-11-22 · Schema version: **2**
 
 A Tapcue project describes one stand. It is the contract between the editor, the player and
 the server: the Zod schema in `packages/shared` implements exactly what this document
@@ -18,30 +18,52 @@ my-stand/
 ```
 
 - `project.json` — the whole description, UTF-8 JSON.
-- `assets/` — every image and video referenced by the project. Nothing outside this folder is referenced.
+- `assets/` — every image and video referenced by the project, and mini-sites in `assets/sites/` ([§9.4](#94-site-paths)). Nothing outside this folder is referenced.
 - For transfer, the folder is packed into a `.zip` with the same layout at its root.
+
+Projects live side by side in a **library** folder ([ADR 0021](adr/0021-project-library.md)),
+by default `Documents/Tapcue`:
+
+```
+Tapcue/
+  tapcue.json        { "active": "weplay-2026" }: opened again after a restart
+  demo-stand/
+  weplay-2026/       project.json + assets/, as above
+  .trash/
+    hall-b-2026-11-21T10-15-00-000Z/
+```
+
+- Each subfolder with a `project.json` is a project; its folder name is its id. Hidden folders
+  (`.trash`, an import in progress) are not projects.
+- A new project's folder is named after it: lowercase letters, digits and `-`, made unique with
+  a number (`weplay-2026-2`).
+- A deleted project is moved into `.trash/` with the time it was deleted; Tapcue never empties it.
 
 ## 2. Top level
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Demo stand",
   "canvas": { ... },
   "pages": [ ... ],
   "targets": [ ... ],
-  "stations": [ ... ]
+  "stations": [ ... ],
+  "webPageSeconds": 180,
+  "transition": "slide"
 }
 ```
 
 | Field | Type | Rules |
 |---|---|---|
-| `schemaVersion` | integer | Always `1` for this version. The server refuses projects with a version it does not know. |
+| `schemaVersion` | integer | Always `2` for this version. A version `1` project is upgraded when it is read ([§12](#12-versioning)); a version Tapcue does not know is refused. |
 | `name` | string | 1–100 characters. Shown in the editor. |
 | `canvas` | [Canvas](#3-canvas) | |
 | `pages` | [Page](#4-page)[] | At least one. Array order is the order in the editor. |
 | `targets` | [Target](#6-target)[] | May be empty. |
 | `stations` | [Station](#8-station)[] | May be empty (nothing can be played until one exists). |
+| `webPageSeconds` | integer, optional | 10–3600; absent means 180. On a page with a web background, the idle return uses this instead of the station's timeout ([spec PG-10](spec.md#53-pages)). |
+| `transition` | `"fade"` \| `"slide"` \| `"zoom"` \| `"none"`, optional | How every page change looks; absent means `"fade"` ([spec PG-4](spec.md#53-pages), [ADR 0025](adr/0025-motion.md)). |
 
 ## 3. Canvas
 
@@ -73,12 +95,20 @@ my-stand/
 | `background` | Background \| `null` | `null` shows `canvas.backgroundColor`. |
 | `hotspots` | [Hotspot](#5-hotspot)[] | Array order is stacking order: later hotspots are on top. |
 
-**Background**
+**Background**, one of:
 
-| Field | Type | Rules |
+| Form | Fields | Rules |
 |---|---|---|
-| `type` | `"image"` \| `"video"` | Video always plays muted and looped. |
-| `asset` | [Asset path](#93-asset-paths) | |
+| Image or video | `type`: `"image"` \| `"video"`, `asset`: [Asset path](#93-asset-paths) | Video always plays muted and looped. |
+| Online web page | `type`: `"web"`, `url`: string | An absolute `http://` or `https://` address, up to 2000 characters ([ADR 0024](adr/0024-web-backgrounds.md)). |
+| Mini-site | `type`: `"web"`, `site`: [Site path](#94-site-paths) | A folder of the assets with an `index.html`. |
+
+A `web` background has exactly one of `url` and `site`.
+
+```json
+{ "type": "web", "url": "https://example.com/configurator" }
+{ "type": "web", "site": "assets/sites/catalog" }
+```
 
 ## 5. Hotspot
 
@@ -92,8 +122,10 @@ my-stand/
   "pressEffect": "ripple",
   "action": {
     "goTo": "p_7tn4vb",
-    "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
-                 "address": "/composition/columns/2/connect", "args": [] }
+    "commands": [
+      { "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
+                     "address": "/composition/columns/2/connect", "args": [] } }
+    ]
   }
 }
 ```
@@ -109,7 +141,7 @@ my-stand/
 | `text` | Text, optional | A label drawn on the hotspot. See below. Absent = no text. |
 | `kind` | `"button"` \| `"fader"`, optional | Absent = `"button"`. A fader sends a value while it is dragged ([ADR 0020](adr/0020-faders.md)). |
 | `fader` | Fader, optional | Required for a fader, not allowed otherwise. See below. |
-| `pressEffect` | `"none"` \| `"highlight"` \| `"press"` \| `"ripple"` | Animation on tap. |
+| `pressEffect` | `"none"` \| `"highlight"` \| `"press"` \| `"ripple"` \| `"pop"` \| `"glow"` | Animation on tap ([spec HS-5](spec.md#54-hotspots)). |
 | `action` | [Action](#7-action) | |
 
 **Shape** — one of:
@@ -143,7 +175,8 @@ my-stand/
 | `padding` | number | 0–500 canvas pixels between the hotspot's edge and the text. |
 
 **Fader** ([ADR 0020](adr/0020-faders.md)) — a hotspot with `kind: "fader"` sets a value by
-dragging along it and sends its command with that value.
+dragging along it and sends its command with that value. It has at most one command, sent at
+once: no sequence and no delay ([ADR 0022](adr/0022-command-sequences.md)).
 
 ```json
 "kind": "fader",
@@ -152,8 +185,10 @@ dragging along it and sends its command with that value.
   "value": { "at": 0, "as": "f" }
 },
 "pressEffect": "none",
-"action": { "goTo": null, "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
-            "address": "/composition/layers/1/video/opacity", "args": [] } }
+"action": { "goTo": null, "commands": [
+  { "command": { "type": "osc-udp", "targetId": "t_r2k8sd",
+                 "address": "/composition/layers/1/video/opacity", "args": [] } }
+] }
 ```
 
 | Field | Type | Rules |
@@ -198,16 +233,35 @@ Common fields: `id` ([Id](#92-ids), unique among targets) and `name` (1–100 ch
 ## 7. Action
 
 ```json
-{ "goTo": "p_7tn4vb", "command": { ... } }
+{
+  "goTo": "p_7tn4vb",
+  "commands": [
+    { "command": { ... } },
+    { "delayMs": 2500, "name": "Lights up", "command": { ... } },
+    { "delayMs": 1000, "enabled": false, "command": { ... } }
+  ]
+}
 ```
 
 | Field | Type | Rules |
 |---|---|---|
 | `goTo` | page [Id](#92-ids) \| `null` | Must reference an existing page. `null` = stay. |
-| `command` | Command \| `null` | `null` = send nothing. |
+| `commands` | list of Steps | 0–20 steps, sent in order ([ADR 0022](adr/0022-command-sequences.md)). An empty list sends nothing. |
 
-Both may be `null` (a hotspot that only plays its press effect). When both are set, the
-command is sent first, then the page changes ([spec ACT-2](spec.md#55-actions)).
+**Step**
+
+| Field | Type | Rules |
+|---|---|---|
+| `delayMs` | integer, optional | 0–60000. Milliseconds to wait before this step is sent; absent = 0. |
+| `name` | string, optional | 0–100 characters. Shown in the editor and the command log instead of the step's number. |
+| `enabled` | boolean, optional | `false` switches the step off; absent or `true` = on. A step that is off is skipped with its pause, as if it were not in the list, and is not counted in "step 2 of 3" ([spec ACT-9](spec.md#55-actions)). It is still validated: its target must exist, so it works when switched back on. |
+| `command` | Command | See below. Each step has its own target. |
+
+`goTo` may be `null` and `commands` empty (a hotspot that only plays its press effect). The first
+step without a delay is sent at once and the page changes right after the tap; later steps are
+sent by the server on its own timers, after the tablet has moved on
+([spec ACT-2](spec.md#55-actions), ACT-5 to ACT-8). A fader has at most one step, with no delay;
+switched off, a drag sends nothing. When every step is off, a tap sends nothing.
 
 **Command** — `type` must equal the `protocol` of the referenced target.
 
@@ -235,6 +289,7 @@ Example OSC arguments:
 | `name` | string | 1–100 characters. |
 | `startPageId` | page [Id](#92-ids) | Must reference an existing page. |
 | `idleTimeoutSeconds` | integer \| `null` | 5–3600. `null` = never return automatically. |
+| `inviteTaps` | `true`, optional | Absent = off. While idle on its start page, the station invites taps ([spec ST-7](spec.md#57-stations)). |
 
 ## 9. Common types
 
@@ -255,6 +310,23 @@ slugs because they appear in URLs.
 `"assets/<file name>"`. The file name contains only `A–Z a–z 0–9 . _ -`, no folders, no
 `..`. The server checks that the file exists when the project is loaded or saved.
 
+### 9.4 Site paths
+
+`"assets/sites/<folder name>"`: a mini-site unpacked from a .zip. The folder name follows the asset
+file name rules, without `.`; the folder holds an `index.html` and the site's own files and
+subfolders. The server checks that `index.html` exists when the project is loaded or saved.
+
+```
+my-stand/
+  assets/
+    home.jpg
+    sites/
+      catalog/
+        index.html
+        app.js
+        img/...
+```
+
 ## 10. Validation
 
 Validation happens in two layers:
@@ -264,15 +336,16 @@ Validation happens in two layers:
 2. **References** — checked across the whole project:
    - all IDs are unique within their kind;
    - every `goTo` and `startPageId` points to an existing page;
-   - every `command.targetId` points to an existing target, and `command.type` matches that target's `protocol`;
+   - every step's `command.targetId` points to an existing target, and `command.type` matches that target's `protocol`;
+   - a fader has at most one step, and it has no delay;
    - every hotspot lies inside the canvas;
-   - every asset path points to an existing file *(server only — the file system is not visible to the schema)*.
+   - every asset path points to an existing file, and every site path to a folder with an `index.html` *(server only — the file system is not visible to the schema)*.
 
 An invalid project is never saved. Errors name the exact place, e.g.
 `pages[2].hotspots[0].action.goTo: page "p_zz0000" does not exist`.
 
 Deleting a page or a target never leaves broken references: the editor operation that
-deletes it also clears every `goTo` or `command` that pointed to it. A station whose start page
+deletes it also clears every `goTo` that pointed to it and removes every step that sent to it. A station whose start page
 is deleted starts on the first remaining page, since `startPageId` cannot be empty; for the same
 reason the last page of a project cannot be deleted.
 
@@ -280,7 +353,7 @@ reason the last page of a project cannot be deleted.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Demo stand",
   "canvas": { "width": 2048, "height": 1536, "scaleMode": "fit", "backgroundColor": "#000000" },
   "pages": [
@@ -298,8 +371,16 @@ reason the last page of a project cannot be deleted.
           "pressEffect": "ripple",
           "action": {
             "goTo": "p_7tn4vb",
-            "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
-                         "path": "/demo/screen-1/product-a", "body": null }
+            "commands": [
+              { "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
+                             "path": "/demo/screen-1/product-a", "body": null } },
+              { "delayMs": 1500, "name": "Second screen",
+                "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
+                             "path": "/demo/screen-2/product-a", "body": null } },
+              { "delayMs": 3000, "enabled": false,
+                "command": { "type": "http", "targetId": "t_demo01", "method": "POST",
+                             "path": "/demo/lights/product-a", "body": null } }
+            ]
           }
         }
       ]
@@ -316,7 +397,7 @@ reason the last page of a project cannot be deleted.
           "shape": { "type": "ellipse" },
           "style": { "fill": "#FFFFFF", "border": null, "opacity": 0.2 },
           "pressEffect": "highlight",
-          "action": { "goTo": "p_h8x2kq", "command": null }
+          "action": { "goTo": "p_h8x2kq", "commands": [] }
         }
       ]
     }
@@ -336,3 +417,22 @@ reason the last page of a project cannot be deleted.
 Adding an optional field with a default does not change it. When it changes, the server
 upgrades older projects on load with a small migration function per version, and this
 document gets a changelog section.
+
+### Changelog
+
+- **Version 2** (Tapcue 0.5, [ADR 0022](adr/0022-command-sequences.md)): `action.command` became
+  `action.commands`, a list of steps with an optional delay. A version 1 project is upgraded
+  wherever it is read (loading, import, the projects list): `"command": X` becomes
+  `"commands": [{ "command": X }]` and `"command": null` becomes `"commands": []`. The file on disk
+  keeps version 1 until the next save. Error messages name the upgraded fields, e.g.
+  `action.commands[0].command.targetId` for what the file calls `action.command.targetId`.
+  Tapcue 0.4 and older refuse a version 2 project.
+- **Version 2, Tapcue 0.6:** a step may have a `name` and `enabled` (both optional, so the version
+  stays 2). Tapcue 0.5 refuses a project that uses them, since a step has no other fields there.
+- **Version 2, Tapcue 0.9** ([ADR 0024](adr/0024-web-backgrounds.md)): a background may be
+  `{ "type": "web", "url" }` or `{ "type": "web", "site" }`, and the project may have
+  `webPageSeconds`. A project without them is unchanged, so the version stays 2; Tapcue 0.8 and
+  older refuse a project that uses them.
+- **Version 2, Tapcue 0.10** ([ADR 0025](adr/0025-motion.md)): a project may have `transition`, a
+  hotspot's `pressEffect` may be `"pop"` or `"glow"`, and a station may have `inviteTaps`. The
+  version stays 2; Tapcue 0.9 and older refuse a project that uses them.

@@ -21,8 +21,8 @@ const FORMATS: Record<string, { type: 'image' | 'video'; mime: string }> = {
 };
 
 export interface UploadOptions {
-  /** The project folder; files go into its assets/ folder. */
-  dir: string;
+  /** The active project's folder, read on each upload; files go into its assets/ folder. */
+  dir: () => string;
   /** Tests pass a small limit instead of sending 200 MB. */
   maxBytes?: number;
   /** The random part of a file name; tests pass a fixed one. */
@@ -55,7 +55,7 @@ export function registerUpload(
     }
 
     const name = assetName(file.filename, suffix());
-    const path = join(dir, 'assets', name);
+    const path = join(dir(), 'assets', name);
     try {
       // Streamed to disk, never held in memory. `wx` refuses to replace an existing file.
       await pipeline(file.file, createWriteStream(path, { flags: 'wx' }));

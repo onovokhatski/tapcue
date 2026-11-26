@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { errorOf } from '../test/errors';
 import { docExample } from '../test/format-doc';
 import { Canvas } from './canvas';
-import { Hotspot, Page } from './pages';
-import { Project } from './project';
+import { Action, activeSteps, backgroundSource, Hotspot, Page } from './pages';
+import { DEFAULT_WEB_PAGE_SECONDS, pageTransition, Project, webPageSeconds } from './project';
 import { Station } from './stations';
 import { Target } from './targets';
 
@@ -29,7 +29,7 @@ const hotspot = {
   shape: { type: 'rect', cornerRadius: 24 },
   style: { fill: null, border: null, opacity: 1 },
   pressEffect: 'ripple',
-  action: { goTo: 'p_7tn4vb', command: null },
+  action: { goTo: 'p_7tn4vb', commands: [] },
 };
 
 describe('Hotspot', () => {
@@ -43,7 +43,7 @@ describe('Hotspot', () => {
   });
 
   it('accepts a hotspot that does nothing but play its press effect', () => {
-    expect(errorOf(Hotspot, { ...hotspot, action: { goTo: null, command: null } })).toBeNull();
+    expect(errorOf(Hotspot, { ...hotspot, action: { goTo: null, commands: [] } })).toBeNull();
   });
 
   it('accepts a frosted backdrop from 1 to 100 px, and no field for none (spec HS-8)', () => {
@@ -410,9 +410,15 @@ describe('Hotspot', () => {
       'fader.value.as',
     ],
     ['an unknown press effect', { pressEffect: 'bounce' }, 'pressEffect'],
-    ['a go-to that is not a page id', { action: { goTo: 'home', command: null } }, 'action.goTo'],
+    ['a go-to that is not a page id', { action: { goTo: 'home', commands: [] } }, 'action.goTo'],
   ])('rejects %s', (_, change, expected) => {
     expect(errorOf(Hotspot, { ...hotspot, ...change })).toContain(expected);
+  });
+});
+
+describe('press effects (spec HS-5, ADR 0025)', () => {
+  it.each(['none', 'highlight', 'press', 'ripple', 'pop', 'glow'])('accepts %s', (pressEffect) => {
+    expect(errorOf(Hotspot, { ...hotspot, pressEffect })).toBeNull();
   });
 });
 
@@ -425,6 +431,80 @@ describe('Page', () => {
     ['a video background', { type: 'video', asset: 'assets/waves.mp4' }],
   ])('accepts %s', (_, background) => {
     expect(errorOf(Page, { ...page, background })).toBeNull();
+  });
+
+  describe('web background (spec PG-7, ADR 0024)', () => {
+    const web = (fields: object) =>
+      errorOf(Page, { ...page, background: { type: 'web', ...fields } });
+
+    it.each([
+      ['an https address', { url: 'https://example.com/configurator?lang=en#top' }],
+      ['an http address on the stand network', { url: 'http://192.168.1.20:8080/' }],
+      ['an address in capitals', { url: 'HTTPS://EXAMPLE.COM' }],
+      ['a mini-site', { site: 'assets/sites/catalog' }],
+      ['a mini-site folder with "_" and "-"', { site: 'assets/sites/Hall_B-2026' }],
+    ])('accepts %s', (_, fields) => {
+      expect(web(fields)).toBeNull();
+    });
+
+    it.each([
+      ['another scheme', 'ftp://example.com'],
+      ['no scheme', 'example.com'],
+      ['no host', 'https://'],
+      ['no host before the path', 'https:///path'],
+      ['a space', 'https://example.com/a b'],
+      ['text before the scheme', ' https://example.com'],
+    ])('refuses an address with %s', (_, url) => {
+      expect(web({ url })).toBe(
+        'background.url: Expected an address starting with http:// or https://',
+      );
+    });
+
+    it('refuses an address over 2000 characters, and takes one of exactly 2000', () => {
+      const at = (length: number) => `https://example.com/${'a'.repeat(length - 20)}`;
+      expect(at(2000)).toHaveLength(2000);
+      expect(web({ url: at(2000) })).toBeNull();
+      expect(web({ url: at(2001) })).toBe('background.url: Expected at most 2000 characters');
+    });
+
+    it.each([
+      'assets/catalog',
+      'assets/sites/',
+      'assets/sites/a.b',
+      'assets/sites/../x',
+      'assets/sites/a/b',
+      'sites/catalog',
+    ])('refuses the site path %s', (site) => {
+      expect(web({ site })).toBe(
+        'background.site: Expected "assets/sites/<folder>" using only A–Z, a–z, 0–9, "_" and "-"',
+      );
+    });
+
+    it('needs exactly one of an address and a mini-site', () => {
+      const message =
+        'background: Expected either "url" (an online address) or "site" (a mini-site), not both';
+      expect(web({})).toBe(message);
+      expect(web({ url: 'https://example.com', site: 'assets/sites/catalog' })).toBe(message);
+    });
+
+    it('refuses the fields of another background type', () => {
+      expect(web({ url: 'https://example.com', asset: 'assets/home.jpg' })).toBe(
+        'background: Unrecognized key: "asset"',
+      );
+      expect(
+        errorOf(Page, { ...page, background: { type: 'image', url: 'https://example.com' } }),
+      ).toContain('background');
+    });
+
+    it('names what each background shows', () => {
+      expect(backgroundSource({ type: 'image', asset: 'assets/home.jpg' })).toBe('assets/home.jpg');
+      expect(backgroundSource({ type: 'web', url: 'https://example.com' })).toBe(
+        'https://example.com',
+      );
+      expect(backgroundSource({ type: 'web', site: 'assets/sites/catalog' })).toBe(
+        'assets/sites/catalog',
+      );
+    });
   });
 
   it('rejects a background of another type', () => {
@@ -455,14 +535,28 @@ describe('Station', () => {
   it.each([3, 3601, 7.5])('rejects an idle timeout of %s', (idleTimeoutSeconds) => {
     expect(errorOf(Station, { ...station, idleTimeoutSeconds })).toContain('idleTimeoutSeconds');
   });
+
+  it('invites taps while idle when it says so, and is off without the field (spec ST-7)', () => {
+    expect(errorOf(Station, { ...station, inviteTaps: true })).toBeNull();
+    expect(errorOf(Station, station)).toBeNull();
+  });
+
+  it.each([false, 'yes', 1])(
+    'refuses inviteTaps: %j, since off is written as no field',
+    (value) => {
+      expect(errorOf(Station, { ...station, inviteTaps: value })).toBe(
+        'inviteTaps: Expected true, or no field for off',
+      );
+    },
+  );
 });
 
 describe('Project', () => {
   const project = docExample('11. Complete example') as Record<string, unknown>;
 
   it('rejects a project from another schema version, saying which versions differ', () => {
-    expect(errorOf(Project, { ...project, schemaVersion: 2 })).toBe(
-      'schemaVersion: This project uses schema version 2; this version of Tapcue reads version 1',
+    expect(errorOf(Project, { ...project, schemaVersion: 3 })).toBe(
+      'schemaVersion: This project uses schema version 3; this version of Tapcue reads version 2',
     );
   });
 
@@ -470,6 +564,43 @@ describe('Project', () => {
     expect(errorOf(Project, { ...project, pages: [] })).toBe(
       'pages: A project needs at least one page',
     );
+  });
+
+  describe('page transition (spec PG-4, ADR 0025)', () => {
+    it.each(['fade', 'slide', 'zoom', 'none'])('accepts %s', (transition) => {
+      expect(errorOf(Project, { ...project, transition })).toBeNull();
+    });
+
+    it.each(['wipe', 'Slide', ''])('refuses %j', (transition) => {
+      expect(errorOf(Project, { ...project, transition })).toContain('transition: ');
+    });
+
+    it('is a fade when the project does not say, as in every project before 0.10', () => {
+      const parsed = Project.parse(project);
+      expect(pageTransition(parsed)).toBe('fade');
+      expect(pageTransition({ ...parsed, transition: 'slide' })).toBe('slide');
+    });
+  });
+
+  describe('web page time (spec PG-10)', () => {
+    it.each([10, 3600])('accepts %s seconds', (seconds) => {
+      expect(errorOf(Project, { ...project, webPageSeconds: seconds })).toBeNull();
+    });
+
+    it.each([9, 3601, 7.5])('refuses %s seconds', (seconds) => {
+      expect(errorOf(Project, { ...project, webPageSeconds: seconds })).toBe(
+        Number.isInteger(seconds)
+          ? 'webPageSeconds: Expected 10 to 3600 seconds'
+          : 'webPageSeconds: Expected a whole number of seconds',
+      );
+    });
+
+    it('is 180 s when the project does not say, as in every project before 0.9', () => {
+      const parsed = Project.parse(project);
+      expect(DEFAULT_WEB_PAGE_SECONDS).toBe(180);
+      expect(webPageSeconds(parsed)).toBe(180);
+      expect(webPageSeconds({ ...parsed, webPageSeconds: 45 })).toBe(45);
+    });
   });
 
   it('accepts a project without targets and stations', () => {
@@ -482,5 +613,70 @@ describe('Project', () => {
     expect(errorOf(Project, { ...project, canvas: { ...canvas, scalemode: 'fill' } })).toBe(
       'canvas: Unrecognized key: "scalemode"',
     );
+  });
+});
+
+describe('Action (ADR 0022)', () => {
+  const step = { command: { type: 'udp', targetId: 't_projec', text: 'GO' } };
+  const action = (commands: unknown[]) => ({ goTo: null, commands });
+
+  it('accepts up to 20 steps, each with an optional delay from 0 to 60000 ms', () => {
+    expect(errorOf(Action, action([]))).toBeNull();
+    expect(errorOf(Action, action(Array.from({ length: 20 }, () => step)))).toBeNull();
+    for (const delayMs of [0, 1, 2500, 60_000]) {
+      expect(errorOf(Action, action([{ ...step, delayMs }]))).toBeNull();
+    }
+  });
+
+  it('refuses more than 20 steps', () => {
+    expect(errorOf(Action, action(Array.from({ length: 21 }, () => step)))).toBe(
+      'commands: Expected at most 20 commands',
+    );
+  });
+
+  it.each([
+    [-1, 'Expected 0 to 60000 ms'],
+    [60_001, 'Expected 0 to 60000 ms'],
+    [2.5, 'Expected a whole number of milliseconds'],
+  ])('refuses a delay of %s ms', (delayMs, message) => {
+    expect(errorOf(Action, action([{ ...step, delayMs }]))).toBe(`commands.0.delayMs: ${message}`);
+  });
+
+  it('accepts a name of up to 100 characters and an on/off switch (spec ACT-9)', () => {
+    for (const name of ['', 'Lights up', 'x'.repeat(100)]) {
+      expect(errorOf(Action, action([{ ...step, name }]))).toBeNull();
+    }
+    for (const enabled of [true, false]) {
+      expect(errorOf(Action, action([{ ...step, enabled }]))).toBeNull();
+    }
+  });
+
+  it('refuses a longer name and a switch that is not true or false', () => {
+    expect(errorOf(Action, action([{ ...step, name: 'x'.repeat(101) }]))).toBe(
+      'commands.0.name: Expected at most 100 characters',
+    );
+    expect(errorOf(Action, action([{ ...step, enabled: 'no' }]))).toContain('commands.0.enabled');
+    expect(errorOf(Action, action([{ ...step, name: 7 }]))).toContain('commands.0.name');
+  });
+
+  it('refuses the old single command and unknown step fields', () => {
+    expect(errorOf(Action, { goTo: null, command: step.command })).toContain('commands');
+    expect(errorOf(Action, action([{ ...step, wait: 1 }]))).toBe(
+      'commands.0: Unrecognized key: "wait"',
+    );
+  });
+});
+
+describe('activeSteps (spec ACT-9)', () => {
+  const step = (text: string, enabled?: boolean) => ({
+    command: { type: 'udp' as const, targetId: 't_projec', text },
+    ...(enabled === undefined ? {} : { enabled }),
+  });
+
+  it('keeps the steps that are on, in order: absent and true mean on', () => {
+    const commands = [step('A'), step('B', false), step('C', true), step('D', false)];
+    const kept = activeSteps({ goTo: null, commands });
+    expect(kept).toEqual([commands[0], commands[2]]);
+    expect(activeSteps({ goTo: null, commands: [step('A', false)] })).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 // The Stations tab: one entry point per tablet — a list on the left, the selected station's form,
-// and its URL as a QR code to scan with the tablet (spec ST-1, ST-2, ST-6, ED-4, ED-10;
+// and its URL as a QR code to scan with the tablet (spec ST-1, ST-2, ST-6, ST-7, ED-4, ED-10;
 // design: stationsScreen(), qrCard()).
 import type { Project, Station } from '@tapcue/shared';
 import { useState } from 'react';
@@ -17,6 +17,7 @@ import {
   changeStationId,
   checkStationId,
   deleteStation,
+  setInviteTaps,
   updateStation,
 } from '../operations/stations';
 import { useEditor } from '../useEditor';
@@ -267,6 +268,21 @@ function StationForm({
           </div>
           <p className={`text-body-s ${seconds.error ? 'text-danger-fg' : 'text-muted'}`}>
             {seconds.error ?? '5–3600 s. Every tap restarts the timer.'}
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-label-s text-secondary">Invite taps when idle</p>
+          <Segmented
+            label="Invite taps when idle"
+            options={[
+              { value: 'on', label: 'On' },
+              { value: 'off', label: 'Off' },
+            ]}
+            value={station.inviteTaps ? 'on' : 'off'}
+            onChange={(value) => change((p) => setInviteTaps(p, station.id, value === 'on'))}
+          />
+          <p className="text-body-s text-muted">
+            After 15 s without a touch on the start page, its buttons pulse one after another.
           </p>
         </div>
         <p className="text-body-s text-muted">Changes save automatically.</p>

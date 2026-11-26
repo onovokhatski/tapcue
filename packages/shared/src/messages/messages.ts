@@ -13,6 +13,21 @@ export const LogSource = z.discriminatedUnion('type', [
 ]);
 export type LogSource = z.infer<typeof LogSource>;
 
+/**
+ * Where an entry sits in a tap's sequence of commands (ADR 0022): `run` is the same for every entry
+ * of one tap, `step` counts from 1 of `of`, and `delayMs` is the pause before the step. Steps that
+ * are off are not counted (spec ACT-9). Absent for a tap that sends one unnamed command at once.
+ */
+export const SequenceStep = z.strictObject({
+  run: z.int().min(0),
+  step: z.int().min(1),
+  of: z.int().min(1),
+  delayMs: z.int().min(0),
+  /** The step's name, when it has one (spec ACT-9). */
+  name: z.string().max(100).optional(),
+});
+export type SequenceStep = z.infer<typeof SequenceStep>;
+
 const logEntryBase = {
   /** Increases by one per entry, so a client can order entries and spot ones it missed. */
   seq: z.int().min(0),
@@ -21,6 +36,7 @@ const logEntryBase = {
   source: LogSource,
   pageId: PageId,
   hotspotId: HotspotId,
+  sequence: SequenceStep.optional(),
 };
 
 /** Names are copied at send time, so the log still reads right after a target or hotspot is renamed. */
@@ -28,6 +44,11 @@ const delivery = {
   hotspotName: z.string().max(100),
   targetName: Name,
   command: Command,
+  /**
+   * A fader's drag is one entry, for the value where the finger stopped (ADR 0020): how many
+   * values the drag sent, that one included. Absent for a tap.
+   */
+  valuesSent: z.int().min(1).optional(),
 };
 
 /** One line of the command log (spec TGT-4, TGT-5). */
@@ -35,7 +56,10 @@ export const LogEntry = z.discriminatedUnion('status', [
   /** OSC and UDP: the packet left the server. HTTP: the target answered 2xx. */
   z.strictObject({ ...logEntryBase, ...delivery, status: z.literal('sent') }),
   z.strictObject({ ...logEntryBase, ...delivery, status: z.literal('error'), message: z.string() }),
-  /** The tap named a page or hotspot the server's project does not have (ADR 0005). */
+  /**
+   * The tap named a page or hotspot the server's project does not have (ADR 0005), or steps of a
+   * sequence were not sent: `sequence.step` is the first of them (ADR 0022).
+   */
   z.strictObject({ ...logEntryBase, status: z.literal('ignored'), message: z.string() }),
 ]);
 export type LogEntry = z.infer<typeof LogEntry>;
@@ -51,6 +75,15 @@ export const DemoRequest = z.strictObject({
   /** From the X-Tapcue-Station and X-Tapcue-Hotspot headers (spec TGT-6); null when absent. */
   station: z.string().nullable(),
   hotspot: z.string().nullable(),
+  /** A fader's value and range, from the X-Tapcue-Fader header (spec TGT-6); absent for a tap. */
+  fader: z.strictObject({ value: z.number(), min: z.number(), max: z.number() }).optional(),
+  /**
+   * The step of a sequence, from the X-Tapcue-Sequence header (spec TGT-6, ADR 0022): `run` is the
+   * same for every step of one tap. Absent for a tap that sends one command at once.
+   */
+  sequence: z
+    .strictObject({ run: z.int().min(0), step: z.int().min(1), of: z.int().min(1) })
+    .optional(),
 });
 export type DemoRequest = z.infer<typeof DemoRequest>;
 

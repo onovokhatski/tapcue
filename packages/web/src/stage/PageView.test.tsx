@@ -1,7 +1,7 @@
 import type { Canvas, Hotspot, Page } from '@tapcue/shared';
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PageView } from './PageView';
+import { PageView, PREVIEW_PIXEL_RATIO, WEB_READY_LIMIT_MS } from './PageView';
 
 const canvas: Canvas = { width: 2048, height: 1536, scaleMode: 'fit', backgroundColor: '#102030' };
 
@@ -15,7 +15,7 @@ const hotspot: Hotspot = {
   shape: { type: 'rect', cornerRadius: 24 },
   style: { fill: null, border: null, opacity: 1 },
   pressEffect: 'none',
-  action: { goTo: null, command: null },
+  action: { goTo: null, commands: [] },
 };
 
 function page(overrides: Partial<Page> = {}): Page {
@@ -220,6 +220,159 @@ describe('PageView', () => {
         el.getAttribute('data-hotspot'),
       );
       expect(ids).toEqual(['h_test00', 'h_test01']);
+    });
+  });
+
+  describe('web background (spec PG-7, PG-8, PG-10, ADR 0024)', () => {
+    const online = page({
+      background: { type: 'web', url: 'https://example.com/shop' },
+      hotspots: [hotspot],
+    });
+    const site = page({ background: { type: 'web', site: 'assets/sites/catalog' } });
+
+    function renderWeb(p: Page, viewport = { width: 1224, height: 768 }) {
+      stubViewport(viewport.width, viewport.height);
+      const onReady = vi.fn();
+      const onActivity = vi.fn();
+      const view = render(
+        <PageView page={p} canvas={canvas} onReady={onReady} onActivity={onActivity} />,
+      );
+      const frame = view.container.querySelector('iframe')!;
+      return { ...view, frame, onReady, onActivity };
+    }
+
+    /** What the frame's window is, as the browser would give it: same-origin, or a throw. */
+    function giveWindow(frame: HTMLIFrameElement, view: EventTarget | 'cross-origin') {
+      Object.defineProperty(frame, 'contentWindow', {
+        configurable: true,
+        get: () =>
+          view === 'cross-origin'
+            ? {
+                addEventListener: () => {
+                  throw new DOMException('Blocked a frame', 'SecurityError');
+                },
+                removeEventListener: () => {
+                  throw new DOMException('Blocked a frame', 'SecurityError');
+                },
+              }
+            : view,
+      });
+    }
+
+    it('shows an online address in a sandboxed frame', () => {
+      const { frame } = renderWeb(online);
+      expect(frame).toHaveAttribute('src', 'https://example.com/shop');
+      expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+      expect(frame).toHaveAttribute('title', 'Web page');
+    });
+
+    it("shows a mini-site's index.html from the assets", () => {
+      expect(renderWeb(site).frame).toHaveAttribute('src', '/assets/sites/catalog/index.html');
+    });
+
+    it('covers the page area in screen pixels, not scaled with the canvas', () => {
+      // 1224 × 768 fits the 2048 × 1536 canvas at 0.5, with 100 px bars left and right.
+      const { frame, getByTestId } = renderWeb(online);
+      expect(frame).toHaveStyle({ left: '100px', top: '0px', width: '1024px', height: '768px' });
+      expect(frame.closest('[data-testid="page-canvas"]')).toBeNull();
+      expect(getByTestId('page-canvas').contains(frame)).toBe(false);
+    });
+
+    it('lets taps through to the site, except on the hotspots drawn over it', () => {
+      const { getByTestId, container } = renderWeb(online);
+      expect(getByTestId('page-canvas')).toHaveClass(
+        'pointer-events-none',
+        '*:pointer-events-auto',
+      );
+      // The frame comes first, so the hotspots are drawn over it.
+      const children = [...container.firstElementChild!.children];
+      expect(children[0]?.tagName).toBe('IFRAME');
+      // Pages without a site keep their canvas as it was.
+      const { getByTestId: plain } = render(<PageView page={page()} canvas={canvas} />, {
+        container: document.body.appendChild(document.createElement('div')),
+      });
+      expect(plain('page-canvas')).not.toHaveClass('pointer-events-none');
+    });
+
+    it('is ready once the site has loaded', () => {
+      const { frame, onReady } = renderWeb(online);
+      expect(onReady).not.toHaveBeenCalled();
+      fireEvent.load(frame);
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+
+    it('waits at most 3 s for a site, as ADR 0024 says', () => {
+      expect(WEB_READY_LIMIT_MS).toBe(3000);
+    });
+
+    it('is ready after the limit when the site is slow, and only once', () => {
+      vi.useFakeTimers();
+      try {
+        const { frame, onReady } = renderWeb(online);
+        act(() => void vi.advanceTimersByTime(WEB_READY_LIMIT_MS - 1));
+        expect(onReady).not.toHaveBeenCalled();
+        act(() => void vi.advanceTimersByTime(1));
+        expect(onReady).toHaveBeenCalledTimes(1);
+        fireEvent.load(frame); // the slow site arrives after all
+        expect(onReady).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("hears touches inside a mini-site's pages, as each one loads", () => {
+      const { frame, onActivity } = renderWeb(site);
+      const first = new EventTarget();
+      giveWindow(frame, first);
+      fireEvent.load(frame);
+      first.dispatchEvent(new Event('pointerdown'));
+      expect(onActivity).toHaveBeenCalledTimes(1);
+      // In the capture phase, so a site that stops its own events cannot hide a touch.
+      const listen = vi.spyOn(first, 'addEventListener');
+      giveWindow(frame, first);
+      fireEvent.load(frame);
+      expect(listen).toHaveBeenCalledWith('pointerdown', expect.any(Function), { capture: true });
+      // A link followed inside the site loads a new document: it is heard too, the old one is let go.
+      const second = new EventTarget();
+      giveWindow(frame, second);
+      fireEvent.load(frame);
+      second.dispatchEvent(new Event('pointerdown'));
+      first.dispatchEvent(new Event('pointerdown'));
+      expect(onActivity).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops hearing them when the page goes', () => {
+      const { frame, onActivity, unmount } = renderWeb(site);
+      const view = new EventTarget();
+      giveWindow(frame, view);
+      fireEvent.load(frame);
+      unmount();
+      view.dispatchEvent(new Event('pointerdown'));
+      expect(onActivity).not.toHaveBeenCalled();
+    });
+
+    it('takes no click or focus in the editor, which passes inertWeb (ADR 0024)', () => {
+      const { frame } = renderWeb(online);
+      expect(frame.style.pointerEvents).toBe('');
+      expect(frame).not.toHaveAttribute('tabindex');
+      stubViewport(1024, 768);
+      const { container } = render(<PageView page={online} canvas={canvas} inertWeb />, {
+        container: document.body.appendChild(document.createElement('div')),
+      });
+      const inert = container.querySelector('iframe')!;
+      expect(inert.style.pointerEvents).toBe('none');
+      expect(inert).toHaveAttribute('tabindex', '-1');
+      // Laid out at the tablet's size, 1024 × 768 for this canvas, and shrunk to the 0.5 preview.
+      expect(inert).toHaveStyle({ width: '1024px', height: '768px', transform: 'scale(1)' });
+      expect(PREVIEW_PIXEL_RATIO).toBe(2);
+    });
+
+    it("cannot hear an online site's touches, and is ready all the same", () => {
+      const { frame, onReady, onActivity } = renderWeb(online);
+      giveWindow(frame, 'cross-origin');
+      expect(() => fireEvent.load(frame)).not.toThrow();
+      expect(onReady).toHaveBeenCalledTimes(1);
+      expect(onActivity).not.toHaveBeenCalled();
     });
   });
 });

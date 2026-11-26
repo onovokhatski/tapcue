@@ -37,6 +37,8 @@ export function registerDemoReceiver(
           body: request.body ? request.body : null,
           station: header(request.headers['x-tapcue-station']),
           hotspot: decoded(header(request.headers['x-tapcue-hotspot'])),
+          ...faderLevel(header(request.headers['x-tapcue-fader'])),
+          ...sequenceStep(header(request.headers['x-tapcue-sequence'])),
         });
         return { ok: true };
       },
@@ -51,6 +53,22 @@ export function registerDemoReceiver(
 
     done();
   });
+}
+
+/** "0.5 0 1" from X-Tapcue-Fader (spec TGT-6) as a fader's level; nothing for anything else. */
+export function faderLevel(value: string | null): { fader?: DemoRequest['fader'] } {
+  const parts = value?.trim().split(/\s+/).map(Number) ?? [];
+  if (parts.length !== 3 || !parts.every(Number.isFinite)) return {};
+  const [level, min, max] = parts as [number, number, number];
+  return min < max ? { fader: { value: level, min, max } } : {};
+}
+
+/** "17 2 3" from X-Tapcue-Sequence (spec TGT-6) as a step of a tap's run; nothing for anything else. */
+export function sequenceStep(value: string | null): { sequence?: DemoRequest['sequence'] } {
+  const parts = value?.trim().split(/\s+/).map(Number) ?? [];
+  if (parts.length !== 3 || !parts.every(Number.isInteger)) return {};
+  const [run, step, of] = parts as [number, number, number];
+  return run >= 0 && step >= 1 && step <= of ? { sequence: { run, step, of } } : {};
 }
 
 function header(value: string | string[] | undefined): string | null {

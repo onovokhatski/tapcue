@@ -4,6 +4,287 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-11-25
+
+The stand moves: pages change with a transition, buttons answer with more life, and an idle
+station invites taps. Milestone v0.10 (Motion).
+
+### Added
+
+- **Page transitions** (Settings, one choice per project): Fade, Slide, Zoom or None. Slide
+  follows the page order: a page further down the list comes in from the right, one further up
+  from the left.
+- **Pop and Glow press effects:** Pop springs the button out and back after a tap; Glow lights a
+  soft halo around it while it is pressed. The page change after a tap waits for the effect to
+  finish.
+- **Invite taps when idle** (Stations, one switch per station): after 15 s without a touch on the
+  station's start page, its buttons pulse one after another until someone touches the screen.
+- **The demo stand** slides between pages, and its main station invites taps.
+
+### Changed
+
+- **Project format:** a project may have `transition`, a hotspot's `pressEffect` may be `"pop"` or
+  `"glow"`, and a station may have `inviteTaps`. The schema version stays 2; Tapcue 0.9 and older
+  refuse a project that uses them.
+- **Reduced motion:** when the tablet asks for less motion, no button grows: Pop is left out, and
+  Glow and the invite pulse only light up.
+
+### Known limitations
+
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: motion (from 0.10.0), web backgrounds (from 0.9.0), sequences (from
+  0.5.0), faders (from 0.3.0), the stand setup (from 0.1.0) and the frosted backdrop over video
+  (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
+## [0.9.0] - 2026-11-25
+
+A page can show a live web page, with the stand's own hotspots on top. Milestone v0.9 (Web
+backgrounds).
+
+### Added
+
+- **Web pages as page backgrounds:** an online address, or a mini-site uploaded as a `.zip` with
+  an `index.html`, which Tapcue serves itself and which works without internet. Visitors scroll
+  and tap the site; hotspots drawn over it lead back to the stand's pages.
+- **The embed check:** the editor asks the server whether an online address may be shown inside
+  another page. An address that forbids it (`X-Frame-Options` or CSP `frame-ancestors`) is refused
+  with the reason; one that could not be checked can be used anyway.
+- **On the tablet** the site fills the page area at the screen's own size, so its text stays
+  readable, in a sandbox that keeps it from leaving the page, opening windows or downloading. It
+  loads afresh on every visit, and a page change waits at most 3 s for it.
+- **Web page time** (Settings, default 3 min): on a page with a web background, the tablet goes
+  back to its start page after this time instead of its station's idle timeout. It counts from
+  opening for an online site, whose taps cannot be seen, and from the last tap for a mini-site.
+- **In the editor** the site is shown live on the canvas, laid out as on a tablet, under the
+  hotspots; clicks still select and drag them.
+- **Export and import** carry mini-sites with the project.
+- **The demo stand** has a Showroom page with a mini-site, reached from About us.
+
+### Changed
+
+- **Project format:** a background may be `{ "type": "web", "url" }` or
+  `{ "type": "web", "site" }`, and a project may have `webPageSeconds`. The schema version stays
+  2; Tapcue 0.8 and older refuse a project that uses them.
+- **Demo mode** also refuses the embed check, so the public server never fetches an address on
+  request.
+
+### Known limitations
+
+- Many sites forbid being shown inside another page (most large services, YouTube's own pages
+  but not its `/embed/` links). Tapcue says so; it cannot show them.
+- An online site needs internet on the stand.
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: web backgrounds (from 0.9.0), sequences (from 0.5.0), faders (from
+  0.3.0), the stand setup (from 0.1.0) and the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
+## [0.8.0] - 2026-11-25
+
+A wrong drag, delete or paste is one keystroke from undone. Milestone v0.8 (Undo and redo).
+
+### Added
+
+- **Undo and redo** in the editor: Cmd/Ctrl + Z undoes, Shift + Cmd/Ctrl + Z or Ctrl + Y redoes,
+  and Undo and Redo buttons sit in the top bar, with the shortcut in their tooltips. An undo is
+  saved like any change, so every open tablet follows it within a second. Up to 100 steps are
+  kept while the editor tab is open.
+- **One step per action:** a whole drag or resize on the canvas, a series of arrow nudges, or
+  typing into one field is one step; each switch, choice or button is a step of its own.
+- **Inside a text field** the shortcuts undo the typing, as the browser does, and leave the
+  project alone.
+
+### Changed
+
+- **A change from another editor clears the history**, and the top bar says "Changed in another
+  editor: undo starts here", so undo never overwrites someone else's work. Opening or importing a
+  project in this editor clears it without a notice.
+
+### Known limitations
+
+- The history is not kept when the editor tab is reloaded.
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: sequences (from 0.5.0), faders (from 0.3.0), the stand setup (from
+  0.1.0) and the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
+## [0.7.0] - 2026-11-24
+
+The editor gets out of the way on a busy stand. Several hotspots are selected, copied to another
+page, aligned and styled together; the page list and command cards fold away; commands have names
+and an on/off switch; and the hotspot panel folds into one line per section. Milestones v0.6
+(Editor tidy-up) and v0.7 (Properties panel), released together.
+
+### Added
+
+- **Select several hotspots:** Shift-, Cmd- or Ctrl-click, a rectangle dragged on the empty page,
+  or Cmd/Ctrl + A; Escape clears. Drag one of them to move them all, nudge them with the arrow
+  keys, duplicate them, or delete them after one confirmation. The group stops as a whole at the
+  canvas edge.
+- **Copy and paste hotspots** between pages of the project: Cmd/Ctrl + C and V, or Copy and Paste
+  in the editor. Copies land at the same positions (24 px off on their own page) with new names,
+  and keep everything else.
+- **Align, distribute, same size:** align left, centre, right, top, middle or bottom (several to
+  their common box, one to the canvas); spread three or more with equal gaps; give several the
+  width, height or size of the first.
+- **Edit several at once:** the shape, style and text style that selected hotspots share; a value
+  they do not share shows as "Mixed".
+- **Named commands that can be switched off:** a step of a sequence can have a name, shown in the
+  editor and the command log, and an on/off switch. A step that is off is skipped with its pause
+  and not counted; a fader's command can be switched off too.
+- **Foldable command cards:** each folds into one line with its name, target, command and pause;
+  Fold all and Unfold all.
+- **Foldable panel sections:** every section of the hotspot panel folds and says its state in one
+  line ("144, 500 · 560 × 720", "Go to Product A · 2 commands over 1.5 s"). The folds are kept in
+  the browser, the same for every hotspot.
+- **Go to page as a command card:** the page link is the first card among the commands, added
+  next to Add command.
+- **Collapsible page list:** the page list folds into a rail of thumbnails at any window width.
+
+### Changed
+
+- **Unique hotspot names on a page:** a new hotspot is named "Button N", a copy gets a free name
+  ("Play demo 2"), and a rename to a name another hotspot on the page has is refused with a hint.
+  Duplicates in older projects stay until edited.
+- **The hotspot panel's order** goes from how a hotspot looks to what it does: Name, Type,
+  Position and size (with the align tools), Style (with the shape), Text, On tap, Stacking.
+- **Position and size fields** show four-digit values in full.
+- **Project format:** a step may have `name` and `enabled`, both optional, so the schema version
+  stays 2. Tapcue 0.5.0 refuses a project that uses them.
+
+### Known limitations
+
+- No undo yet: it comes next.
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: sequences (from 0.5.0), faders (from 0.3.0), the stand setup (from
+  0.1.0) and the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
+## [0.5.0] - 2026-11-23
+
+One tap sends several commands in order, each after its own pause, to one media server or
+several: start a clip in Resolume, then a QLab cue 2.5 seconds later
+([ADR 0022](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0022-command-sequences.md)).
+Milestone v0.5.
+
+### Added
+
+- **Command sequences:** a button's commands are a list of up to 20 steps, each with its own
+  target and a pause before it of 0 to 60 seconds.
+- **The server keeps the time:** the first step is sent at once, each next one after its pause,
+  so a tablet that sleeps or goes to another page does not stop a sequence. A pause counts from
+  when the step before was sent, so a slow target does not push the rest back.
+- **Start over:** tapping the same button again, from any station, cancels the steps not yet
+  sent and starts the sequence from the top. Other buttons' sequences keep running.
+- **Editor:** On tap lists the commands. Each has a pause in seconds with tenths, a target and
+  its fields; Add command reuses the last target; drag a command by its handle, or press
+  Alt + ↑ / ↓ on it, to reorder. A summary says how many commands over how long. Send test runs
+  the whole sequence and shows each step's result as it arrives.
+- **Command log:** the steps of one tap are one row (Sent, Error, Cancelled or Running), opened
+  to show each step with its place and pause.
+- **`X-Tapcue-Sequence` header** on every HTTP command of a sequence: the tap's run, the step
+  and how many steps (`17 2 3`).
+- **Demo:** Play demo on the demo stand's Product A page sends a second command 1.5 s later,
+  and the demo receiver shows a step's place and the time since the step before.
+
+### Changed
+
+- **Project format, schema version 2:** `action.command` became `action.commands`, a list of
+  steps. Projects from 0.4.0 and older open and import as before and are written as version 2
+  on the next save; Tapcue 0.4.0 and older then refuse them with a message about the version.
+- **A failed step does not stop the rest:** it is logged as an error, and the next step is sent
+  on time. Steps not yet sent are cancelled when another project is opened, and dropped when the
+  server stops.
+- **A fader** still sends one command, at once, with its value.
+
+### Known limitations
+
+- There is no "stop on error" option yet: every step of a sequence is sent.
+- Not yet checked on an iPad: sequences, faders (from 0.3.0), the stand setup (from 0.1.0) and
+  the frosted backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
+## [0.4.0] - 2026-11-21
+
+One Tapcue server keeps several stands and runs one of them: projects are created, opened and
+deleted from the editor ([ADR 0021](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0021-project-library.md)).
+
+### Added
+
+- **Projects library:** projects live side by side in one folder, by default `Documents/Tapcue`
+  in your home folder, one subfolder each. `--projects` or `TAPCUE_PROJECTS` puts it elsewhere.
+- **Projects tab** in the editor: every project with its canvas size and last change, the open
+  one first. A project that does not load shows why. The project name in the top bar leads there.
+- **New project:** a name and a canvas size, from common stand screens (iPad, iPad Pro 12.9″,
+  Full HD, 16:10) or typed in, give an empty project with one page and one station, "Main". It
+  opens on every station at once.
+- **Open a project:** after a confirmation, every station and editor switches to it within a
+  second. What the editor still has waiting is saved into the previous project first. Tapcue
+  opens the same project again after a restart.
+- **Delete a project:** after a confirmation, its folder moves into the library's `.trash`
+  folder, from which it can be brought back by hand. The open project cannot be deleted.
+- **API:** `GET /api/projects`, `POST /api/projects`, `POST /api/projects/:id/open` and
+  `DELETE /api/projects/:id`.
+
+### Changed
+
+- **Which project starts:** the one `--project` names, else the one last opened from the
+  library, else the demo stand as before. The click-to-run app keeps its copy of the demo stand
+  in the library.
+- **Saving:** the editor names the revision its copy came from, so a save made before another
+  project was opened is refused and the editor shows the open project instead. The change made
+  in those last moments is dropped, not written into the other stand.
+- **Fader values** start over from each fader's start when another project is opened.
+- **Online demo:** it keeps its one project; creating, opening and deleting are turned off.
+
+### Known limitations
+
+- Emptying `.trash` and renaming a project's folder are left to the file system.
+- Not yet checked on an iPad: faders (from 0.3.0), the stand setup (from 0.1.0) and the frosted
+  backdrop over video (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
+## [0.3.0] - 2026-11-20
+
+Besides buttons, a hotspot can be a fader that sends a value while it is dragged: a volume, a
+layer's opacity, a light level ([ADR 0020](https://github.com/onovokhatski/tapcue/blob/main/docs/adr/0020-faders.md)).
+Milestone v0.3.
+
+### Added
+
+- **Faders** (`kind: "fader"`, `fader`): a vertical or horizontal control with a range, a step
+  and a start value. It keeps everything a hotspot has (shape, style, frost, image, text) and
+  shows a level and a knob on the player. Dragging it, or touching its track, sets the value.
+- **Value commands:** for OSC the value is an argument of its own, sent as a float or an integer,
+  at a position you choose. For UDP text and an HTTP path or body, `{value}` is replaced by the
+  value as text: `128`, or up to 3 decimals such as `0.75`.
+- **Shared value:** the Tapcue server holds each fader's value. Every tablet on any station shows
+  the same position, and a reloaded tablet shows it again. While a fader is dragged, about 25
+  commands a second are sent, and the value where the finger stops is always sent. Offline, a
+  tablet sends that last value once it is back.
+- **Editor:** a Type section makes a hotspot a button or a fader, with fields for direction,
+  range, step, start value and where the value goes; each field accepts only a value that fits
+  the others. Send test sends a value of your choice.
+- **Command log:** a drag is one row, for its final value, with the number of values it sent.
+- **Demo:** the demo stand has a Volume fader on the Product A page, and the demo receiver shows
+  a fader's value as a level on its screen's tile. HTTP commands of a fader carry an
+  `X-Tapcue-Fader` header with the value, min and max.
+
+### Changed
+
+- **Project format:** `kind` and `fader` are optional, and an absent `kind` means a button.
+  Projects from 0.2.0 open unchanged; `schemaVersion` stays 1.
+- **Number fields** step by fractions where a field needs it, such as 0.01 for a fader's range.
+
+### Known limitations
+
+- A fader shows the last value Tapcue sent, not the media server's level: a change made on the
+  media server itself is not seen (no feedback from media servers yet). After a server restart
+  faders are back at their start values.
+- Faders are not yet checked on an iPad
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)),
+  nor are the stand setup (from 0.1.0) and the frosted backdrop over video (from 0.2.0).
+
 ## [0.2.0] - 2026-11-18
 
 Hotspots carry their own content on top of the artwork, so button labels and pictures change in

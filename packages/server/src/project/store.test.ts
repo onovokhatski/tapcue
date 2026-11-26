@@ -1,8 +1,9 @@
-import { chmod, cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PROJECT_DIR } from '../config';
+import { asVersion1, singleCommands } from '../test/version1';
 import { loadProject, loadProjectStore, PROJECT_FILE, ProjectLoadError } from './store';
 
 // Each test works on its own copy of the demo stand in a temporary folder.
@@ -142,6 +143,43 @@ describe('save', () => {
     expect(store.revision).toBe(1);
   });
 
+  describe('mini-site backgrounds (project format §9.4)', () => {
+    async function saveSite(withIndex: boolean) {
+      const dir = await demoCopy();
+      await mkdir(join(dir, 'assets/sites/catalog/img'), { recursive: true });
+      await writeFile(join(dir, 'assets/sites/catalog/img/a.png'), '');
+      if (withIndex) await writeFile(join(dir, 'assets/sites/catalog/index.html'), '<h1>Hi</h1>');
+      const store = await loadProjectStore(dir);
+      const [home, ...rest] = store.project.pages;
+      if (!home) throw new Error('the demo stand has pages');
+      const page = { ...home, background: { type: 'web', site: 'assets/sites/catalog' } };
+      return store.save({ ...store.project, pages: [page, ...rest] });
+    }
+
+    it('saves a mini-site that has its index.html', async () => {
+      expect((await saveSite(true)).ok).toBe(true);
+    });
+
+    it('refuses a mini-site without an index.html', async () => {
+      const result = await saveSite(false);
+      expect(result.ok ? [] : result.errors).toEqual([
+        {
+          path: 'pages[0].background.site',
+          message: 'file "assets/sites/catalog/index.html" does not exist',
+        },
+      ]);
+    });
+
+    it('checks no file for an online address', async () => {
+      const dir = await demoCopy();
+      const store = await loadProjectStore(dir);
+      const [home, ...rest] = store.project.pages;
+      if (!home) throw new Error('the demo stand has pages');
+      const page = { ...home, background: { type: 'web', url: 'https://example.com' } };
+      expect((await store.save({ ...store.project, pages: [page, ...rest] })).ok).toBe(true);
+    });
+  });
+
   it('refuses a project whose hotspot image is not in the folder (spec HS-9)', async () => {
     const dir = await demoCopy();
     const store = await loadProjectStore(dir);
@@ -213,5 +251,99 @@ describe('save', () => {
     expect(results.map((result) => result.revision)).toEqual([2, 3, 4]);
     expect(store.project.name).toBe('Three');
     expect(await readSaved(dir)).toMatchObject({ name: 'Three' });
+  });
+});
+
+describe('open (ADR 0021)', () => {
+  it('makes another folder the active project at the next revision', async () => {
+    const first = await demoCopy();
+    const second = await demoCopy();
+    await editProject(second, (project) => {
+      project['name'] = 'Hall B';
+    });
+    const store = await loadProjectStore(first);
+
+    const result = await store.open(second);
+
+    expect(result).toMatchObject({ ok: true, revision: 2 });
+    expect(store.dir).toBe(second);
+    expect(store.project.name).toBe('Hall B');
+    expect(store.revision).toBe(2);
+    expect(store.openedAt).toBe(2);
+  });
+
+  it('refuses a folder that does not load, and keeps the project that is open', async () => {
+    const first = await demoCopy();
+    const broken = await demoCopy();
+    await writeFile(join(broken, PROJECT_FILE), '{ not json');
+    const store = await loadProjectStore(first);
+
+    const result = await store.open(broken);
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.errors[0]?.path).toBe(PROJECT_FILE);
+    expect(store.dir).toBe(first);
+    expect(store.revision).toBe(1);
+    expect(store.openedAt).toBe(1);
+  });
+
+  it('saves into the folder that is open now', async () => {
+    const first = await demoCopy();
+    const second = await demoCopy();
+    const store = await loadProjectStore(first);
+    await store.open(second);
+
+    await store.save({ ...store.project, name: 'Saved after the switch' });
+
+    const saved = JSON.parse(await readFile(join(second, PROJECT_FILE), 'utf8')) as {
+      name: string;
+    };
+    expect(saved.name).toBe('Saved after the switch');
+    const untouched = JSON.parse(await readFile(join(first, PROJECT_FILE), 'utf8')) as {
+      name: string;
+    };
+    expect(untouched.name).toBe('Demo stand');
+  });
+
+  it('refuses a save based on a copy of the project open before, and writes nothing', async () => {
+    const first = await demoCopy();
+    const second = await demoCopy();
+    const store = await loadProjectStore(first);
+    const before = await readFile(join(second, PROJECT_FILE), 'utf8');
+    await store.open(second); // revision 2
+
+    const stale = await store.save({ ...store.project, name: 'From the old editor' }, 1);
+
+    expect(stale).toEqual({ ok: false, errors: [], revision: 2, stale: true });
+    expect(await readFile(join(second, PROJECT_FILE), 'utf8')).toBe(before);
+    expect(store.revision).toBe(2);
+  });
+
+  it('takes a save based on the open project, or one that names no revision', async () => {
+    const store = await loadProjectStore(await demoCopy());
+    await store.open(await demoCopy()); // revision 2
+
+    expect(await store.save({ ...store.project, name: 'A' }, 2)).toMatchObject({ ok: true });
+    expect(await store.save({ ...store.project, name: 'B' }, 3)).toMatchObject({ ok: true });
+    expect(await store.save({ ...store.project, name: 'C' })).toMatchObject({ revision: 5 });
+  });
+});
+
+describe('a project from Tapcue 0.4 or older (schema version 1, ADR 0022)', () => {
+  it('loads it upgraded, and writes version 2 only on the next save', async () => {
+    const dir = await demoCopy();
+    const file = join(dir, PROJECT_FILE);
+    // Version 1 has no sequences: the demo stand's Play demo keeps its first command.
+    const current = singleCommands(JSON.parse(await readFile(file, 'utf8')) as unknown);
+    await writeFile(file, JSON.stringify(asVersion1(current)));
+
+    const store = await loadProjectStore(dir);
+
+    expect(store.project).toEqual(current);
+    expect(
+      (JSON.parse(await readFile(file, 'utf8')) as { schemaVersion: number }).schemaVersion,
+    ).toBe(1);
+    await store.save(store.project);
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(current);
   });
 });

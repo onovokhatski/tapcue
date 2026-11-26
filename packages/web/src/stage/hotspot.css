@@ -101,10 +101,93 @@
   }
 }
 
-/* Reduced motion: the ripple only fades, without growing. The fades of highlight and press stay. */
+/* pop: after a tap the hotspot grows by a few percent and settles back. */
+.hotspot[data-popping] {
+  animation: hotspot-pop var(--duration-pop) var(--easing-out);
+}
+
+@keyframes hotspot-pop {
+  40% {
+    transform: scale(1.06);
+  }
+}
+
+/* glow: a soft light around the shape grows on touch-down and fades on release. It is the
+   hotspot's sibling, so the hotspot's clipping leaves it whole. */
+.hotspot-glow {
+  position: absolute;
+  pointer-events: none;
+  box-shadow: 0 0 32px 12px color-mix(in srgb, var(--color-overlay-light) 55%, transparent);
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity var(--duration-press-out) var(--easing-out),
+    transform var(--duration-press-out) var(--easing-out);
+}
+
+.hotspot-glow[data-pressed] {
+  opacity: 1;
+  transform: none;
+  transition-duration: var(--duration-base);
+}
+
+/* Invite taps while idle (spec ST-7): the hotspot grows slightly and lights up, then rests for the
+   rest of the cycle. It loops while it is this hotspot's turn; each cycle's end hands the turn on. */
+.hotspot[data-inviting] {
+  animation: hotspot-invite var(--duration-invite) var(--easing-standard) infinite;
+}
+
+.hotspot[data-inviting]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--color-overlay-light) 22%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: hotspot-invite-light var(--duration-invite) var(--easing-standard) infinite;
+}
+
+@keyframes hotspot-invite {
+  35% {
+    transform: scale(1.04);
+  }
+  70%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hotspot-invite-light {
+  35% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: nothing grows. The ripple only fades, the glow and the invitation only light up
+   and fade, and pop, which is only growth, is left out. The fades of highlight and press stay. */
 @media (prefers-reduced-motion: reduce) {
   .hotspot > .ripple {
     animation-name: hotspot-ripple-fade;
+  }
+
+  /* Still an animation, so its end clears the pop as usual. */
+  .hotspot[data-popping] {
+    animation-name: hotspot-still;
+  }
+
+  .hotspot-glow,
+  .hotspot-glow[data-pressed] {
+    transform: none;
+  }
+
+  /* The invitation only lights up; still an animation, so each cycle still hands the turn on. */
+  .hotspot[data-inviting] {
+    animation-name: hotspot-still;
   }
 }
 
@@ -114,5 +197,11 @@
   }
   to {
     opacity: 0;
+  }
+}
+
+@keyframes hotspot-still {
+  to {
+    transform: none;
   }
 }

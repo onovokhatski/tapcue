@@ -22,7 +22,49 @@ function receive(...requests: DemoRequest[]): DemoState {
   );
 }
 
+function volume(value: number, hotspot = 'Volume'): DemoRequest {
+  return {
+    ...request('screen-1', 'volume'),
+    method: 'PUT',
+    body: String(value),
+    hotspot,
+    fader: { value, min: 0, max: 100 },
+  };
+}
+
 describe('demo receiver state', () => {
+  it("updates one row with a fader's values in a row, instead of adding one each (ADR 0020)", () => {
+    const state = receive(volume(10), volume(20), volume(30));
+    expect(state.requests.map((r) => [r.id, r.request.body])).toEqual([[2, '30']]);
+    expect(state.screens.map((s) => s.last.request.fader?.value)).toEqual([30]);
+    expect(state.freshId).toBe(2);
+  });
+
+  it('starts a new row after another request, or for another fader on the screen', () => {
+    const state = receive(
+      volume(10),
+      request('screen-1', 'product-a'),
+      volume(20),
+      volume(30, 'Brightness'),
+    );
+    expect(state.requests.map((r) => [r.request.content, r.request.hotspot])).toEqual([
+      ['volume', 'Brightness'],
+      ['volume', 'Volume'],
+      ['product-a', 'Play demo'],
+      ['volume', 'Volume'],
+    ]);
+  });
+
+  it('starts a new row for a fader with the same name on another screen', () => {
+    const state = receive(volume(10), { ...volume(20), screen: 'screen-2' });
+    expect(state.requests.map((r) => r.request.screen)).toEqual(['screen-2', 'screen-1']);
+  });
+
+  it('adds a row for each tap, also on a request the same as the last', () => {
+    const state = receive(request('screen-1', 'product-a'), request('screen-1', 'product-a'));
+    expect(state.requests).toHaveLength(2);
+  });
+
   it('lists requests newest first', () => {
     const state = receive(request('screen-1', 'product-a'), request('screen-1', 'product-b'));
     expect(state.requests.map((r) => [r.id, r.request.content])).toEqual([
@@ -79,5 +121,37 @@ describe('demo receiver state', () => {
     expect(state).toEqual({ ...initialDemoState, nextId: 1 });
     state = demoReducer(state, { type: 'received', request: request('screen-1', 'product-b') });
     expect(state.requests[0]?.id).toBe(1);
+  });
+});
+
+describe('steps of a sequence (ADR 0022)', () => {
+  const step = (run: number, n: number, time: string): DemoRequest => ({
+    ...request('screen-1', `step-${n}`),
+    time,
+    sequence: { run, step: n, of: 3 },
+  });
+
+  it('says how long after the step before of the same tap a later step came', () => {
+    const state = receive(
+      step(4, 1, '2026-10-30T14:05:09.000Z'),
+      step(9, 1, '2026-10-30T14:05:09.500Z'), // another tap in between
+      step(4, 2, '2026-10-30T14:05:10.500Z'),
+      step(4, 3, '2026-10-30T14:05:11.000Z'),
+    );
+    expect(state.requests.map((r) => r.sinceMs)).toEqual([500, 1500, undefined, undefined]);
+  });
+
+  it('leaves out the time for a first step, even one whose run number came before', () => {
+    // Run numbers start over when the server restarts, so an old run 4 may still be on the page.
+    const state = receive(
+      step(4, 2, '2026-10-30T14:05:09.000Z'),
+      step(4, 1, '2026-10-30T14:06:00.000Z'),
+    );
+    expect(state.requests[0]).not.toHaveProperty('sinceMs');
+  });
+
+  it('leaves out the time for a first step, and when the step before is not on the page', () => {
+    const state = receive(step(4, 2, '2026-10-30T14:05:10.500Z'));
+    expect(state.requests[0]).not.toHaveProperty('sinceMs');
   });
 });

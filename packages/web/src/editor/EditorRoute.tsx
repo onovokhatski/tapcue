@@ -14,15 +14,18 @@ import { CommandLog } from './log/CommandLog';
 import { PageList } from './pages/PageList';
 import { HotspotPanel } from './pages/HotspotPanel';
 import { PagePanel } from './pages/PagePanel';
+import { ProjectsTab } from './projects/ProjectsTab';
 import { SettingsTab } from './settings/SettingsTab';
 import { StationsTab } from './stations/StationsTab';
 import { TargetsTab } from './targets/TargetsTab';
 import { TooSmall } from './TooSmall';
 import { EditorSkeleton } from './EditorSkeleton';
+import { HistoryNotice, UndoButtons, useTypingGroups, useUndoKeys } from './UndoControls';
 import { EditorStoreContext, useEditor } from './useEditor';
 import { editorLayout, useWindowSize } from './useWindowSize';
 
 export const EDITOR_TABS = [
+  { path: 'projects', label: 'Projects' },
   { path: 'pages', label: 'Pages' },
   { path: 'targets', label: 'Targets' },
   { path: 'stations', label: 'Stations' },
@@ -88,6 +91,7 @@ function Body({ title, compact }: { title: string; compact: boolean }) {
   if (load === 'failed') {
     return <Placeholder title="Cannot reach the server" text="The editor retries on its own." />;
   }
+  if (title === 'Projects') return <ProjectsTab />;
   if (title === 'Targets') return <TargetsTab />;
   if (title === 'Stations') return <StationsTab />;
   if (title === 'Settings') return <SettingsTab />;
@@ -102,7 +106,7 @@ function Body({ title, compact }: { title: string; compact: boolean }) {
 
 /** The selected hotspot's properties, or the page's when no hotspot is selected (design). */
 function PropertiesPanel() {
-  const hotspotSelected = useEditor((state) => state.selection.hotspotId !== null);
+  const hotspotSelected = useEditor((state) => state.selection.hotspotIds.length > 0);
   return hotspotSelected ? <HotspotPanel /> : <PagePanel />;
 }
 
@@ -112,6 +116,8 @@ function TopBar({ connection }: { connection: SocketStatus }) {
   const demo = useEditor((state) => state.demo);
   // Before the project arrives there is nothing to save yet (frame E1).
   const loaded = useEditor((state) => state.load === 'ready');
+  useUndoKeys();
+  useTypingGroups();
   return (
     <header className="flex h-12 flex-none items-stretch gap-5 border-b border-default bg-surface pr-3 pl-4">
       <div className="flex items-center gap-2">
@@ -125,7 +131,14 @@ function TopBar({ connection }: { connection: SocketStatus }) {
             <span className="text-body-m text-muted" aria-hidden="true">
               /
             </span>
-            <span className="text-label-m text-secondary">{name}</span>
+            {/* The open project's name leads to the others (spec PRJ-5). */}
+            <NavLink
+              to="/edit/projects"
+              title="All projects"
+              className="text-label-m text-secondary hover:text-primary hover:underline"
+            >
+              {name}
+            </NavLink>
           </>
         )}
       </div>
@@ -145,6 +158,8 @@ function TopBar({ connection }: { connection: SocketStatus }) {
         ))}
       </nav>
       <div className="ml-auto flex items-center gap-2">
+        <HistoryNotice />
+        {loaded && <UndoButtons />}
         <StatusBadge {...CONNECTION_BADGE[connection]} />
         {/* In demo mode nothing is saved, so the save status gives way to that (frame G4). */}
         {loaded && <StatusBadge status={demo ? 'demo' : SAVE_BADGE[save.state]} />}

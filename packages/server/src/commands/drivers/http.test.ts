@@ -127,6 +127,20 @@ describe('HTTP driver', () => {
       expect(decodeURIComponent(header)).toBe('Кнопка 100%');
     });
 
+    it("gives a fader's value and range, and no fader header for a tap (ADR 0020)", async () => {
+      await open().send(target(), post, { ...fromStation, fader: { value: 0.42, min: 0, max: 1 } });
+      await open().send(target(), post, fromStation);
+      expect(received[0]?.headers['x-tapcue-fader']).toBe('0.42 0 1');
+      expect(received[1]?.headers).not.toHaveProperty('x-tapcue-fader');
+    });
+
+    it("names a sequence's step, and no sequence header for one command (ADR 0022)", async () => {
+      await open().send(target(), post, { ...fromStation, sequence: { run: 17, step: 2, of: 3 } });
+      await open().send(target(), post, fromStation);
+      expect(received[0]?.headers['x-tapcue-sequence']).toBe('17 2 3');
+      expect(received[1]?.headers).not.toHaveProperty('x-tapcue-sequence');
+    });
+
     it('sends an empty header for a hotspot without a name', async () => {
       await open().send(target(), post, { ...fromStation, hotspotName: '' });
       expect(received[0]?.headers['x-tapcue-hotspot']).toBe('');

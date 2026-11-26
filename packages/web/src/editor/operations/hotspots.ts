@@ -5,6 +5,7 @@ import {
   type AssetPath,
   type Command,
   type FaderSettings,
+  firstCommand,
   type Hotspot,
   type HotspotId,
   type HotspotText,
@@ -15,15 +16,16 @@ import {
   type Style,
   VALUE_PLACEHOLDER,
 } from '@tapcue/shared';
-import { moveRect, type Rect } from './geometry';
+import { boundingBox, moveGroup, moveRect, type Rect } from './geometry';
+import { freeName, nameProblem } from './hotspotNames';
 import { newId } from './ids';
 
 /** A new hotspot's share of the canvas: big enough to see and grab at any canvas size. */
 const DEFAULT_SHARE = 0.2;
 
 /**
- * Adds a hotspot in the centre of the page, invisible and doing nothing yet, named "Hotspot N"
- * with the first free N (spec HS-1, ADR 0012). Returns its id too.
+ * Adds a hotspot in the centre of the page: a button, invisible and doing nothing yet, named
+ * "Button N" with the lowest free N on the page (spec HS-1, ED-14, ADR 0012). Returns its id too.
  */
 export function addHotspot(
   project: Project,
@@ -38,15 +40,12 @@ export function addHotspot(
     all.map((h) => h.id),
     random,
   );
-  const names = new Set(page.hotspots.map((h) => h.name));
-  let n = page.hotspots.length + 1;
-  while (names.has(`Hotspot ${n}`)) n++;
   const { width: cw, height: ch } = project.canvas;
   const width = Math.round(cw * DEFAULT_SHARE);
   const height = Math.round(ch * DEFAULT_SHARE);
   const hotspot: Hotspot = {
     id: hotspotId,
-    name: `Hotspot ${n}`,
+    name: freeName(page, 'Button 1'),
     x: Math.round((cw - width) / 2),
     y: Math.round((ch - height) / 2),
     width,
@@ -55,7 +54,7 @@ export function addHotspot(
     // Invisible, as most hotspots lie over a button drawn in the artwork.
     style: { fill: null, border: null, opacity: 1 },
     pressEffect: 'press',
-    action: { goTo: null, command: null },
+    action: { goTo: null, commands: [] },
   };
   return {
     project: updatePage(project, pageId, (p) => ({ ...p, hotspots: [...p.hotspots, hotspot] })),
@@ -100,7 +99,10 @@ export function nudgeHotspot(
   return placeHotspot(project, pageId, hotspotId, moveRect(hotspot, dx, dy, project.canvas));
 }
 
-/** Names are optional (the editor shows "Unnamed"), up to 100 characters after trimming. */
+/**
+ * Names are optional (the editor shows "Unnamed"), up to 100 characters after trimming, and not
+ * one another hotspot on the page already has (spec ED-14; see nameProblem).
+ */
 export function renameHotspot(
   project: Project,
   pageId: PageId,
@@ -108,8 +110,10 @@ export function renameHotspot(
   name: string,
 ): Project {
   const trimmed = name.trim();
-  const hotspot = findHotspot(project, pageId, hotspotId);
-  if (!hotspot || trimmed.length > 100 || trimmed === hotspot.name) return project;
+  const page = project.pages.find((p) => p.id === pageId);
+  const hotspot = page?.hotspots.find((h) => h.id === hotspotId);
+  if (!page || !hotspot || trimmed.length > 100 || trimmed === hotspot.name) return project;
+  if (nameProblem(page, hotspotId, trimmed)) return project;
   return updateHotspots(project, pageId, (hotspots) =>
     hotspots.map((h) => (h.id === hotspotId ? { ...h, name: trimmed } : h)),
   );
@@ -119,8 +123,9 @@ export function renameHotspot(
 export const DUPLICATE_OFFSET = 20;
 
 /**
- * A copy with a new id and the same properties, a little to the right and down but inside the
- * canvas, just above the original in the stacking order (spec HS-7). Returns its id too.
+ * A copy with a new id, a free name ("Play" → "Play 2") and the same properties, a little to the
+ * right and down but inside the canvas, just above the original in the stacking order (spec HS-7,
+ * ED-14). Returns its id too.
  */
 export function duplicateHotspot(
   project: Project,
@@ -128,32 +133,170 @@ export function duplicateHotspot(
   hotspotId: HotspotId,
   random?: () => number,
 ): { project: Project; hotspotId: HotspotId | null } {
-  const original = findHotspot(project, pageId, hotspotId);
-  if (!original) return { project, hotspotId: null };
-  const id = newId(
-    'h',
-    project.pages.flatMap((p) => p.hotspots.map((h) => h.id)),
-    random,
+  const copied = duplicateHotspots(project, pageId, [hotspotId], random);
+  return { project: copied.project, hotspotId: copied.hotspotIds[0] ?? null };
+}
+
+/** The boxes of these hotspots of the page, by id; ids not on the page are left out. */
+export function boxesOf(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+): Record<HotspotId, Rect> {
+  const boxes: Record<HotspotId, Rect> = {};
+  for (const h of project.pages.find((p) => p.id === pageId)?.hotspots ?? []) {
+    if (ids.includes(h.id)) boxes[h.id] = { x: h.x, y: h.y, width: h.width, height: h.height };
+  }
+  return boxes;
+}
+
+/** The common box of these hotspots of the page: where a group stands (spec ED-16). */
+export function groupBox(project: Project, pageId: PageId, ids: HotspotId[]): Rect | null {
+  return boundingBox(Object.values(boxesOf(project, pageId, ids)));
+}
+
+/** Puts each hotspot where `rects` says, in one change; the caller keeps them inside the canvas. */
+export function placeHotspots(
+  project: Project,
+  pageId: PageId,
+  rects: Record<HotspotId, Rect>,
+): Project {
+  return Object.entries(rects).reduce(
+    (next, [id, rect]) => placeHotspot(next, pageId, id, rect),
+    project,
   );
-  const { x, y, width, height } = original;
-  const copy: Hotspot = {
-    ...structuredClone(original),
-    ...moveRect({ x, y, width, height }, DUPLICATE_OFFSET, DUPLICATE_OFFSET, project.canvas),
-    id,
-  };
+}
+
+/**
+ * Moves hotspots together by (dx, dy) canvas pixels from where they are now; the group stops as a
+ * whole at the canvas edge (spec ED-16). One hotspot moves as nudgeHotspot moves it.
+ */
+export function nudgeHotspots(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+  dx: number,
+  dy: number,
+): Project {
+  const boxes = boxesOf(project, pageId, ids);
+  return placeHotspots(project, pageId, moveGroup(boxes, dx, dy, project.canvas));
+}
+
+/** Deletes hotspots of a page in one change. */
+export function deleteHotspots(project: Project, pageId: PageId, ids: HotspotId[]): Project {
+  const page = project.pages.find((p) => p.id === pageId);
+  if (!page?.hotspots.some((h) => ids.includes(h.id))) return project;
+  return updateHotspots(project, pageId, (hotspots) => hotspots.filter((h) => !ids.includes(h.id)));
+}
+
+/**
+ * Copies hotspots in one change: each copy with a new id and a free name, just above its original,
+ * and all of them moved together a little to the right and down, inside the canvas (spec HS-7,
+ * ED-14, ED-16). Returns the copies' ids, in page order.
+ */
+export function duplicateHotspots(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+  random?: () => number,
+): { project: Project; hotspotIds: HotspotId[] } {
+  const page = project.pages.find((p) => p.id === pageId);
+  if (!page) return { project, hotspotIds: [] };
+  const originals = page.hotspots.filter((h) => ids.includes(h.id));
+  const moved = moveGroup(
+    boxesOf(project, pageId, ids),
+    DUPLICATE_OFFSET,
+    DUPLICATE_OFFSET,
+    project.canvas,
+  );
+  const copies = makeCopies(project, page, originals, (h) => moved[h.id]!, random);
+  const copyOf = new Map(originals.map((h, i) => [h.id, copies[i]!]));
   return {
-    project: updateHotspots(project, pageId, (hotspots) => {
-      const index = hotspots.findIndex((h) => h.id === hotspotId);
-      return [...hotspots.slice(0, index + 1), copy, ...hotspots.slice(index + 1)];
-    }),
-    hotspotId: id,
+    project: updateHotspots(project, pageId, (hotspots) =>
+      hotspots.flatMap((h) => {
+        const copy = copyOf.get(h.id);
+        return copy ? [h, copy] : [h];
+      }),
+    ),
+    hotspotIds: copies.map((c) => c.id),
   };
+}
+
+/** How far hotspots pasted on the page they were copied from land, right and down (spec ED-17). */
+export const PASTE_OFFSET = 24;
+
+/**
+ * Pastes copied hotspots onto a page of the project (spec ED-17): on top of the others, at the
+ * same positions, or 24 px right and down on the page they were copied from, so the copies show;
+ * moved together, inside the canvas; with new ids and free names (ED-14). A link to the page they
+ * land on, or to a page deleted since, becomes "stay"; commands to a target deleted since are
+ * dropped, so the project stays valid. Returns the copies' ids.
+ */
+export function pasteHotspots(
+  project: Project,
+  pageId: PageId,
+  copied: { pageId: PageId; hotspots: Hotspot[] },
+  random?: () => number,
+): { project: Project; hotspotIds: HotspotId[] } {
+  const page = project.pages.find((p) => p.id === pageId);
+  if (!page || copied.hotspots.length === 0) return { project, hotspotIds: [] };
+  const offset = copied.pageId === pageId ? PASTE_OFFSET : 0;
+  const boxes: Record<string, Rect> = {};
+  copied.hotspots.forEach(({ x, y, width, height }, i) => (boxes[i] = { x, y, width, height }));
+  const moved = moveGroup(boxes, offset, offset, project.canvas);
+  const targets = new Set(project.targets.map((t) => t.id));
+  const pages = new Set(project.pages.map((p) => p.id));
+  const fitted = copied.hotspots.map((hotspot): Hotspot => {
+    const { goTo, commands } = hotspot.action;
+    const stay = goTo === null || goTo === pageId || !pages.has(goTo);
+    return {
+      ...hotspot,
+      action: {
+        goTo: stay ? null : goTo,
+        commands: commands.filter((step) => targets.has(step.command.targetId)),
+      },
+    };
+  });
+  const copies = makeCopies(project, page, fitted, (_, i) => moved[i]!, random);
+  return {
+    project: updateHotspots(project, pageId, (hotspots) => [...hotspots, ...copies]),
+    hotspotIds: copies.map((c) => c.id),
+  };
+}
+
+/**
+ * Copies of `originals` for `page`, each at the box `boxOf` gives it, with an id not used on any
+ * page and a name free on the page, also among the copies themselves.
+ */
+function makeCopies(
+  project: Project,
+  page: Project['pages'][number],
+  originals: Hotspot[],
+  boxOf: (original: Hotspot, index: number) => Rect,
+  random?: () => number,
+): Hotspot[] {
+  const taken = project.pages.flatMap((p) => p.hotspots.map((h) => h.id));
+  const copies: Hotspot[] = [];
+  let named = page;
+  for (const [index, original] of originals.entries()) {
+    const id = newId('h', taken, random);
+    taken.push(id);
+    const copy: Hotspot = {
+      ...structuredClone(original),
+      ...boxOf(original, index),
+      id,
+      name: freeName(named, original.name),
+    };
+    // Later copies must not take a name an earlier copy got.
+    named = { ...named, hotspots: [...named.hotspots, copy] };
+    copies.push(copy);
+  }
+  return copies;
 }
 
 /** Deletes a hotspot. Nothing else refers to hotspots, so nothing else changes. */
 export function deleteHotspot(project: Project, pageId: PageId, hotspotId: HotspotId): Project {
-  if (!findHotspot(project, pageId, hotspotId)) return project;
-  return updateHotspots(project, pageId, (hotspots) => hotspots.filter((h) => h.id !== hotspotId));
+  return deleteHotspots(project, pageId, [hotspotId]);
 }
 
 /**
@@ -256,7 +399,8 @@ export function setHotspotText(
  * Makes the hotspot a button or a fader (ADR 0020). A new fader starts from 0 to 1 by 0.01 at 0,
  * vertical when its box is taller than wide, with the value as the last OSC argument; it changes
  * no page and has no press effect, and a command of another protocol is cleared, since a fader
- * sends OSC for now. A button loses the fader settings and gets the press-in effect back.
+ * sends OSC for now. A button loses the fader settings and gets the press-in effect back. A name
+ * the editor gave ("Button 3") follows the kind ("Fader 1"); one the integrator gave stays.
  */
 export function setKind(
   project: Project,
@@ -264,12 +408,16 @@ export function setKind(
   hotspotId: HotspotId,
   kind: 'button' | 'fader',
 ): Project {
+  const page = project.pages.find((p) => p.id === pageId);
   return updateHotspot(project, pageId, hotspotId, (h) => {
     const current = h.kind === 'fader' ? 'fader' : 'button';
-    if (current === kind) return h;
-    const { kind: _kind, fader: _fader, ...rest } = h;
+    if (current === kind || !page) return h;
+    const { kind: _kind, fader: _fader, ...withoutFader } = h;
+    const rest = { ...withoutFader, name: kindName(page, h, current, kind) };
     if (kind === 'button') return { ...rest, pressEffect: 'press' };
-    const command = h.action.command && withPlaceholder(h.action.command);
+    // A fader sends one command, at once (ADR 0022): the first one, with a place for the value.
+    const first = firstCommand(h.action);
+    const command = first && withPlaceholder(first);
     const fader: FaderSettings = {
       orientation: h.height > h.width ? 'vertical' : 'horizontal',
       min: 0,
@@ -278,8 +426,23 @@ export function setKind(
       start: 0,
       value: { at: command?.type === 'osc-udp' ? command.args.length : 0, as: 'f' },
     };
-    return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, command } };
+    const commands = command ? [{ command }] : [];
+    return { ...rest, kind, fader, pressEffect: 'none', action: { goTo: null, commands } };
   });
+}
+
+const KIND_NAME = { button: 'Button', fader: 'Fader' } as const;
+
+/** "Button 3" becomes the lowest free "Fader N" when the hotspot becomes a fader, and back. */
+function kindName(
+  page: Project['pages'][number],
+  hotspot: Hotspot,
+  from: 'button' | 'fader',
+  to: 'button' | 'fader',
+): string {
+  const given = new RegExp(`^${KIND_NAME[from]} \\d+$`, 'i').test(hotspot.name.trim());
+  // Its own "Button N" never clashes with a "Fader N", so the page can be searched as it is.
+  return given ? freeName(page, `${KIND_NAME[to]} 1`) : hotspot.name;
 }
 
 /**
@@ -339,13 +502,28 @@ export function setAction(
     const action = update(h.action);
     if (JSON.stringify(action) === JSON.stringify(h.action)) return h;
     // A fader's value position stays within its OSC arguments, also when one is removed.
-    const command = action.command;
+    const command = firstCommand(action);
     if (h.fader && command?.type === 'osc-udp' && h.fader.value.at > command.args.length) {
       const value = { ...h.fader.value, at: command.args.length };
       return { ...h, action, fader: { ...h.fader, value } };
     }
     return { ...h, action };
   });
+}
+
+/**
+ * Applies `operation` to each of these hotspots of the page in turn, as one change: how a setting
+ * is given to several at once (spec ED-19). Each call gets the hotspot as it was before.
+ */
+export function forEachHotspot(
+  project: Project,
+  pageId: PageId,
+  ids: HotspotId[],
+  operation: (project: Project, hotspot: Hotspot) => Project,
+): Project {
+  const page = project.pages.find((p) => p.id === pageId);
+  const hotspots = page?.hotspots.filter((h) => ids.includes(h.id)) ?? [];
+  return hotspots.reduce(operation, project);
 }
 
 /** Applies a change to one hotspot; the same project when the hotspot is missing or unchanged. */

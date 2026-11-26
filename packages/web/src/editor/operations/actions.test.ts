@@ -1,7 +1,19 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { emptyCommand, setCommand, setCommandTarget, setGoTo } from './actions';
+import {
+  addStep,
+  emptyCommand,
+  moveStep,
+  sequenceLength,
+  setCommand,
+  setCommandTarget,
+  setGoTo,
+  setStepDelay,
+  setStepEnabled,
+  setStepName,
+  withStep,
+} from './actions';
 import { setKind } from './hotspots';
 
 const expectValid = (project: Project) =>
@@ -28,15 +40,19 @@ describe('action operations (spec ACT-1)', () => {
   describe('setCommandTarget', () => {
     it('clears the command for "no command", and keeps the page link', () => {
       const project = setCommandTarget(demoProject(), 'p_home00', 'h_carda0', null);
-      expect(action(project)).toEqual({ goTo: 'p_proda0', command: null });
+      expect(action(project)).toEqual({ goTo: 'p_proda0', commands: [] });
       expectValid(project);
     });
 
     it('starts the empty command of another protocol', () => {
       const toUdp = setCommandTarget(demoProject(), 'p_home00', 'h_carda0', 't_projec');
-      expect(action(toUdp).command).toEqual({ type: 'udp', targetId: 't_projec', text: 'GO' });
+      expect(action(toUdp).commands[0]?.command).toEqual({
+        type: 'udp',
+        targetId: 't_projec',
+        text: 'GO',
+      });
       const toHttp = setCommandTarget(demoProject(), 'p_home00', 'h_carda0', 't_demo00');
-      expect(action(toHttp).command).toEqual({
+      expect(action(toHttp).commands[0]?.command).toEqual({
         type: 'http',
         targetId: 't_demo00',
         method: 'POST',
@@ -56,9 +72,9 @@ describe('action operations (spec ACT-1)', () => {
         host: '192.168.1.21',
         port: 7000,
       });
-      const original = action(before).command;
+      const original = action(before).commands[0]?.command;
       const project = setCommandTarget(before, 'p_home00', 'h_carda0', 't_resol2');
-      expect(action(project).command).toEqual({ ...original, targetId: 't_resol2' });
+      expect(action(project).commands[0]?.command).toEqual({ ...original, targetId: 't_resol2' });
       expectValid(project);
     });
 
@@ -77,7 +93,9 @@ describe('action operations (spec ACT-1)', () => {
         address: '/layer/1/clip/2/connect',
         args: [{ type: 'f', value: 0.5 }],
       });
-      expect(action(project).command).toMatchObject({ address: '/layer/1/clip/2/connect' });
+      expect(action(project).commands[0]?.command).toMatchObject({
+        address: '/layer/1/clip/2/connect',
+      });
       expectValid(project);
     });
 
@@ -96,7 +114,7 @@ describe('action operations (spec ACT-1)', () => {
   it("starts a fader's UDP and HTTP commands with {value}, valid at once (ADR 0020)", () => {
     const fader = setKind(demoProject(), 'p_home00', 'h_about0', 'fader');
     const commandOf = (project: Project) =>
-      project.pages[0]!.hotspots.find((h) => h.id === 'h_about0')!.action.command;
+      project.pages[0]!.hotspots.find((h) => h.id === 'h_about0')!.action.commands[0]?.command;
     const udp = setCommandTarget(fader, 'p_home00', 'h_about0', 't_projec');
     expect(commandOf(udp)).toEqual({ type: 'udp', targetId: 't_projec', text: '{value}' });
     expectValid(udp);
@@ -116,3 +134,175 @@ describe('action operations (spec ACT-1)', () => {
     }
   });
 });
+
+describe('sequences (spec ACT-5, ACT-6, ADR 0022)', () => {
+  const udp = (text: string) => ({ type: 'udp' as const, targetId: 't_projec', text });
+  const texts = (project: Project) =>
+    action(project).commands.map((s) => ('text' in s.command ? s.command.text : s.command.type));
+  /** The demo stand with Product A's card sending these steps. */
+  function withSteps(commands: Project['pages'][number]['hotspots'][number]['action']['commands']) {
+    const project = demoProject();
+    const card = project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!;
+    card.action = { ...card.action, commands };
+    return project;
+  }
+  const three = () =>
+    withSteps([
+      { command: udp('ONE') },
+      { delayMs: 500, command: udp('TWO') },
+      { command: udp('THREE') },
+    ]);
+
+  describe('withStep', () => {
+    const sequence = {
+      goTo: null,
+      commands: [
+        { delayMs: 500, command: udp('ONE') },
+        { delayMs: 2000, command: udp('TWO') },
+      ],
+    };
+
+    it("replaces a step's command, keeping its delay and the other steps", () => {
+      expect(withStep(sequence, 1, udp('NEW'))).toEqual({
+        goTo: null,
+        commands: [sequence.commands[0], { delayMs: 2000, command: udp('NEW') }],
+      });
+    });
+
+    it('adds a step just past the end, and removes one for null', () => {
+      expect(withStep(sequence, 2, udp('NEW')).commands).toHaveLength(3);
+      expect(withStep(sequence, 0, null)).toEqual({ goTo: null, commands: [sequence.commands[1]] });
+    });
+
+    it('changes nothing for an index that is not there, or past 20 steps', () => {
+      expect(withStep(sequence, 5, udp('NEW'))).toBe(sequence);
+      expect(withStep(sequence, -1, udp('NEW'))).toBe(sequence);
+      const full = {
+        goTo: null,
+        commands: Array.from({ length: 20 }, () => ({ command: udp('X') })),
+      };
+      expect(withStep(full, 20, udp('NEW'))).toBe(full);
+    });
+  });
+
+  it('edits and removes the step it is given, and leaves the others', () => {
+    const project = three();
+    const changed = setCommand(project, 'p_home00', 'h_carda0', udp('EDITED'), 1);
+    expect(texts(changed)).toEqual(['ONE', 'EDITED', 'THREE']);
+    expect(action(changed).commands[1]!.delayMs).toBe(500);
+    const removed = setCommandTarget(project, 'p_home00', 'h_carda0', null, 1);
+    expect(texts(removed)).toEqual(['ONE', 'THREE']);
+    expectValid(removed);
+  });
+
+  it("starts a step to another protocol with that protocol's empty command", () => {
+    const project = setCommandTarget(three(), 'p_home00', 'h_carda0', 't_resolm', 2);
+    expect(action(project).commands[2]!.command).toEqual({
+      type: 'osc-udp',
+      targetId: 't_resolm',
+      address: '/',
+      args: [],
+    });
+    expect(texts(project).slice(0, 2)).toEqual(['ONE', 'TWO']);
+  });
+
+  it('adds a command to the target of the last step, or to the first target', () => {
+    const added = addStep(three(), 'p_home00', 'h_carda0');
+    expect(action(added).commands[3]).toEqual({ command: emptyCommand(target(added, 't_projec')) });
+    expectValid(added);
+
+    const none = addStep(withSteps([]), 'p_home00', 'h_carda0');
+    expect(action(none).commands).toEqual([{ command: emptyCommand(none.targets[0]!) }]);
+  });
+
+  it('adds nothing at 20 commands or without a target', () => {
+    const full = withSteps(Array.from({ length: 20 }, () => ({ command: udp('X') })));
+    expect(addStep(full, 'p_home00', 'h_carda0')).toBe(full);
+    const noTargets = { ...withSteps([]), targets: [] };
+    expect(addStep(noTargets, 'p_home00', 'h_carda0')).toBe(noTargets);
+  });
+
+  it('moves a step, delay and all, within the list', () => {
+    const project = three();
+    expect(texts(moveStep(project, 'p_home00', 'h_carda0', 0, 2))).toEqual(['TWO', 'THREE', 'ONE']);
+    const up = moveStep(project, 'p_home00', 'h_carda0', 1, 0);
+    expect(action(up).commands[0]).toEqual({ delayMs: 500, command: udp('TWO') });
+    expect(texts(moveStep(project, 'p_home00', 'h_carda0', 0, 99))).toEqual([
+      'TWO',
+      'THREE',
+      'ONE',
+    ]);
+    expect(texts(moveStep(project, 'p_home00', 'h_carda0', 2, -1))).toEqual([
+      'THREE',
+      'ONE',
+      'TWO',
+    ]);
+    expect(moveStep(project, 'p_home00', 'h_carda0', 1, 1)).toBe(project);
+    expect(moveStep(project, 'p_home00', 'h_carda0', 7, 0)).toBe(project);
+  });
+
+  it('sets a delay in whole ms from 0 to 60 s, and leaves the field out for 0', () => {
+    const project = three();
+    const later = setStepDelay(project, 'p_home00', 'h_carda0', 2, 2500);
+    expect(action(later).commands[2]).toEqual({ delayMs: 2500, command: udp('THREE') });
+    const none = setStepDelay(project, 'p_home00', 'h_carda0', 1, 0);
+    expect(action(none).commands[1]).toEqual({ command: udp('TWO') });
+    for (const bad of [-1, 60_001, 2.5]) {
+      expect(setStepDelay(project, 'p_home00', 'h_carda0', 1, bad)).toBe(project);
+    }
+    expect(setStepDelay(project, 'p_home00', 'h_carda0', 9, 100)).toBe(project);
+    expectValid(later);
+  });
+
+  it('adds up the pauses of a sequence', () => {
+    expect(sequenceLength(action(three()))).toBe(500);
+    expect(sequenceLength({ goTo: null, commands: [] })).toBe(0);
+  });
+
+  it('leaves out the pause of a step that is off (spec ACT-9)', () => {
+    const project = setStepEnabled(three(), 'p_home00', 'h_carda0', 1, false);
+    expect(sequenceLength(action(project))).toBe(0);
+  });
+
+  describe('setStepName (spec ACT-9)', () => {
+    it('names a step, trimmed; an empty name leaves the field out', () => {
+      const named = setStepName(three(), 'p_home00', 'h_carda0', 1, '  Lights up ');
+      expect(action(named).commands[1]).toEqual({
+        delayMs: 500,
+        name: 'Lights up',
+        command: udp('TWO'),
+      });
+      expectValid(named);
+      const cleared = setStepName(named, 'p_home00', 'h_carda0', 1, '   ');
+      expect(action(cleared).commands[1]).toEqual({ delayMs: 500, command: udp('TWO') });
+    });
+
+    it('keeps the project for a name over 100 characters or a missing step', () => {
+      const project = three();
+      expect(setStepName(project, 'p_home00', 'h_carda0', 0, 'x'.repeat(101))).toBe(project);
+      expect(setStepName(project, 'p_home00', 'h_carda0', 3, 'Late')).toBe(project);
+      const longest = setStepName(project, 'p_home00', 'h_carda0', 0, 'x'.repeat(100));
+      expect(action(longest).commands[0]!.name).toHaveLength(100);
+    });
+  });
+
+  describe('setStepEnabled (spec ACT-9)', () => {
+    it('switches a step off, and on again by leaving the field out', () => {
+      const off = setStepEnabled(three(), 'p_home00', 'h_carda0', 2, false);
+      expect(action(off).commands[2]).toEqual({ enabled: false, command: udp('THREE') });
+      expectValid(off);
+      const on = setStepEnabled(off, 'p_home00', 'h_carda0', 2, true);
+      expect(action(on).commands[2]).toEqual({ command: udp('THREE') });
+      expect(setStepEnabled(on, 'p_home00', 'h_carda0', 2, true)).toBe(on);
+    });
+
+    it('keeps the project for a missing step', () => {
+      const project = three();
+      expect(setStepEnabled(project, 'p_home00', 'h_carda0', 5, false)).toBe(project);
+    });
+  });
+});
+
+function target(project: Project, id: string) {
+  return project.targets.find((t) => t.id === id)!;
+}

@@ -1,13 +1,13 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { demoProject } from '../../test/demoProject';
+import { demoProject, plainDemoProject } from '../../test/demoProject';
 import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { aspectNote, SettingsTab } from './SettingsTab';
 
-async function renderTab(demo = false) {
+async function renderTab(demo = false, project = demoProject()) {
   const store = createEditorStore({
-    load: () => Promise.resolve({ revision: 1, project: demoProject(), demo }),
+    load: () => Promise.resolve({ revision: 1, project, demo }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
@@ -20,7 +20,10 @@ async function renderTab(demo = false) {
       <SettingsTab />
     </EditorStoreContext>,
   );
-  return { canvas: () => store.getState().project!.canvas };
+  return {
+    canvas: () => store.getState().project!.canvas,
+    project: () => store.getState().project!,
+  };
 }
 
 const type = (name: string, value: string) =>
@@ -53,6 +56,23 @@ describe('SettingsTab (spec CNV-1, CNV-2, ED-10)', () => {
     type('Height', '15x0');
     expect(screen.getByText('Expected a whole number of pixels')).toBeInTheDocument();
     expect(canvas().height).toBe(1536);
+  });
+
+  it('chooses the page transition, fade for a project without one (spec PG-4)', async () => {
+    const { project } = await renderTab(false, plainDemoProject());
+    const group = within(screen.getByRole('radiogroup', { name: 'Page transition' }));
+    expect(group.getAllByRole('radio').map((r) => r.textContent)).toEqual([
+      'Fade',
+      'Slide',
+      'Zoom',
+      'None',
+    ]);
+    expect(group.getByRole('radio', { name: 'Fade' })).toBeChecked();
+    fireEvent.click(group.getByRole('radio', { name: 'Slide' }));
+    expect(project().transition).toBe('slide');
+    expect(group.getByRole('radio', { name: 'Slide' })).toBeChecked();
+    fireEvent.click(group.getByRole('radio', { name: 'Fade' }));
+    expect('transition' in project()).toBe(false);
   });
 
   it('changes the scale mode, and the diagrams mark it as current', async () => {
@@ -107,6 +127,31 @@ describe('SettingsTab (spec CNV-1, CNV-2, ED-10)', () => {
     );
     expect(screen.getByText('The 2560 × 1600 page is 8:5.')).toBeInTheDocument();
   });
+});
+
+describe('web page time (spec PG-10)', () => {
+  it('shows the default of 180 s for a project that sets none', async () => {
+    await renderTab();
+    const card = screen.getByRole('region', { name: 'Web pages' });
+    expect(within(card).getByRole('textbox', { name: 'Web page time' })).toHaveValue('180');
+    expect(card).toHaveTextContent('For an online site it counts from opening the page');
+  });
+
+  it('sets the time as it is typed', async () => {
+    const { project } = await renderTab();
+    type('Web page time', '45');
+    expect(project().webPageSeconds).toBe(45);
+  });
+
+  it.each(['9', '3601', '1.5', 'abc'])(
+    'refuses %s with the range, and changes nothing',
+    async (text) => {
+      const { project } = await renderTab();
+      type('Web page time', text);
+      expect(screen.getByText('Expected 10 to 3600 seconds')).toBeInTheDocument();
+      expect(project().webPageSeconds).toBeUndefined();
+    },
+  );
 });
 
 describe('SettingsTab in demo mode (spec DEMO-3, frame G4)', () => {

@@ -148,7 +148,7 @@ function EmptyState({ playerUrl }: { playerUrl: string }) {
         <div className="space-y-2 rounded-lg border border-default bg-subtle p-4">
           <p className="text-label-m">
             Open the player in another tab, then tap &quot;Play demo&quot; or &quot;Call our
-            team&quot;
+            team&quot;, or drag the Volume fader
           </p>
           <div className="flex items-center gap-2">
             <input
@@ -235,19 +235,41 @@ function ScreenTile({ screen, source, fresh }: { screen: Screen; source: string;
           <span className="text-body-s text-muted">Playing</span>
         )}
       </div>
-      <div className="flex aspect-video items-center justify-center rounded bg-inverse px-3">
+      <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded bg-inverse px-3">
         <span
-          className="truncate font-mono text-heading-l font-normal text-text-inverse"
+          className="max-w-full truncate font-mono text-heading-l font-normal text-text-inverse"
           aria-live="polite"
         >
           {request.content}
         </span>
+        {request.fader && <Level fader={request.fader} />}
       </div>
       <p className="mt-2 truncate text-body-s text-muted">
         Since <span className="font-mono text-mono-s">{clock(request.time).slice(0, 8)}</span>
         {source && ` · ${source}`}
       </p>
     </section>
+  );
+}
+
+/** A fader's value as a bar along its range, with the number: what the screen would be set to. */
+function Level({ fader }: { fader: NonNullable<DemoRequest['fader']> }) {
+  const { value, min, max } = fader;
+  const percent = Math.round(Math.min(1, Math.max(0, (value - min) / (max - min))) * 100);
+  return (
+    <div className="flex w-full max-w-[240px] items-center gap-2">
+      <div
+        role="meter"
+        aria-label="Level"
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        className="h-1.5 flex-1 overflow-hidden rounded-full bg-text-inverse/25"
+      >
+        <div className="h-full rounded-full bg-accent" style={{ width: `${percent}%` }} />
+      </div>
+      <span className="font-mono text-mono-s text-text-inverse tabular-nums">{value}</span>
+    </div>
   );
 }
 
@@ -272,7 +294,8 @@ function RequestTable({
           Requests <span className="text-body-s text-muted">newest first</span>
         </h2>
         <span className="text-body-s text-muted">
-          Station and hotspot come from the X-Tapcue-Station and X-Tapcue-Hotspot headers
+          Station, hotspot and step come from the X-Tapcue-Station, X-Tapcue-Hotspot and
+          X-Tapcue-Sequence headers
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -303,7 +326,7 @@ function RequestTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[color:var(--color-border-default)]">
-            {requests.map(({ id, request }) => {
+            {requests.map(({ id, request, sinceMs }) => {
               const fresh = id === freshId;
               return (
                 <tr
@@ -319,7 +342,17 @@ function RequestTable({
                   <td className={`${cell} text-body-s text-secondary`}>
                     {stationName(request) ?? '—'}
                   </td>
-                  <td className={`${cell} text-body-s`}>{request.hotspot ?? '—'}</td>
+                  <td className={`${cell} text-body-s`}>
+                    {request.hotspot ?? '—'}
+                    {request.sequence && request.sequence.of > 1 && (
+                      // Which step of the tap's sequence, and how long after the one before (ADR 0022).
+                      <span className="text-muted">
+                        {' '}
+                        · step {request.sequence.step} of {request.sequence.of}
+                        {sinceMs !== undefined && ` · +${(sinceMs / 1000).toFixed(1)} s`}
+                      </span>
+                    )}
+                  </td>
                   <td className={`${cell} font-mono text-mono-s`}>{request.method}</td>
                   <td className={`${cell} font-mono text-mono-s`}>
                     <span className="text-muted">/demo/</span>

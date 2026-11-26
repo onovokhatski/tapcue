@@ -1,7 +1,7 @@
 // Pages and the hotspots on them (docs/project-format.md §4, §5, §7).
 import { z } from 'zod';
 import { Command } from './targets';
-import { AssetPath, Color, HotspotId, Name, PageId } from './values';
+import { AssetPath, Color, HotspotId, Name, PageId, SitePath, WebUrl } from './values';
 
 /** Canvas pixels. Positions may be fractional after scaling; staying inside the canvas is checked across the project. */
 const Coordinate = z.number('Expected a number').min(0, 'Expected 0 or more');
@@ -90,15 +90,54 @@ export const FaderSettings = z.strictObject({
 });
 export type FaderSettings = z.infer<typeof FaderSettings>;
 
-export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple']);
+/** What a tap looks like (spec HS-5); pop and glow since v0.10 (ADR 0025). */
+export const PressEffect = z.enum(['none', 'highlight', 'press', 'ripple', 'pop', 'glow']);
 export type PressEffect = z.infer<typeof PressEffect>;
 
-/** What a tap does. Both null is allowed: a hotspot that only plays its press effect. */
+/** At most this many commands per tap, and this long a pause before one (ADR 0022). */
+export const MAX_STEPS = 20;
+export const MAX_DELAY_MS = 60_000;
+
+/**
+ * One command of a sequence and the pause before it is sent (spec ACT-5, ACT-6, ACT-9, ADR 0022).
+ * Absent `delayMs` means no pause; absent `enabled` means on. A step that is off is skipped with
+ * its pause, as if it were not in the list.
+ */
+export const Step = z.strictObject({
+  /** Shown in the editor and the command log instead of "Command 2"; optional. */
+  name: z.string().max(100, 'Expected at most 100 characters').optional(),
+  enabled: z.boolean().optional(),
+  delayMs: z
+    .int('Expected a whole number of milliseconds')
+    .min(0, `Expected 0 to ${MAX_DELAY_MS} ms`)
+    .max(MAX_DELAY_MS, `Expected 0 to ${MAX_DELAY_MS} ms`)
+    .optional(),
+  command: Command,
+});
+export type Step = z.infer<typeof Step>;
+
+/**
+ * What a tap does: go to a page and send commands, one after another. Neither is required: a
+ * hotspot may only play its press effect.
+ */
 export const Action = z.strictObject({
   goTo: PageId.nullable(),
-  command: Command.nullable(),
+  commands: z.array(Step).max(MAX_STEPS, `Expected at most ${MAX_STEPS} commands`),
 });
 export type Action = z.infer<typeof Action>;
+
+/** The steps that are on, in order: what a tap sends (spec ACT-9). */
+export function activeSteps(action: Action): Step[] {
+  return action.commands.filter((step) => step.enabled !== false);
+}
+
+/**
+ * The first command, the only one a fader has (ADR 0022); null when there is none. It may be
+ * switched off: what is sent comes from activeSteps().
+ */
+export function firstCommand(action: Action): Command | null {
+  return action.commands[0]?.command ?? null;
+}
 
 export const Hotspot = z.strictObject({
   id: HotspotId,
@@ -120,12 +159,35 @@ export const Hotspot = z.strictObject({
 });
 export type Hotspot = z.infer<typeof Hotspot>;
 
-/** Video backgrounds always play muted and looped (spec PG-3). */
-export const Background = z.strictObject({
+/** An uploaded image or video. Video backgrounds always play muted and looped (spec PG-3). */
+export const MediaBackground = z.strictObject({
   type: z.enum(['image', 'video']),
   asset: AssetPath,
 });
+export type MediaBackground = z.infer<typeof MediaBackground>;
+
+/**
+ * A web page under the hotspots (spec PG-7, ADR 0024): an online address or an uploaded
+ * mini-site, exactly one of them.
+ */
+export const WebBackground = z
+  .strictObject({
+    type: z.literal('web'),
+    url: WebUrl.optional(),
+    site: SitePath.optional(),
+  })
+  .refine((web) => (web.url === undefined) !== (web.site === undefined), {
+    message: 'Expected either "url" (an online address) or "site" (a mini-site), not both',
+  });
+export type WebBackground = z.infer<typeof WebBackground>;
+
+export const Background = z.discriminatedUnion('type', [MediaBackground, WebBackground]);
 export type Background = z.infer<typeof Background>;
+
+/** What a background shows: its file, its address or its mini-site's folder. */
+export function backgroundSource(background: Background): string {
+  return background.type === 'web' ? (background.url ?? background.site ?? '') : background.asset;
+}
 
 export const Page = z.strictObject({
   id: PageId,

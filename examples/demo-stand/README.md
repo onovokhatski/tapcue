@@ -1,14 +1,15 @@
 # Demo stand
 
 The project used by the tests, the server's demo mode and the demo receiver (spec DEMO-2).
-It follows the design prototype: a fictional audio brand, four pages, three targets and two stations.
+It follows the design prototype: a fictional audio brand, five pages, three targets and two stations.
 
 | Page | Background | Hotspots |
 |---|---|---|
 | Home | `home.jpg` | Product A, B and C cards (OSC to Resolume), About, Call our team (HTTP) |
-| Product A | `product-a.jpg` | Back, Play demo (HTTP to the demo receiver), Next product |
+| Product A | `product-a.jpg` | Back, Play demo (two HTTP commands to the demo receiver: screen-1, then the lights 1.5 s later), Next product, Volume fader |
 | Product B | `product-b.jpg` | Back, Play demo (HTTP), Show on the wall (UDP to the projector) |
-| About us | `about-loop.mp4` | Back |
+| About us | `about-loop.mp4` | Back, Visit the showroom |
+| Showroom | the mini-site `assets/sites/showroom` (spec PG-7) | Back to the stand, a visible button in the corner the site keeps clear |
 
 Stations: `main` starts on Home, `small` on Product A.
 
@@ -23,6 +24,9 @@ editor generates random ones.
   gradient-heavy PNGs were 1.3–2.5 MB, a lot for every tablet to download over Wi-Fi);
 - the About us video is a 6-second H.264 loop at 1920 × 1440, 30 fps, no audio, with the index at
   the start of the file: a soft light circles once per loop, so the last frame leads back to the first.
+
+The showroom mini-site (`assets/sites/showroom`) is three hand-written files, HTML and CSS only,
+laid out for a 1024 px tablet; it is not generated.
 
 To rebuild them on macOS:
 

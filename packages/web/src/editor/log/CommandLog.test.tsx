@@ -54,6 +54,34 @@ describe('CommandLog (spec ED-6, ED-9)', () => {
     ]);
   });
 
+  it("shows a fader's drag as one row with the number of values it sent (ADR 0020)", async () => {
+    const drag = {
+      ...sentEntry,
+      hotspotName: 'Volume',
+      command: {
+        type: 'http',
+        targetId: 't_demo00',
+        method: 'PUT',
+        path: '/demo/screen-1/volume',
+        body: '42',
+      },
+      targetName: 'Demo receiver',
+      valuesSent: 37,
+    } as LogEntry; // sentEntry is typed as any entry; this one is a sent one
+    const { row } = await renderLog([drag]);
+    expect(within(row('sent')).getAllByRole('cell').at(-1)).toHaveTextContent(
+      'Demo receiver PUT /demo/screen-1/volume · 37 values sent',
+    );
+  });
+
+  it('says "1 value" for a single touch, and nothing for a tap', async () => {
+    const { row, unmount } = await renderLog([{ ...sentEntry, valuesSent: 1 } as LogEntry]);
+    expect(row('sent')).toHaveTextContent('· 1 value sent');
+    unmount();
+    const tap = await renderLog([sentEntry]);
+    expect(tap.row('sent')).not.toHaveTextContent('sent');
+  });
+
   it('marks a failure in red with its reason, and a test send with the Test tag', async () => {
     const { row } = await renderLog([errorEntry]);
     expect(row('error')).toHaveClass('bg-danger-bg');
@@ -140,5 +168,115 @@ describe('CommandLog (spec ED-6, ED-9)', () => {
       await renderLog();
       expect(isExpanded()).toBe(false);
     });
+  });
+});
+
+describe('sequences in the command log (ADR 0022)', () => {
+  const step = (
+    seq: number,
+    n: number,
+    of: number,
+    delayMs: number,
+    status: 'sent' | 'error' = 'sent',
+  ) =>
+    ({
+      ...(status === 'sent' ? sentEntry : errorEntry),
+      seq,
+      hotspotName: 'Product A card',
+      sequence: { run: 5, step: n, of, delayMs },
+    }) as LogEntry;
+
+  it('shows a sequence as one row with how it went, and its steps when opened', async () => {
+    setWindowSize(1440, 1000);
+    const { panel } = await renderLog([step(10, 1, 3, 0), step(11, 2, 3, 1500, 'error')]);
+    const table = within(panel()).getByRole('table');
+    const toggle = within(table).getByRole('button', { name: 'Sequence of 3 commands' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(table).toHaveTextContent('1 of 3 sent · 1 failed');
+    expect(within(table).getAllByRole('row')).toHaveLength(2); // the head and the sequence
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const rows = within(table).getAllByRole('row').slice(2);
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining('Step 1 of 3 · '),
+      expect.stringContaining('Step 2 of 3 · after 1.5 s · '),
+    ]);
+    fireEvent.click(toggle);
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+  });
+
+  it.each([
+    [[step(1, 1, 2, 0), step(2, 2, 2, 500)], 'Sent', '2 of 2 sent'],
+    [[step(1, 1, 3, 0)], null, null],
+  ])('says a finished sequence was sent', async (entries, result, summary) => {
+    setWindowSize(1440, 1000);
+    const { panel } = await renderLog(entries);
+    if (result === null) {
+      // One step so far: a plain row, with its place.
+      expect(within(panel()).queryByRole('button', { name: /Sequence of/ })).toBeNull();
+      expect(panel()).toHaveTextContent('Step 1 of 3 · ');
+      return;
+    }
+    expect(panel()).toHaveTextContent(result);
+    expect(panel()).toHaveTextContent(summary);
+  });
+
+  it('says a sequence was cancelled, or is still running', async () => {
+    setWindowSize(1440, 1000);
+    const cancel: LogEntry = {
+      seq: 3,
+      time: sentEntry.time,
+      source: sentEntry.source,
+      pageId: 'p_home00',
+      hotspotId: 'h_carda0',
+      sequence: { run: 5, step: 2, of: 3, delayMs: 0 },
+      status: 'ignored',
+      message: '2 steps cancelled: tapped again',
+    };
+    const { panel, store } = await renderLog([step(1, 1, 3, 0), cancel]);
+    const sequenceRow = () =>
+      within(panel())
+        .getByRole('button', { name: /Sequence of/ })
+        .closest('tr')!;
+    expect(sequenceRow()).toHaveAttribute('data-status', 'cancelled');
+    expect(sequenceRow()).toHaveTextContent('Cancelled');
+    expect(sequenceRow()).toHaveTextContent('1 of 3 sent · 2 cancelled');
+    expect(sequenceRow()).toHaveTextContent('Product A card');
+
+    act(() => store.getState().clearLog());
+    act(() => {
+      store
+        .getState()
+        .logged({ ...step(20, 1, 3, 0), sequence: { run: 6, step: 1, of: 3, delayMs: 0 } });
+      store
+        .getState()
+        .logged({ ...step(21, 2, 3, 0), sequence: { run: 6, step: 2, of: 3, delayMs: 0 } });
+    });
+    expect(sequenceRow()).toHaveAttribute('data-status', 'running');
+    expect(sequenceRow()).toHaveTextContent('Running');
+  });
+
+  it('says a named step by its name instead of its number (spec ACT-9)', async () => {
+    setWindowSize(1440, 1000);
+    const named = {
+      ...step(11, 2, 2, 1500),
+      sequence: { run: 5, step: 2, of: 2, delayMs: 1500, name: 'Lights up' },
+    };
+    const { panel } = await renderLog([step(10, 1, 2, 0), named]);
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Sequence of 2 commands' }));
+    const rows = within(panel()).getAllByRole('row').slice(2);
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining('Step 1 of 2 · '),
+      expect.stringContaining('Lights up · after 1.5 s · '),
+    ]);
+    expect(rows[1]).not.toHaveTextContent('Step 2');
+  });
+
+  it('says "One command" for a single command sent after a pause', async () => {
+    setWindowSize(1440, 1000);
+    const { panel } = await renderLog([step(1, 1, 1, 2000)]);
+    expect(panel()).toHaveTextContent('One command · after 2 s · ');
   });
 });

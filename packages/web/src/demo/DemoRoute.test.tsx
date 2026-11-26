@@ -62,6 +62,21 @@ const tile = (name: string) => screen.getByRole('region', { name });
 const rows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
 
 describe('demo receiver page (spec DEMO-1)', () => {
+  it("shows a sequence's step and the time since the step before (ADR 0022)", async () => {
+    const { arrive } = await renderPage();
+    arrive({ ...playA, sequence: { run: 3, step: 1, of: 2 } });
+    arrive({
+      ...playA,
+      time: '2026-10-30T14:05:10.623Z',
+      path: '/demo/lights/product-a',
+      screen: 'lights',
+      sequence: { run: 3, step: 2, of: 2 },
+    });
+    expect(rows()[0]).toHaveTextContent('Play demo · step 2 of 2 · +1.5 s');
+    expect(rows()[1]).toHaveTextContent('Play demo · step 1 of 2');
+    expect(rows()[1]).not.toHaveTextContent('+');
+  });
+
   it('listens on /ws as a viewer: it never says hello', async () => {
     await renderPage();
     expect(FakeWebSocket.last.url).toBe('ws://localhost:3000/ws');
@@ -101,6 +116,33 @@ describe('demo receiver page (spec DEMO-1)', () => {
     ]);
     expect(tile('screen-3')).toHaveTextContent('call-staff');
     expect(tile('screen-3')).toHaveTextContent('Main catalog · Call our team');
+  });
+
+  it("shows a fader's value as a level on its tile, and a drag as one row (ADR 0020)", async () => {
+    const { arrive } = await renderPage();
+    const volume = (value: number): DemoRequest => ({
+      ...playA,
+      method: 'PUT',
+      path: '/demo/screen-1/volume',
+      content: 'volume',
+      body: String(value),
+      hotspot: 'Volume',
+      fader: { value, min: 100, max: 200 },
+    });
+    arrive(volume(120));
+    arrive(volume(150));
+    const level = within(tile('screen-1')).getByRole('meter', { name: 'Level' });
+    expect(level).toHaveAttribute('aria-valuenow', '150');
+    // Halfway along 100–200.
+    expect(level.firstElementChild).toHaveStyle({ width: '50%' });
+    expect(tile('screen-1')).toHaveTextContent('volume150');
+    expect(rows()).toHaveLength(1);
+  });
+
+  it('shows no level for a tap', async () => {
+    const { arrive } = await renderPage();
+    arrive(playA);
+    expect(within(tile('screen-1')).queryByRole('meter')).toBeNull();
   });
 
   it('shows the body in the log only, never on the tile', async () => {

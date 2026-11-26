@@ -48,7 +48,8 @@ commands.
 
 | Term | Meaning |
 |---|---|
-| **Project** | Everything describing one stand: a folder with `project.json` and `assets/`. One server runs one project. |
+| **Project** | Everything describing one stand: a folder with `project.json` and `assets/`. |
+| **Library** | The folder whose subfolders are projects. The server runs one of them, the **active project** ([ADR 0021](adr/0021-project-library.md)). |
 | **Canvas** | The fixed design size of all pages (e.g. 2048×1536) and the scale mode used on screens. |
 | **Scale mode** | `fit` — whole canvas visible, empty bars where aspect ratios differ. `fill` — screen fully covered, canvas edges may be cropped. |
 | **Page** | One screen of the interface: a background plus hotspots. |
@@ -69,10 +70,14 @@ IDs are referenced from issues and tests.
 
 ### 5.1 Project
 
-- **PRJ-1** The server loads one project from a folder on disk at startup.
+- **PRJ-1** The server loads the active project from a folder on disk at startup: the one named at start, else the one last opened from the library, else the demo stand.
 - **PRJ-2** The project is validated against the schema on load and on every save; invalid data is rejected with a readable error.
 - **PRJ-3** The integrator can export the project as a single `.zip` file.
 - **PRJ-4** The integrator can import a project from a `.zip` file, replacing the current one after confirmation.
+- **PRJ-5** The integrator can list the projects in the library, with each one's name, canvas size and last change; a project that does not load is listed with its error.
+- **PRJ-6** The integrator can create an empty project from a name and a canvas size: one blank page and one station that starts on it.
+- **PRJ-7** The integrator can open another project from the library; every station and editor switches to it, and it stays active after a restart.
+- **PRJ-8** The integrator can delete a project other than the active one; its folder is moved into the library's `.trash/`, not removed.
 
 ### 5.2 Canvas
 
@@ -83,11 +88,27 @@ IDs are referenced from issues and tests.
 ### 5.3 Pages
 
 - **PG-1** The integrator can create, rename, reorder and delete pages.
-- **PG-2** A page background is an image (JPEG, PNG, WebP) or a video (MP4/H.264), uploaded by the integrator.
+- **PG-2** A page background is an image (JPEG, PNG, WebP) or a video (MP4/H.264), uploaded by the integrator, or a web page (PG-7).
 - **PG-3** A video background plays muted, looped and starts automatically.
-- **PG-4** Page changes use a fade transition.
+- **PG-4** Page changes use the project's transition: Fade (default), Slide, Zoom or None. Slide
+  comes in from the right to a page further down the page list and from the left to one further
+  up ([ADR 0025](adr/0025-motion.md)).
 - **PG-5** A page change never shows a blank frame: the next background is ready before the fade starts.
 - **PG-6** Uploaded files are limited to 200 MB each (see [Appendix A](#appendix-a-recommended-media)).
+- **PG-7** A page background can be a web page: an online address (http or https), or a mini-site
+  uploaded as a .zip with an `index.html` and served by the Tapcue server. Hotspots sit on top as
+  on any page; a tap outside them reaches the site, which can be scrolled and used
+  ([ADR 0024](adr/0024-web-backgrounds.md)).
+- **PG-8** The site is loaded afresh on every visit to its page, so a visitor never finds someone
+  else's scroll position or form.
+- **PG-9** The editor checks whether an online address may be embedded and says so before it is
+  used. A site that forbids it (`X-Frame-Options` or CSP `frame-ancestors`) cannot be a
+  background. The editor notes that an online site needs internet on the stand.
+- **PG-10** On a page with a web background, the station's idle return (ST-4) uses the project's
+  web page time (Settings tab, 10 s to 60 min, default 3 min) instead of the station's timeout:
+  for an online site counted from opening the page, since the player cannot see taps inside it;
+  for a mini-site, from the last tap, inside the site or not. A station without an idle timeout
+  never returns.
 
 ### 5.4 Hotspots
 
@@ -96,7 +117,7 @@ IDs are referenced from issues and tests.
 - **HS-3** Shape: rectangle (with optional corner radius) or ellipse.
 - **HS-4** Style: invisible, or fill colour and its own opacity, border colour and width, and the
   opacity of the whole hotspot.
-- **HS-5** Press effect: none, highlight, press-in, or ripple.
+- **HS-5** Press effect: none, highlight, press-in, ripple, pop (the hotspot grows a little on release and settles back) or glow (its shape lights up while pressed).
 - **HS-6** Hotspots can be deleted and their stacking order changed.
 - **HS-7** A hotspot can be duplicated: the copy gets a new id, the same properties and a small
   offset, clamped to the canvas, and becomes the selection.
@@ -130,14 +151,29 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 
 ### 5.5 Actions
 
-- **ACT-1** A hotspot action can navigate to a page, send a command to a target, or both.
+- **ACT-1** A hotspot action can navigate to a page, send commands to targets, or both. Since
+  v0.5 ([ADR 0022](adr/0022-command-sequences.md)) a button sends a sequence of commands (ACT-5); a
+  fader sends one command, with no delay.
 - **ACT-2** A tap fires on release (lifting the finger), so a visitor can cancel by sliding off.
   The command is sent at once; the page change starts after the short release effect (at most
   160 ms). A ripple keeps playing over the transition and never delays it.
 - **ACT-3** Navigation happens immediately on the tablet and does not wait for the command result.
-- **ACT-4** The editor has a "Send test" button for the selected hotspot's command. The server
-  sends it exactly as if the hotspot had been tapped, so commands can be checked during setup
-  without the tablet.
+- **ACT-4** The editor has a "Send test" button for the selected hotspot's commands. The server
+  sends them exactly as if the hotspot had been tapped, the whole sequence with its delays, so
+  commands can be checked during setup without the tablet.
+- **ACT-5** A button's commands are a sequence of up to 20 steps, sent in order. Each step has its
+  own target, so one tap can drive several media servers. A step can be named and switched off
+  (ACT-9).
+- **ACT-6** Each step may wait before it is sent: 0 to 60 seconds, set in tenths of a second. The
+  server keeps the time, so a tablet that sleeps or changes page does not stop the sequence. A
+  step that is off does not wait either: its pause is skipped with it (ACT-9).
+- **ACT-7** Tapping a hotspot again while its sequence is still running, from any station, cancels
+  the steps not yet sent and starts the sequence over. Sequences of other hotspots keep running.
+- **ACT-8** A step that fails is logged, and the next step is still sent on time. Steps not yet
+  sent are dropped when another project is opened (PRJ-7) or the server stops.
+- **ACT-9** A step can have a name, shown in the editor and the command log, and can be switched
+  off: a step that is off is skipped with its pause, as if it were not in the sequence, and is
+  not counted in its numbering.
 
 ### 5.6 Targets and drivers
 
@@ -149,21 +185,33 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 - **TGT-3** Every driver implements one common interface, so a new protocol can be added without changing the rest of the system.
 - **TGT-4** Every sent command and every delivery error is recorded in a command log visible in the editor.
   Each entry names its source: the station that tapped, or "Test" for a send from the editor (ACT-4).
+  A fader's drag is one entry, for the value where the finger stopped, with the number of values
+  the drag sent (FD-3). Each step of a sequence is an entry of its own, marked with its place
+  ("step 2 of 3"); cancelled steps are noted once per sequence (ACT-7, ACT-8).
 - **TGT-5** Delivery status: OSC over UDP and UDP report *sent* when the packet leaves the server
   and *error* only when sending fails locally (e.g. the host cannot be resolved) — UDP cannot
   confirm arrival. HTTP reports *error* on a non-2xx response or after a 2-second timeout.
 - **TGT-6** Every HTTP command carries `X-Tapcue-Station` (station id, or `test`; no station
   may use that id) and `X-Tapcue-Hotspot` (hotspot name; characters outside printable ASCII and
   `%` are percent-encoded as UTF-8) headers, so the receiving side can tell where it came from.
+  A fader's command also carries `X-Tapcue-Fader`: its value, min and max separated by spaces
+  (`42 0 100`), so a receiver can show the level. A step of a sequence (ACT-5) carries
+  `X-Tapcue-Sequence`: the tap's run number, the step and how many steps, separated by spaces
+  (`17 2 3`), so a receiver can tell the steps of one tap apart.
 
 ### 5.7 Stations
 
 - **ST-1** The integrator manages stations: name, start page, idle timeout (seconds, or off).
 - **ST-2** A tablet opens a station by URL: `/play/<station-id>`.
 - **ST-3** Any number of tablets can open the same station (duplicate or backup tablets).
-- **ST-4** After the idle timeout with no taps, the player returns to the station's start page.
+- **ST-4** After the idle timeout with no taps, the player returns to the station's start page. On a page with a web background the web page time applies instead (PG-10).
 - **ST-5** Taps from different tablets are not coordinated: each tap sends its command; the last one wins on the media server.
 - **ST-6** The editor shows each station's URL, built from the server's local network address, and a QR code that opens it, so a tablet is set up by scanning instead of typing an IP address.
+- **ST-7** A station can invite taps while idle: after 15 s without a touch on its start page, the
+  hotspots of that page that go to a page or send a command pulse softly one after another, in
+  page order, in a loop, until the next touch ([ADR 0025](adr/0025-motion.md)). Faders and other
+  pages stay still. An attract screen needs no more: a start page with a looping video and one
+  large "Touch to start" hotspot.
 
 ### 5.8 Player
 
@@ -208,16 +256,67 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
   - under 900 px tall: the command log starts collapsed; the user's choice is kept in the browser;
   - under 1280 px wide or 720 px tall: the editor shows a "needs a wider window" notice instead.
   The player and demo receiver have no minimum size.
+- **ED-13** The page list can be folded into the thumbnail rail at any window width, and opened
+  again; the choice is kept in the browser.
+- **ED-14** Hotspot names are unique on their page: a new hotspot is named after its kind
+  ("Button 3", "Fader 1"), a duplicated or pasted one gets a free name ("Play demo 2"), and a
+  rename to a name another hotspot on the page already has is refused with a hint. Names are
+  compared trimmed and ignoring case. Duplicates in older projects stay until edited.
+- **ED-15** Each command of a sequence is a card that folds into one line (its name or
+  "Command N", target, command and pause), can be renamed, and has an on/off switch (ACT-9);
+  all cards fold and unfold at once.
+- **ED-16** Several hotspots of a page can be selected (Shift- or Cmd/Ctrl-click, a rectangle
+  dragged on the empty canvas, Cmd/Ctrl+A) and moved, nudged, deleted or duplicated together;
+  Escape clears the selection.
+- **ED-17** Selected hotspots can be copied and pasted onto any page of the open project, at the
+  same positions, with new ids and free names (ED-14); pasting on the same page offsets them.
+  The shortcuts act only outside text fields.
+- **ED-18** Selected hotspots can be aligned (left, centre, right, top, middle, bottom) to their
+  common box, or one hotspot to the canvas; three or more can be distributed with equal gaps
+  horizontally or vertically; and several can be given the same width or height.
+- **ED-19** Settings several selected hotspots share (style, shape, press effect, text style)
+  can be changed for all at once; a setting whose values differ shows as "Mixed".
+- **ED-20** Every section of the hotspot panel, for one hotspot or several, folds. Folded, it
+  shows its state in one line ("144, 500 · 560 × 720", "Go to Product A · 2 commands over
+  1.5 s"); open, its fields are edited. A section with an invalid field opens and stays open
+  until the field is fixed (ED-10). Which sections are folded is kept in the browser, the same
+  for every hotspot; Name, Position and size, and On tap start open.
+- **ED-21** The hotspot panel goes from how a hotspot looks to what it does: Name, Type,
+  Position and size (with the align tools, ED-18), Style, Text, On tap (While dragged for a
+  fader), Stacking.
+- **ED-22** "Go to page" is one of the choices of Add command: the first card of the list, at
+  most one, with no pause; the page still changes at once on the tablet (ACT-2). The project
+  keeps the link in `action.goTo`.
+- **ED-23** The position and size fields show four-digit values, the size of a 2048 × 1536
+  canvas, in full.
+- **ED-24** Every change to the project made in the editor can be undone and redone, in order,
+  up to 100 steps back ([ADR 0023](adr/0023-undo-history.md)). An undo is saved like any change
+  and reaches every open tablet. The history lasts while the editor tab is open: a reload starts
+  it afresh.
+- **ED-25** One step is one action: a whole drag on the canvas, a series of arrow nudges (until
+  1 s without one), typing into one field (until the focus leaves it or 1 s passes), or one
+  button such as Add hotspot, Paste or an align button.
+- **ED-26** Cmd/Ctrl + Z undoes, and Shift + Cmd/Ctrl + Z or Ctrl + Y redoes, outside text fields,
+  where they act on the text. Undo and Redo buttons in the top bar are disabled when there is
+  nothing to undo or redo, and their tooltips name the shortcut.
+- **ED-27** A project saved by another editor, opened from the library, or reloaded after a save
+  was refused as stale, clears the history: undo never overwrites someone else's work. When steps
+  were lost to another editor's change, the top bar says so until the next change or for a few
+  seconds; opening or importing a project in this editor clears it without a notice.
 
 ### 5.10 Demo receiver
 
 - **DEMO-1** Accepts HTTP requests on `/demo/<screen>/<content>` and shows them as a live log,
   plus one tile per screen name with the content it last received (e.g. `POST /demo/screen-1/product-a`
   → tile "screen-1" shows "product-a"). The request body is shown in the log, not on the tiles.
+  A request with `X-Tapcue-Fader` (TGT-6) also shows its value as a level on the tile, and a
+  fader's values in a row update one log row instead of adding one each. A request with
+  `X-Tapcue-Sequence` shows its step ("step 2 of 3") and the time since the step before it of
+  the same tap ("+1.5 s").
 - **DEMO-2** Ships with a demo project that targets the demo receiver, so the full flow works out of the box.
 - **DEMO-3** A demo mode (server start flag) makes a public online demo safe:
   - the editor is fully usable, but changes live only in the visitor's browser tab and are gone after a reload — every visitor starts from the original demo project;
-  - the server rejects saving, file uploads and project import;
+  - the server rejects saving, file uploads, project import, creating, opening or deleting projects, and checking online addresses for embedding (PG-9);
   - commands are delivered only to the demo receiver, whatever the targets say;
   - the editor shows a permanent "Demo mode — changes are not saved" notice.
 
@@ -227,10 +326,11 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 
 | Screen | Used by | Purpose |
 |---|---|---|
+| Editor — Projects | Integrator | The projects in the library: create, open on every station, delete (PRJ-5 to PRJ-8) |
 | Editor — Pages | Integrator | Page list, canvas with hotspots, properties panel |
 | Editor — Targets | Integrator | Manage command destinations |
 | Editor — Stations | Integrator | Manage stations, their URLs and QR codes |
-| Editor — Settings | Integrator | Canvas size and scale mode, import/export |
+| Editor — Settings | Integrator | Canvas size and scale mode, page transition, web page time, import/export |
 | Command log (panel in every editor tab) | Integrator | Sent commands and errors |
 | Player | Visitor | Full-screen station, nothing else |
 | Station not found | Integrator | Unknown station id, links to existing stations |
@@ -239,7 +339,7 @@ Since v0.3 ([ADR 0020](adr/0020-faders.md)), a hotspot may be a **fader** instea
 ### 6.2 Flows
 
 **F1. Build a stand from scratch (integrator)**
-1. Opens the editor, sets the canvas size and scale mode.
+1. Opens the editor, creates a new project on the Projects tab with the canvas size, and sets the scale mode.
 2. Adds a target, e.g. "Resolume" (OSC over UDP, IP, port).
 3. Creates pages and uploads a background for each.
 4. Adds hotspots over the drawn buttons, makes them invisible, chooses a press effect.
@@ -285,7 +385,7 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 
 ## 8. Assumptions and constraints
 
-- One server runs one project. Several stands need several server instances.
+- One server runs one project at a time, chosen from its library (PRJ-7). Several stands running at once need several server instances.
 - The media server owns all show logic; Tapcue does not know what is playing.
 - Tablets and the server are on the same local network; the network is trusted. Anyone on it can open the editor — on a stand this network is typically a dedicated access point, not the venue Wi-Fi.
 - Artwork is prepared to the canvas size by a designer; button labels and pictures may instead be
@@ -293,14 +393,12 @@ The same flow works on the public online demo (DEMO-3) without installing anythi
 
 ## 9. Out of scope for MVP (planned later)
 
-- Undo/redo in the editor (the architecture must allow adding it).
 - Manual zoom and panning on the editor canvas.
 - Editor password.
 - A command sent when a station returns to its start page after the idle timeout.
-- Image-based hotspot states (a separate "pressed" image).
 - OSC over TCP, raw TCP.
 - Command templates for QLab and Resolume.
-- Idle ("attract") animations, more transitions and press effects, polygon hotspots.
+- Polygon hotspots.
 - Import from Figma.
 - Feedback from media servers (what is currently playing).
 

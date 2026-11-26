@@ -29,6 +29,49 @@ describe('validateProject', () => {
     expect(result).toEqual({ ok: true, project: example });
   });
 
+  it('upgrades a version 1 project before checking it (project format §12)', () => {
+    const v1 = JSON.parse(JSON.stringify(example)) as Record<string, unknown> & Project;
+    const raw = v1 as unknown as {
+      schemaVersion: number;
+      pages: { hotspots: { action: Record<string, unknown> }[] }[];
+    };
+    raw.schemaVersion = 1;
+    const [first] = example.pages[0]!.hotspots[0]!.action.commands;
+    raw.pages[0]!.hotspots[0]!.action = { goTo: 'p_7tn4vb', command: first!.command };
+    raw.pages[1]!.hotspots[0]!.action = { goTo: 'p_h8x2kq', command: null };
+
+    const result = validateProject(v1);
+
+    expect(result.ok).toBe(true);
+    const upgraded = result.ok ? result.project : null;
+    expect(upgraded?.schemaVersion).toBe(2);
+    expect(upgraded?.pages[0]!.hotspots[0]!.action).toEqual({
+      goTo: 'p_7tn4vb',
+      commands: [{ command: first!.command }],
+    });
+    expect(upgraded?.pages[1]!.hotspots[0]!.action).toEqual({ goTo: 'p_h8x2kq', commands: [] });
+  });
+
+  it('reports errors in an upgraded project at the fields it has now', () => {
+    const raw = JSON.parse(JSON.stringify(example)) as {
+      schemaVersion: number;
+      targets: unknown[];
+      pages: { hotspots: { action: Record<string, unknown> }[] }[];
+    };
+    raw.schemaVersion = 1;
+    raw.targets = [];
+    raw.pages[0]!.hotspots[0]!.action = {
+      goTo: null,
+      command: { type: 'udp', targetId: 't_gone00', text: 'GO' },
+    };
+    expect(errorsOf(raw)).toEqual([
+      {
+        path: 'pages[0].hotspots[0].action.commands[0].command.targetId',
+        message: 'target "t_gone00" does not exist',
+      },
+    ]);
+  });
+
   it.each([null, 'project.json', 42, []])(
     'does not throw for input that is not a project: %j',
     (input) => {
@@ -118,12 +161,14 @@ describe('validateProject', () => {
   describe('references to targets', () => {
     it('reports a command whose target is missing', () => {
       const errors = errorsOf(project((p) => (p.targets = [])));
-      expect(errors).toEqual([
-        {
-          path: 'pages[0].hotspots[0].action.command.targetId',
+      // Every step is checked, also the third one, which is off: switched back on, it must work
+      // (ADR 0022, spec ACT-9).
+      expect(errors).toEqual(
+        [0, 1, 2].map((c) => ({
+          path: `pages[0].hotspots[0].action.commands[${c}].command.targetId`,
           message: 'target "t_demo01" does not exist',
-        },
-      ]);
+        })),
+      );
     });
 
     it('reports a command of another protocol than its target', () => {
@@ -138,11 +183,11 @@ describe('validateProject', () => {
           };
         }),
       );
+      const message = 'a "http" command cannot be sent to target "Resolume", which uses "osc-udp"';
       expect(errors).toEqual([
-        {
-          path: 'pages[0].hotspots[0].action.command.type',
-          message: 'a "http" command cannot be sent to target "Resolume", which uses "osc-udp"',
-        },
+        { path: 'pages[0].hotspots[0].action.commands[0].command.type', message },
+        { path: 'pages[0].hotspots[0].action.commands[1].command.type', message },
+        { path: 'pages[0].hotspots[0].action.commands[2].command.type', message },
       ]);
     });
   });
@@ -207,12 +252,16 @@ describe('validateProject', () => {
         hotspot.pressEffect = 'none';
         hotspot.action = {
           goTo: null,
-          command: {
-            type: 'osc-udp',
-            targetId: 't_resolm',
-            address: '/composition/layers/1/video/opacity',
-            args: [],
-          },
+          commands: [
+            {
+              command: {
+                type: 'osc-udp',
+                targetId: 't_resolm',
+                address: '/composition/layers/1/video/opacity',
+                args: [],
+              },
+            },
+          ],
         };
         change(p);
       });
@@ -220,14 +269,32 @@ describe('validateProject', () => {
     const fader = (p: Project) => home(p).hotspots[0]!;
     const at = 'pages[0].hotspots[0]';
 
+    it('reports a fader with a sequence or a delay: it sends one command, at once (ADR 0022)', () => {
+      const step = fader(withFader()).action.commands[0]!;
+      expect(errorsOf(withFader((p) => (fader(p).action.commands = [step, step])))).toEqual([
+        { path: `${at}.action.commands`, message: 'a fader sends one command, not a sequence' },
+      ]);
+      expect(
+        errorsOf(withFader((p) => (fader(p).action.commands = [{ ...step, delayMs: 500 }]))),
+      ).toEqual([
+        {
+          path: `${at}.action.commands[0].delayMs`,
+          message: "a fader's command is sent at once, with no delay",
+        },
+      ]);
+      expect(
+        errorsOf(withFader((p) => (fader(p).action.commands = [{ ...step, delayMs: 0 }]))),
+      ).toEqual([]);
+    });
+
     it('accepts a fader, and one that sends nothing yet', () => {
       expect(errorsOf(withFader())).toEqual([]);
-      expect(errorsOf(withFader((p) => (fader(p).action.command = null)))).toEqual([]);
+      expect(errorsOf(withFader((p) => (fader(p).action.commands = [])))).toEqual([]);
     });
 
     it('accepts the value between other arguments, and whole numbers with a whole step', () => {
       const between = withFader((p) => {
-        const command = fader(p).action.command;
+        const command = fader(p).action.commands[0]?.command;
         if (command?.type === 'osc-udp') {
           command.args = [
             { type: 's', value: 'master' },
@@ -260,7 +327,7 @@ describe('validateProject', () => {
         },
       ],
     ])('accepts {value} in %s (ADR 0020)', (_, command) => {
-      const withCommand = withFader((p) => (fader(p).action.command = command));
+      const withCommand = withFader((p) => (fader(p).action.commands = [{ command }]));
       expect(errorsOf(withCommand)).toEqual([]);
     });
 
@@ -331,11 +398,21 @@ describe('validateProject', () => {
         [{ path: `${at}.pressEffect`, message: 'a fader has no press effect' }],
       ],
       [
+        'a pop or glow, the new press effects (ADR 0025)',
+        (p) => (fader(p).pressEffect = 'glow'),
+        [{ path: `${at}.pressEffect`, message: 'a fader has no press effect' }],
+      ],
+      [
         'UDP text without {value}',
-        (p) => (fader(p).action.command = { type: 'udp', targetId: 't_projec', text: 'VOL' }),
+        (p) =>
+          (fader(p).action.commands[0]!.command = {
+            type: 'udp',
+            targetId: 't_projec',
+            text: 'VOL',
+          }),
         [
           {
-            path: `${at}.action.command.text`,
+            path: `${at}.action.commands[0].command.text`,
             message: "expected {value} where the fader's value goes",
           },
         ],
@@ -343,7 +420,7 @@ describe('validateProject', () => {
       [
         'an HTTP command without {value} in its path or body',
         (p) =>
-          (fader(p).action.command = {
+          (fader(p).action.commands[0]!.command = {
             type: 'http',
             targetId: 't_demo01',
             method: 'POST',
@@ -352,7 +429,7 @@ describe('validateProject', () => {
           }),
         [
           {
-            path: `${at}.action.command.path`,
+            path: `${at}.action.commands[0].command.path`,
             message: "expected {value} in the path or the body, where the fader's value goes",
           },
         ],
@@ -373,7 +450,9 @@ describe('validateProject', () => {
     expect(errors.map((e) => e.path)).toEqual([
       'stations[0].startPageId',
       'pages[0].hotspots[0].action.goTo',
-      'pages[0].hotspots[0].action.command.targetId',
+      'pages[0].hotspots[0].action.commands[0].command.targetId',
+      'pages[0].hotspots[0].action.commands[1].command.targetId',
+      'pages[0].hotspots[0].action.commands[2].command.targetId',
     ]);
   });
 });

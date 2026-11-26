@@ -11,7 +11,8 @@
 
 **Beautiful touch interfaces for exhibition stands, wired to your media server.**
 
-> **Status:** v0.2.0: hotspots with their own frost, image and text ([changelog](CHANGELOG.md),
+> **Status:** v0.10.0: pages change with a transition, buttons pop or glow, and an idle station
+> invites taps ([changelog](CHANGELOG.md),
 > [download the apps](https://github.com/onovokhatski/tapcue/releases/latest)). See the
 > [roadmap](docs/roadmap.md) for what comes next.
 
@@ -69,15 +70,33 @@ the commands.
 
 - **Pages** with image or looping video backgrounds, `fit` or `fill` scaling, and a safe-area
   overlay that shows what a 16:10 or 16:9 screen crops.
+- **Web pages as backgrounds:** a live site, checked in the editor for whether it may be shown
+  inside another page, or a mini-site uploaded as a `.zip` that works without internet. Visitors
+  scroll and tap the site; hotspots on top lead back to the stand's own pages.
 - **Hotspots:** rectangles and ellipses, invisible or styled, with press effects; each one opens
   a page, sends a command, or both. "Send test" fires a command from the editor.
 - **Hotspot content:** a frosted-glass backdrop, a translucent fill, an image and a text label,
   so button labels change in the editor without new artwork.
+- **Faders:** a hotspot can be a vertical or horizontal fader that sends its value while it is
+  dragged, over OSC, UDP or HTTP; every tablet shows the same position.
+- **Command sequences:** one tap sends several commands in order, each after its own pause, to
+  one media server or several; a second tap starts the sequence over. Commands can be named and
+  switched off without deleting them.
+- **Quick layout:** select several hotspots, move, copy them to another page, align, distribute
+  and style them together; the editor's panels fold so the canvas has room.
+- **Undo and redo:** Cmd/Ctrl + Z and the top-bar buttons take back a drag, a delete or a typed
+  name in one step, on the editor and every open tablet.
 - **Targets:** where commands go — OSC over UDP, UDP or HTTP — with a log of every command sent.
 - **Stations:** an entry point per tablet with its own start page and idle return, opened by
   scanning its QR code.
+- **Motion:** pages change with a fade, a slide that follows the page order, a zoom or no
+  transition; buttons answer a press with a highlight, press-in, ripple, pop or glow; and a
+  station can invite taps while nobody touches it, its buttons pulsing one after another. One
+  choice per place, no timings to set.
 - **Live editing:** every open tablet follows each change within a second, without reloading.
 - **Reliable on the stand:** tablets keep working through Wi-Fi drops and reconnect on their own.
+- **Projects:** several stands on one server, created, opened on every station and deleted from
+  the editor's Projects tab.
 - **Export and import** the whole project, backgrounds included, as one `.zip` file.
 - **Demo receiver and demo project:** try the whole flow without any hardware.
 - **Demo mode** for a public online demo: nothing is saved, and commands never leave the server.
@@ -116,11 +135,15 @@ Tapcue is running with "Demo stand".
 ```
 
 Open the editor on this computer, a station on a tablet (or in another browser tab), and the
-demo receiver at `/demo`: taps on "Call our team" or "Play demo" appear there. To work on your
-own stand, start Tapcue with a project folder of its own:
+demo receiver at `/demo`: taps on "Call our team" or "Play demo", and the Volume fader on the
+Product A page, appear there. Your stands live in a project library, by default
+`Documents/Tapcue` in your home folder ([ADR 0021](docs/adr/0021-project-library.md)). The
+editor's Projects tab creates, opens and deletes them; the one last opened is opened again after
+a restart, on every station. To start with
+a particular project folder, or keep the library elsewhere:
 
 ```bash
-npm start -- --project ./my-stand
+npm start -- --project ./my-stand --projects ./stands
 ```
 
 Before the stand opens, follow the [stand setup guide](docs/stand-setup.md): network, the Tapcue
@@ -132,8 +155,8 @@ Tapcue also comes as an app that needs no Node.js and no terminal
 ([ADR 0017](docs/adr/0017-click-to-run-app.md)): `Tapcue.app` for macOS and `Tapcue.exe` for
 Windows, built by CI and attached to each
 [release](https://github.com/onovokhatski/tapcue/releases/latest) from v0.1.0. A click starts
-Tapcue and opens the editor in the browser; your project lives in `Documents/Tapcue`, which
-starts as a copy of the demo stand. Clicking it again while it runs just opens the editor.
+Tapcue and opens the editor in the browser; your projects live in the library `Documents/Tapcue`,
+which starts with a copy of the demo stand. Clicking it again while it runs just opens the editor.
 
 The apps are not code-signed yet, so the first start needs one extra step:
 
@@ -179,7 +202,7 @@ npm install
 
 | Command | What it does |
 |---|---|
-| `npm start` | Runs Tapcue as on a stand: builds the web app, serves everything on port 4000 and prints the editor and station URLs (`--port`, `--project <folder>`) |
+| `npm start` | Runs Tapcue as on a stand: builds the web app, serves everything on port 4000 and prints the editor and station URLs (`--port`, `--project <folder>`, `--projects <library>`) |
 | `npm run dev` | Starts the server (port 4000) and the web app (http://localhost:5173) with live reload |
 | `npm run build` | Builds the web app for production |
 | `npm run typecheck` | Type-checks every package (TypeScript, strict mode) |

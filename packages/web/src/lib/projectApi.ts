@@ -12,16 +12,24 @@ export interface Loaded {
   quit?: boolean;
 }
 
-/** A refusal says why; `errors` lists the fields when the project itself was invalid. */
+/**
+ * A refusal says why; `errors` lists the fields when the project itself was invalid. `stale`: the
+ * copy saved was of a project that is no longer open on the server (ADR 0021).
+ */
 export type Saved =
-  { ok: true; revision: number } | { ok: false; reason: string; errors: ValidationError[] };
+  | { ok: true; revision: number }
+  | { ok: false; reason: string; errors: ValidationError[]; stale?: true };
 
-/** What the server did with a test send: its log entry, or why it could not send. */
-export type TestSent = { ok: true; entry: LogEntry } | { ok: false; reason: string };
+/**
+ * What the server did with a test send: the log entry of its first command, or null when that
+ * command waits for its delay (ADR 0022); or why it could not send.
+ */
+export type TestSent = { ok: true; entry: LogEntry | null } | { ok: false; reason: string };
 
 export interface ProjectApi {
   load(): Promise<Loaded>;
-  save(project: Project): Promise<Saved>;
+  /** `basedOn`: the revision the editor's copy came from, so a stale copy is refused. */
+  save(project: Project, basedOn: number | null): Promise<Saved>;
   /** For a fader, `value` is the value to send (spec FD-2). */
   testSend(pageId: PageId, hotspotId: HotspotId, value?: number): Promise<TestSent>;
   /** Replaces the whole project with a .zip (spec PRJ-4). */
@@ -38,12 +46,23 @@ export const projectApi: ProjectApi = {
     return (await response.json()) as Loaded;
   },
 
-  async save(project) {
+  async save(project, basedOn) {
     const response = await fetch('/api/project', {
       method: 'PUT',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        ...(basedOn === null ? {} : { 'x-tapcue-revision': String(basedOn) }),
+      },
       body: JSON.stringify(project),
     });
+    if (response.status === 409) {
+      return {
+        ok: false,
+        reason: 'Another project was opened on the server.',
+        errors: [],
+        stale: true,
+      };
+    }
     if (response.status === 400) {
       const body = (await response.json()) as { errors: ValidationError[] };
       return { ok: false, reason: 'The project has invalid values.', errors: body.errors };
@@ -65,8 +84,11 @@ export const projectApi: ProjectApi = {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ pageId, hotspotId, value }),
     });
-    const body = (await response.json().catch(() => ({}))) as { entry?: LogEntry; error?: string };
-    if (response.ok && body.entry) return { ok: true, entry: body.entry };
+    const body = (await response.json().catch(() => ({}))) as {
+      entry?: LogEntry | null;
+      error?: string;
+    };
+    if (response.ok && body.entry !== undefined) return { ok: true, entry: body.entry };
     return { ok: false, reason: body.error ?? `The server answered ${response.status}.` };
   },
 

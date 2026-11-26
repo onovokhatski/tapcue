@@ -6,7 +6,7 @@ import { execFile } from 'node:child_process';
 import { cpSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { parseConfig } from './config';
+import { defaultProjectsDir, parseConfig } from './config';
 import { portInUse, reportStartError, startServer } from './start';
 
 /**
@@ -18,9 +18,12 @@ export function resourcesDir(execPath: string, exists: (path: string) => boolean
   return exists(join(bundled, 'web')) ? bundled : dirname(execPath);
 }
 
-/** The project the app opens when it is given none: a copy of the demo stand to start from. */
+/**
+ * The project the app opens when it is given none and has opened none from the library: a copy of
+ * the demo stand to start from, inside the library.
+ */
 export function defaultProjectDir(home: string): string {
-  return join(home, 'Documents', 'Tapcue', 'demo-stand');
+  return join(defaultProjectsDir(home), 'demo-stand');
 }
 
 /**
@@ -66,7 +69,9 @@ async function tapcueAnswers(port: number): Promise<boolean> {
 export async function launch() {
   const resources = process.env['TAPCUE_RESOURCES'] ?? resourcesDir(process.execPath, existsSync);
   const defaultDir = defaultProjectDir(homedir());
-  const config = parseConfig(process.argv.slice(2), process.env, process.cwd(), defaultDir);
+  const config = parseConfig(process.argv.slice(2), process.env, process.cwd(), {
+    defaultProjectDir: defaultDir,
+  });
   const editor = `http://localhost:${config.port}/edit`;
   try {
     prepareDefaultProject(config.projectDir, defaultDir, join(resources, 'demo-stand'));

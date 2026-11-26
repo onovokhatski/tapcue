@@ -1,5 +1,6 @@
 // The command log at the bottom of every editor tab: what the stations' taps and the editor's test
-// sends delivered, failed or ignored, newest first. Collapsed, it still shows the latest entry
+// sends delivered, failed or ignored, newest first. The steps of one tap's sequence are one row,
+// opened to show each step (ADR 0022). Collapsed, the log still shows the latest entry
 // (spec TGT-4, ED-6, ED-9, ED-12; design: logPanel(), logRow()).
 import type { LogEntry, Project } from '@tapcue/shared';
 import { useState } from 'react';
@@ -7,7 +8,7 @@ import { clock } from '../../lib/clock';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { useEditor } from '../useEditor';
-import { describeCommand } from './logEntries';
+import { describeCommand, type LogRow, logRows, sequenceSummary } from './logEntries';
 
 const LOG_KEY = 'tapcue.commandLog';
 
@@ -30,6 +31,14 @@ export function CommandLog() {
   const clearLog = useEditor((state) => state.clearLog);
   const project = useEditor((state) => state.project);
   const [expanded, setExpandedState] = useState(initiallyExpanded);
+  /** The sequences opened to show their steps, by run. */
+  const [open, setOpen] = useState<ReadonlySet<number>>(new Set());
+  const toggle = (run: number) =>
+    setOpen((current) => {
+      const next = new Set(current);
+      if (!next.delete(run)) next.add(run);
+      return next;
+    });
   const setExpanded = (next: boolean) => {
     setExpandedState(next);
     try {
@@ -141,32 +150,132 @@ export function CommandLog() {
                 </td>
               </tr>
             ) : (
-              log.map((entry) => (
-                <tr
-                  key={entry.seq}
-                  data-status={entry.status}
-                  className={entry.status === 'error' ? 'bg-danger-bg' : 'hover:bg-hover'}
-                >
-                  <td className="py-1 pr-2 pl-4 font-mono text-mono-s whitespace-nowrap text-muted tabular-nums">
-                    {clock(entry.time)}
-                  </td>
-                  <td className="px-2 py-1">
-                    <Result entry={entry} />
-                  </td>
-                  <td className="px-2 py-1">
-                    <Source entry={entry} project={project} />
-                  </td>
-                  <td className="px-2 py-1 text-body-s">{hotspotName(entry)}</td>
-                  <td className="px-2 py-1 pr-4">
-                    <CommandText entry={entry} />
-                  </td>
-                </tr>
-              ))
+              logRows(log).map((row) =>
+                row.kind === 'entry' ? (
+                  <EntryRow key={row.entry.seq} entry={row.entry} project={project} />
+                ) : (
+                  <SequenceRows
+                    key={`run-${row.run}`}
+                    row={row}
+                    project={project}
+                    open={open.has(row.run)}
+                    onToggle={() => toggle(row.run)}
+                  />
+                ),
+              )
             )}
           </tbody>
         </table>
       </div>
     </section>
+  );
+}
+
+function EntryRow({
+  entry,
+  project,
+  step = false,
+}: {
+  entry: LogEntry;
+  project: Project | null;
+  /** A step shown under its sequence's row: indented. */
+  step?: boolean;
+}) {
+  return (
+    <tr
+      data-status={entry.status}
+      className={entry.status === 'error' ? 'bg-danger-bg' : 'hover:bg-hover'}
+    >
+      <td className="py-1 pr-2 pl-4 font-mono text-mono-s whitespace-nowrap text-muted tabular-nums">
+        {clock(entry.time)}
+      </td>
+      <td className="px-2 py-1">
+        <Result entry={entry} />
+      </td>
+      <td className="px-2 py-1">
+        <Source entry={entry} project={project} />
+      </td>
+      <td className="px-2 py-1 text-body-s">{step ? '' : hotspotName(entry)}</td>
+      <td className={`px-2 py-1 pr-4 ${step ? 'pl-6' : ''}`}>
+        <CommandText entry={entry} />
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * One tap's sequence as one row: when it started, how it went and how many steps it had, opened
+ * to show each step under it (ADR 0022).
+ */
+function SequenceRows({
+  row,
+  project,
+  open,
+  onToggle,
+}: {
+  row: Extract<LogRow, { kind: 'sequence' }>;
+  project: Project | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const first = row.steps[0]!;
+  const { of, sent, failed, cancelled } = sequenceSummary(row.steps);
+  const parts = [
+    `${sent} of ${of} sent`,
+    ...(failed ? [`${failed} failed`] : []),
+    ...(cancelled ? [`${cancelled} cancelled`] : []),
+  ];
+  const look = failed ? 'error' : sent === of ? 'sent' : cancelled ? 'cancelled' : 'running';
+  return (
+    <>
+      <tr data-status={look} className={failed ? 'bg-danger-bg' : 'hover:bg-hover'}>
+        <td className="py-1 pr-2 pl-4 font-mono text-mono-s whitespace-nowrap text-muted tabular-nums">
+          {clock(first.time)}
+        </td>
+        <td className="px-2 py-1">
+          <SequenceResult look={look} />
+        </td>
+        <td className="px-2 py-1">
+          <Source entry={first} project={project} />
+        </td>
+        {/* The first step is always one that was sent or failed: a sequence cancelled before its
+            first step is one entry, a plain row. */}
+        <td className="px-2 py-1 text-body-s">{hotspotName(first)}</td>
+        <td className="px-2 py-1 pr-4">
+          <button
+            type="button"
+            aria-expanded={open}
+            className="inline-flex items-center gap-1 rounded text-body-s text-secondary hover:text-primary"
+            onClick={onToggle}
+          >
+            <Icon
+              name="chevron-down"
+              className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`}
+            />
+            Sequence of {of} commands
+          </button>
+          <span className="text-body-s text-muted"> · {parts.join(' · ')}</span>
+        </td>
+      </tr>
+      {open &&
+        row.steps.map((step) => <EntryRow key={step.seq} entry={step} project={project} step />)}
+    </>
+  );
+}
+
+function SequenceResult({ look }: { look: 'error' | 'sent' | 'cancelled' | 'running' }) {
+  const words = {
+    error: { icon: 'alert', text: 'Error', className: 'text-danger-fg' },
+    sent: { icon: 'check', text: 'Sent', className: 'text-success-fg' },
+    cancelled: { icon: 'info', text: 'Cancelled', className: 'text-secondary' },
+    running: { icon: 'info', text: 'Running', className: 'text-secondary' },
+  } as const;
+  const { icon, text, className } = words[look];
+  return (
+    <span className={`inline-flex items-center gap-1 text-label-s ${className}`}>
+      <Icon name={icon} className="h-3.5 w-3.5" />
+      {text}
+    </span>
   );
 }
 
@@ -213,12 +322,38 @@ function CommandText({ entry }: { entry: LogEntry }) {
   const { text, args } = describeCommand(entry.command);
   return (
     <>
+      <StepPlace entry={entry} />
       <span className="text-body-s text-muted">{entry.targetName}</span>{' '}
       <span className="font-mono text-mono-s text-primary">{text}</span>
       {args && <span className="font-mono text-mono-s text-muted"> {args}</span>}
+      {entry.valuesSent !== undefined && (
+        // A fader's drag is this one row, for its final value (ADR 0020).
+        <span className="text-body-s text-muted">
+          {' '}
+          · {entry.valuesSent} {entry.valuesSent === 1 ? 'value' : 'values'} sent
+        </span>
+      )}
       {entry.status === 'error' && (
         <span className="text-body-s text-danger-fg"> · {entry.message}</span>
       )}
     </>
+  );
+}
+
+/**
+ * "Step 2 of 3 · after 1.5 s ·" before a step's command (ADR 0022); a named step says its name
+ * instead: "Lights up · after 1.5 s ·" (spec ACT-9).
+ */
+function StepPlace({ entry }: { entry: LogEntry }) {
+  const { sequence } = entry;
+  if (!sequence) return null;
+  const after =
+    sequence.delayMs > 0 ? ` · after ${Number((sequence.delayMs / 1000).toFixed(1))} s` : '';
+  return (
+    <span className="text-body-s text-muted">
+      {sequence.name ??
+        (sequence.of > 1 ? `Step ${sequence.step} of ${sequence.of}` : 'One command')}
+      {after} ·{' '}
+    </span>
   );
 }

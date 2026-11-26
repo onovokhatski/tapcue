@@ -12,14 +12,20 @@ import { registerTestSend } from './commands/testSend';
 import { createDemoDrivers } from './demo/demoDrivers';
 import { registerDemoReceiver } from './demo/receiver';
 import { type ArchiveOptions, registerArchive } from './project/archive';
+import type { Library } from './project/library';
+import { registerLibraryRoutes } from './project/libraryRoutes';
 import type { ProjectStore } from './project/store';
+import { registerSites, type SiteOptions } from './project/sites';
 import { registerUpload, type UploadOptions } from './project/upload';
+import { type EmbedCheckOptions, registerEmbedCheck } from './embedCheck';
 import { type LocalAddress, registerNetwork } from './network';
 import { registerHub } from './realtime/hub';
 import { registerWebApp } from './webApp';
 
 export interface AppOptions {
   store: ProjectStore;
+  /** The folder of projects to list, create, open and delete (ADR 0021); left out, no such API. */
+  library?: Library;
   /** Log requests to stdout (on when running, off in tests). */
   logger?: boolean;
   /** The real drivers by default; tests pass fakes so nothing leaves the computer. Ignored in demo mode. */
@@ -28,6 +34,10 @@ export interface AppOptions {
   addresses?: () => LocalAddress[];
   /** Upload settings for tests: a small size limit, a fixed file name suffix. */
   upload?: Omit<UploadOptions, 'dir'>;
+  /** Mini-site settings for tests: small size limits, a fixed folder name suffix. */
+  sites?: Omit<SiteOptions, 'dir'>;
+  /** Embed check settings for tests: a short timeout. */
+  embedCheck?: EmbedCheckOptions;
   /** Import settings for tests: a small size limit. */
   archive?: Pick<ArchiveOptions, 'maxBytes'>;
   /** The web app's production build (packages/web/dist); left out, only the API is served. */
@@ -42,13 +52,29 @@ export interface AppOptions {
 }
 
 /** What demo mode refuses, before a body is read (spec DEMO-3). */
-const DEMO_REFUSED = new Set(['PUT /api/project', 'POST /api/assets', 'POST /api/project/import']);
+const DEMO_REFUSED = new Set([
+  'PUT /api/project',
+  'POST /api/assets',
+  'POST /api/sites',
+  'POST /api/project/import',
+  'POST /api/projects',
+  'POST /api/projects/:id/open',
+  'DELETE /api/projects/:id',
+  // A public server fetching any address on request could probe the network it runs in.
+  'GET /api/embed-check',
+]);
+
+/** The header with the revision an editor's copy was based on, sent with each save (ADR 0021). */
+export const BASED_ON_HEADER = 'x-tapcue-revision';
 
 export function buildApp({
   store,
+  library,
   logger = false,
   drivers,
   upload = {},
+  sites = {},
+  embedCheck = {},
   addresses,
   archive = {},
   webDir,
@@ -86,11 +112,17 @@ export function buildApp({
     });
   }
 
-  // Images and videos of the project. @fastify/static answers Range requests (Safari needs them to
-  // play video) and refuses paths that leave the assets folder.
-  void app.register(fastifyStatic, { root: join(store.dir, 'assets'), prefix: '/assets/' });
-  registerUpload(app, { dir: store.dir, ...upload });
+  // Images, videos and mini-sites (assets/sites/) of the active project, looked up on each request:
+  // another project may have been opened since the start (ADR 0021). @fastify/static answers Range requests (Safari needs
+  // them to play video) and refuses paths that leave the assets folder.
+  void app.register(fastifyStatic, { root: join(store.dir, 'assets'), serve: false });
+  app.get<{ Params: { '*': string } }>('/assets/*', (request, reply) =>
+    reply.sendFile(request.params['*'], join(store.dir, 'assets')),
+  );
+  registerUpload(app, { dir: () => store.dir, ...upload });
+  registerSites(app, { dir: () => store.dir, ...sites });
   registerNetwork(app, addresses);
+  registerEmbedCheck(app, embedCheck);
 
   // Taps from players → commands to targets, and the log of what was sent (architecture §5.3).
   const log = createCommandLog();
@@ -99,7 +131,10 @@ export function buildApp({
   const used = demo
     ? createDemoDrivers((request) => hub.toViewers({ type: 'demo-received', request }))
     : (drivers ?? realDrivers());
-  const dispatch = createDispatcher({ project: () => store.project, drivers: used, log });
+  const dispatcher = createDispatcher({ project: () => store.project, drivers: used, log });
+  const { dispatch } = dispatcher;
+  // Steps still waiting in a sequence are dropped when the server stops (ADR 0022).
+  app.addHook('onClose', () => dispatcher.close());
   const faders = createFaders({ project: () => store.project, drivers: used, log });
   app.addHook('onClose', () => faders.close());
   const hub = registerHub(app, { dispatch, log, faders });
@@ -108,8 +143,17 @@ export function buildApp({
 
   // The editor saves the whole project (ADR 0011). An invalid one is refused with its field errors;
   // after a save every player and editor hears the new revision and fetches it (spec PLY-5).
+  // A save names the revision its copy came from; one made before another project was opened is
+  // refused, so a late autosave cannot write one stand's pages into another (ADR 0021).
   app.put('/api/project', async (request, reply) => {
-    const result = await store.save(request.body);
+    const header = request.headers[BASED_ON_HEADER];
+    const basedOn = typeof header === 'string' && /^\d+$/.test(header) ? Number(header) : undefined;
+    const result = await store.save(request.body, basedOn);
+    if (result.stale) {
+      return reply
+        .code(409)
+        .send({ error: 'Another project was opened since this copy was loaded' });
+    }
     if (!result.ok) return reply.code(400).send({ errors: result.errors });
     hub.toAll({ type: 'project-updated', revision: result.revision });
     return { revision: result.revision };
@@ -121,6 +165,23 @@ export function buildApp({
     ...archive,
     onImported: (revision) => hub.toAll({ type: 'project-updated', revision }),
   });
+
+  // Projects in the library; opening one switches every station and editor to it. Steps still
+  // waiting in a sequence are cancelled (ADR 0022), and fader values start over from each fader's
+  // start, as on a fresh start (ADR 0021).
+  if (library) {
+    registerLibraryRoutes(app, {
+      library,
+      store,
+      onOpened: (revision) => {
+        dispatcher.cancelAll('another project was opened');
+        faders.reset();
+        hub.toAll({ type: 'project-updated', revision });
+        const values = faders.values();
+        if (Object.keys(values).length > 0) hub.toAll({ type: 'fader-values', values });
+      },
+    });
+  }
 
   // The demo project's HTTP commands land here and show up on the demo page (spec DEMO-1).
   registerDemoReceiver(app, {

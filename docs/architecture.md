@@ -57,9 +57,12 @@ server/src/
   start.ts           load the project, build the app, listen, print the addresses
   launcher.ts        the click-to-run app: its folders, first start, browser, a second click
   packaged.ts        the click-to-run app's entry, bundled into one file (ADR 0017)
-  config.ts          port, project folder path, demo mode (from CLI args / env)
+  config.ts          port, project folder, library folder, demo mode (from CLI args / env)
   project/
-    store.ts         load, validate and atomically save project.json; keep revision
+    store.ts         load, validate and atomically save project.json; keep revision;
+                     switch to another project folder
+    library.ts       the library: list, create, delete into .trash/, remember the active one
+    libraryRoutes.ts /api/projects endpoints (ADR 0021)
     assets.ts        save uploaded files into assets/, enforce the 200 MB limit
     archive.ts       zip export / import (yazl writes, yauzl reads)
   http/
@@ -67,7 +70,8 @@ server/src/
   realtime/
     hub.ts           WebSocket connections: players and editors, broadcast
   commands/
-    dispatcher.ts    tap → find hotspot action → pick driver → send → log
+    dispatcher.ts    tap → the hotspot's steps → pick driver → send → log; each later step on
+                     its own timer, a new tap on the hotspot starts over (ADR 0022)
     log.ts           in-memory ring buffer of the last 500 log entries
     drivers/
       driver.ts      the common Driver interface
@@ -147,8 +151,9 @@ shape crops. The reference screen and whether the bands are shown are kept in th
   plus the pointer's total movement, so no rounding builds up; an arrow-key nudge starts from the
   hotspot as the store has it at that moment, so fast repeats never undo one another. Boxes stay
   whole canvas pixels, at least 16 px, inside the canvas.
-- The store never mutates the project; it replaces it. Undo/redo (post-MVP) then becomes a
-  stack of previous projects — no redesign needed.
+- The store never mutates the project; it replaces it. Undo/redo keeps the projects it replaced
+  on a stack, with the selection of each, up to 100; continuous edits share a group key and merge
+  into one step ([ADR 0023](adr/0023-undo-history.md)).
 - Changes are **auto-saved** 500 ms after the last edit (debounced), one save at a time; a
   change made during a save is sent right after it. The editor shows "Saving… / Saved", "Unsaved
   changes" when the server cannot be reached (saved again on reconnect), or "Save error" with the
@@ -161,7 +166,9 @@ shape crops. The reference screen and whether the bands are shown are kept in th
 ### 4.3 Player runtime
 
 - Holds the current page and an idle timer; any tap resets the timer
-  ([spec ST-4](spec.md#57-stations)).
+  ([spec ST-4](spec.md#57-stations)). On a page with a web background the timer uses the
+  project's web page time, from opening for an online site and from the last tap, inside the
+  frame too, for a mini-site ([spec PG-10](spec.md#53-pages), [ADR 0024](adr/0024-web-backgrounds.md)).
 - **Load on tap** ([spec PG-5](spec.md#53-pages), [ADR 0016](adr/0016-load-next-page-on-tap.md)):
   only the page on screen and the incoming page are in the DOM. The incoming page's background
   starts loading on the tap, and the page stays invisible until its image is decoded or its
@@ -192,13 +199,17 @@ contract at runtime and get the same TypeScript types at compile time.
 | Method & path | Purpose |
 |---|---|
 | `GET /api/project` | Current project and its revision |
-| `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors |
+| `PUT /api/project` | Replace the project (validated); returns the new revision, or `400` with the field errors. The editor sends `X-Tapcue-Revision`, the revision its copy came from; a copy from before another project was opened is refused with `409` ([ADR 0021](adr/0021-project-library.md)) |
 | `POST /api/assets` | Upload one file (multipart): JPEG, PNG, WebP or MP4, up to 200 MB; answers `201 { asset, type }`, `413` over the limit, `415` for another format |
-| `GET /assets/*` | Serve project files to editor and players |
+| `GET /assets/*` | Serve the active project's files to editor and players |
 | `GET /api/project/export` | Download the project as `.zip`, named after it: `project.json` and every file in `assets/` |
 | `POST /api/project/import` | Upload a `.zip` (body `application/zip`, up to 2 GB) to replace the project; checked like a load, then swapped in and announced as a new revision. Answers `{ revision }`, `400` with the errors (only `project.json` and `assets/<file>` allowed), `413` over the limit, `415` for another body |
+| `GET /api/projects` | The library ([spec PRJ-5](spec.md#51-project)): `{ projects, active }`; each project has its `id` (folder name), `active`, `modified` and either `ok: true` with `name`, `width`, `height`, or `ok: false` with its load `errors`. `active.id` is `null` for a project opened with `--project` outside the library |
+| `POST /api/projects` | Create an empty project (`name`, `width`, `height`; PRJ-6); answers `201 { id }`, or `400` with the field errors |
+| `POST /api/projects/:id/open` | Make a project active (PRJ-7): checked like a load, remembered for the next start, announced as `project-updated`, fader values back to their start. Answers `{ revision }`, `400` with the load errors, `404` for an id the library does not list |
+| `DELETE /api/projects/:id` | Move a project into the library's `.trash/` (PRJ-8); `409` for the active project, `404` for an unknown id |
 | `GET /api/network` | Local IPv4 addresses for station URLs and QR codes, private ranges first; no port, the editor adds the one it is served on |
-| `POST /api/test-send` | Send a hotspot's command from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)); answers the log entry (sent or error), `404` for an unknown hotspot, `409` for one without a command |
+| `POST /api/test-send` | Send a hotspot's commands from the editor as a tap from "test" (`pageId`, `hotspotId`; [spec ACT-4](spec.md#55-actions)): the whole sequence with its delays. Answers the first step's log entry (sent or error), or `entry: null` when the first step waits for its delay; later steps reach the editor as log entries. `404` for an unknown hotspot, `409` for one without a command or with every command switched off |
 | `* /demo/<screen>/<content>` | Demo receiver endpoint (any method; the page itself is `/demo` in the web app) |
 
 The editor saves the **whole project** in one request. A project is a few kilobytes of JSON,
@@ -215,7 +226,7 @@ that says `hello` is a player; every other connection (editors, demo pages) is a
 | player → server | `hello` | `stationId` | Identify after (re)connect |
 | player → server | `tap` | `pageId`, `hotspotId` | A hotspot was tapped |
 | server → all | `project-updated` | `revision` | Fetch the new project |
-| server → viewers | `log-entry` | entry: source (a station or `test`), hotspot, status `sent`, `error` or `ignored` | A command was sent, failed, or the tap named an unknown hotspot |
+| server → viewers | `log-entry` | entry: source (a station or `test`), hotspot, status `sent`, `error` or `ignored`; for a sequence, `sequence` (run, step, of, delay, and the step's name if it has one) | A command was sent, failed, or was not sent: an unknown hotspot, or steps of a sequence cancelled |
 | server → viewers | `demo-received` | request summary | Demo receiver got a request |
 | both | `ping` / `pong` | — | Detect dead connections |
 
@@ -252,7 +263,9 @@ Editor                    Server                         Players
 
 ## 6. Persistence
 
-- The project folder is the only storage: `project.json` + `assets/`.
+- The project folder is the only storage: `project.json` + `assets/`. Projects live side by
+  side in a library folder, which also holds `tapcue.json` naming the active project and
+  `.trash/` for deleted ones ([ADR 0021](adr/0021-project-library.md)).
 - **Atomic save:** write to a temporary file, then rename over `project.json`. A crash
   mid-write never leaves a broken project. Saves run one at a time, so the file on disk is
   always the project in memory.

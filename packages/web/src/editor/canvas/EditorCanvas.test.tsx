@@ -1,8 +1,8 @@
 import type { Project } from '@tapcue/shared';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../../test/demoProject';
-import { createEditorStore } from '../editorStore';
+import { createEditorStore, GROUP_QUIET_MS } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { EditorCanvas } from './EditorCanvas';
 
@@ -103,7 +103,7 @@ describe('EditorCanvas', () => {
     it('selects a hotspot on press: amber outline, name chip and eight handles', async () => {
       const { store, overlay } = await renderCanvas();
       fireEvent.pointerDown(overlay('h_carda0'));
-      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotId: 'h_carda0' });
+      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotIds: ['h_carda0'] });
       const selected = overlay('h_carda0');
       expect(selected).toHaveAttribute('aria-pressed', 'true');
       expect(selected.querySelector('svg')).toHaveAttribute('data-state', 'selected');
@@ -115,14 +115,14 @@ describe('EditorCanvas', () => {
       const { store } = await renderCanvas();
       const button = screen.getByRole('button', { name: 'Product A card' });
       fireEvent.click(button); // Enter or Space on a focused button
-      expect(store.getState().selection.hotspotId).toBe('h_carda0');
+      expect(store.getState().selection.hotspotIds).toEqual(['h_carda0']);
     });
 
     it('clears the selection on a press outside every hotspot', async () => {
       const { store, overlay } = await renderCanvas();
       fireEvent.pointerDown(overlay('h_carda0'));
       fireEvent.pointerDown(screen.getByTestId('selection-layer'));
-      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotId: null });
+      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotIds: [] });
     });
 
     it('marks a hovered hotspot with a wash and a dark name chip', async () => {
@@ -156,6 +156,16 @@ describe('EditorCanvas', () => {
     });
   });
 
+  it('shows a web background live but inert, under the selection layer (ADR 0024)', async () => {
+    const project = demoProject();
+    project.pages[0]!.background = { type: 'web', url: 'https://example.com/' };
+    const { container } = await renderCanvas(project);
+    const frame = container.querySelector('iframe')!;
+    expect(frame).toHaveAttribute('src', 'https://example.com/');
+    expect(frame.style.pointerEvents).toBe('none');
+    expect(screen.queryByText('No background yet')).toBeNull();
+  });
+
   it('shows the empty canvas for a page without a background', async () => {
     const project = demoProject();
     project.pages[0]!.background = null;
@@ -170,7 +180,7 @@ describe('EditorCanvas', () => {
 
   it('shows the selected page', async () => {
     const { store } = await renderCanvas();
-    act(() => store.getState().select({ pageId: 'p_proda0', hotspotId: null }));
+    act(() => store.getState().select({ pageId: 'p_proda0', hotspotIds: [] }));
     expect(screen.getByTestId('canvas-page').querySelector('img')).toHaveAttribute(
       'src',
       '/assets/product-a.jpg',
@@ -202,7 +212,7 @@ describe('EditorCanvas', () => {
       const { store, overlay } = await renderCanvas();
       fireEvent.click(screen.getByRole('button', { name: 'Add hotspot' }));
       const added = store.getState().project!.pages[0]!.hotspots.at(-1)!;
-      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotId: added.id });
+      expect(store.getState().selection).toEqual({ pageId: 'p_home00', hotspotIds: [added.id] });
       // 819, 615, 410 × 307 canvas pixels at half scale.
       expect(overlay(added.id)).toHaveStyle({ left: '410px', top: '308px', width: '205px' });
       expect(store.getState().save).toEqual({ state: 'saving' });
@@ -263,6 +273,70 @@ describe('EditorCanvas', () => {
       expect(store.getState().save).toEqual({ state: 'saved' });
     });
 
+    describe('undo steps (spec ED-25)', () => {
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('makes a whole drag one step, even with a long pause in it', async () => {
+        const { store, overlay } = await renderCanvas();
+        vi.useFakeTimers();
+        const layer = screen.getByTestId('selection-layer');
+        fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 110, clientY: 100 });
+        act(() => void vi.advanceTimersByTime(GROUP_QUIET_MS * 3));
+        fireEvent.pointerMove(layer, { clientX: 130, clientY: 100 });
+        fireEvent.pointerUp(layer);
+        expect(store.getState().past).toHaveLength(1);
+        // The next drag is a step of its own, however soon it comes.
+        fireEvent.pointerDown(overlay('h_carda0'), { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 100, clientY: 110 });
+        fireEvent.pointerUp(layer);
+        expect(store.getState().past).toHaveLength(2);
+        act(() => store.getState().undo());
+        expect(cardA(store).x).toBe(204);
+        act(() => store.getState().undo());
+        expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 560, height: 720 });
+      });
+
+      it('makes a resize one step', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        const handle = overlay('h_carda0').querySelector('[data-handle="se"]')!;
+        const layer = screen.getByTestId('selection-layer');
+        fireEvent.pointerDown(handle, { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 110, clientY: 100 });
+        fireEvent.pointerMove(layer, { clientX: 130, clientY: 90 });
+        fireEvent.pointerUp(layer);
+        expect(store.getState().past).toHaveLength(1);
+        act(() => store.getState().undo());
+        expect(box(cardA(store))).toEqual({ x: 144, y: 500, width: 560, height: 720 });
+      });
+
+      it('makes a series of nudges one step, and a series after a pause another', async () => {
+        const { store, overlay } = await renderCanvas();
+        vi.useFakeTimers();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        for (let i = 0; i < 3; i++) fireEvent.keyDown(window, { key: 'ArrowRight' });
+        expect(store.getState().past).toHaveLength(1);
+        act(() => void vi.advanceTimersByTime(GROUP_QUIET_MS + 1));
+        fireEvent.keyDown(window, { key: 'ArrowRight', shiftKey: true });
+        fireEvent.keyDown(window, { key: 'ArrowDown' });
+        expect(store.getState().past).toHaveLength(2);
+        act(() => store.getState().undo());
+        expect(box(cardA(store))).toEqual({ x: 147, y: 500, width: 560, height: 720 });
+      });
+
+      it('makes nudges of another selection another step', async () => {
+        const { store, overlay } = await renderCanvas();
+        fireEvent.pointerDown(overlay('h_carda0'));
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        fireEvent.pointerDown(overlay('h_cardb0'));
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        expect(store.getState().past).toHaveLength(2);
+      });
+    });
+
     describe('arrow keys', () => {
       it('move the selected hotspot by 1 canvas pixel, with Shift by 10', async () => {
         const { store, overlay } = await renderCanvas();
@@ -307,7 +381,7 @@ describe('EditorCanvas', () => {
         fireEvent.pointerDown(overlay('h_cardb0'));
         fireEvent.keyDown(window, { key: 'Backspace' });
         expect(ids()).not.toContain('h_cardb0');
-        expect(store.getState().selection.hotspotId).toBeNull();
+        expect(store.getState().selection.hotspotIds).toEqual([]);
         field.remove();
       });
 
@@ -401,6 +475,225 @@ describe('EditorCanvas', () => {
       project.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!.y = 0;
       const { overlay } = await renderCanvas(project);
       expect(overlay('h_call00').querySelector('.hs-chip-warn')).toBeNull();
+    });
+  });
+  describe('several hotspots (spec ED-16)', () => {
+    type Store = Awaited<ReturnType<typeof renderCanvas>>['store'];
+    const selected = (store: Store) => store.getState().selection.hotspotIds;
+    const boxOf = (store: Store, id: string) => {
+      const h = store.getState().project!.pages[0]!.hotspots.find((x) => x.id === id)!;
+      return [h.x, h.y];
+    };
+    const layer = () => screen.getByTestId('selection-layer');
+
+    it('adds and removes hotspots with Shift-, Cmd- or Ctrl-click, in page order', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_cardc0'));
+      fireEvent.pointerDown(overlay('h_carda0'), { shiftKey: true });
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardc0']);
+      fireEvent.pointerDown(overlay('h_cardb0'), { metaKey: true });
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardb0', 'h_cardc0']);
+      fireEvent.pointerDown(overlay('h_carda0'), { ctrlKey: true });
+      expect(selected(store)).toEqual(['h_cardb0', 'h_cardc0']);
+      // Several are outlined, and none has resize handles.
+      expect(overlay('h_cardb0')).toHaveAttribute('data-state', 'selected');
+      expect(overlay('h_cardc0')).toHaveAttribute('data-state', 'selected');
+      expect(document.querySelectorAll('[data-handle]')).toHaveLength(0);
+    });
+
+    it('adds with Shift + Enter on an outline, from the keyboard', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.click(overlay('h_carda0'));
+      fireEvent.click(overlay('h_cardb0'), { shiftKey: true });
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardb0']);
+      // A mouse click (detail 1) was handled on the press, and changes nothing more.
+      fireEvent.click(overlay('h_cardc0'), { detail: 1 });
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardb0']);
+    });
+
+    it('moves the whole selection by dragging one of them, stopping it as a whole', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_cardb0'), { shiftKey: true });
+      fireEvent.pointerDown(overlay('h_cardb0'), { clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(layer(), { clientX: 110, clientY: 90 });
+      expect(boxOf(store, 'h_carda0')).toEqual([164, 480]);
+      expect(boxOf(store, 'h_cardb0')).toEqual([764, 480]);
+      fireEvent.pointerMove(layer(), { clientX: 100, clientY: -1000 });
+      expect(boxOf(store, 'h_carda0')).toEqual([144, 0]);
+      expect(boxOf(store, 'h_cardb0')).toEqual([744, 0]);
+      fireEvent.pointerUp(layer());
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardb0']);
+    });
+
+    it('selects only the one pressed when a press on one of several does not move', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_cardb0'), { shiftKey: true });
+      fireEvent.pointerDown(overlay('h_cardb0'), { clientX: 100, clientY: 100 });
+      fireEvent.pointerUp(layer());
+      expect(selected(store)).toEqual(['h_cardb0']);
+    });
+
+    it('selects what a rectangle dragged on the empty page touches', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_call00'));
+      // At 50 %, client (60, 240) → (400, 300) is canvas (120, 480) → (800, 600): cards A and B.
+      fireEvent.pointerDown(layer(), { clientX: 60, clientY: 240, pointerId: 1 });
+      expect(selected(store)).toEqual([]);
+      fireEvent.pointerMove(layer(), { clientX: 400, clientY: 300, pointerId: 1 });
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardb0']);
+      expect(screen.getByTestId('marquee')).toHaveStyle({
+        left: '60px',
+        top: '240px',
+        width: '340px',
+        height: '60px',
+      });
+      // Drawn back smaller, it lets go of B.
+      fireEvent.pointerMove(layer(), { clientX: 200, clientY: 300, pointerId: 1 });
+      expect(selected(store)).toEqual(['h_carda0']);
+      fireEvent.pointerUp(layer());
+      expect(screen.queryByTestId('marquee')).toBeNull();
+      // Moving after the release draws nothing.
+      fireEvent.pointerMove(layer(), { clientX: 900, clientY: 900 });
+      expect(selected(store)).toEqual(['h_carda0']);
+    });
+
+    it('adds a rectangle to the selection with Shift, and keeps it on a Shift press', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_call00'));
+      fireEvent.pointerDown(layer(), { clientX: 60, clientY: 240, shiftKey: true });
+      expect(selected(store)).toEqual(['h_call00']);
+      fireEvent.pointerMove(layer(), { clientX: 200, clientY: 300 });
+      expect(selected(store)).toEqual(['h_carda0', 'h_call00']);
+    });
+
+    it('selects every hotspot of the page with Cmd or Ctrl + A, but not from a text field', async () => {
+      const { store } = await renderCanvas();
+      const field = document.createElement('input');
+      document.body.append(field);
+      fireEvent.keyDown(field, { key: 'a', metaKey: true });
+      expect(selected(store)).toEqual([]);
+      fireEvent.keyDown(window, { key: 'a', metaKey: true });
+      expect(selected(store)).toHaveLength(5);
+      act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: [] }));
+      fireEvent.keyDown(window, { key: 'A', ctrlKey: true });
+      expect(selected(store)).toHaveLength(5);
+      // A alone is just a letter.
+      act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: [] }));
+      fireEvent.keyDown(window, { key: 'a' });
+      expect(selected(store)).toEqual([]);
+      field.remove();
+    });
+
+    it('clears the selection with Escape', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_cardb0'), { shiftKey: true });
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(selected(store)).toEqual([]);
+    });
+
+    it('nudges the whole selection with the arrow keys', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_cardc0'), { shiftKey: true });
+      fireEvent.keyDown(window, { key: 'ArrowRight', shiftKey: true });
+      fireEvent.keyDown(window, { key: 'ArrowUp' });
+      expect(boxOf(store, 'h_carda0')).toEqual([154, 499]);
+      expect(boxOf(store, 'h_cardc0')).toEqual([1354, 499]);
+      expect(boxOf(store, 'h_cardb0')).toEqual([744, 500]);
+    });
+
+    it('asks once before deleting several, naming how many', async () => {
+      const { store, overlay } = await renderCanvas();
+      const ids = () => store.getState().project!.pages[0]!.hotspots.map((h) => h.id);
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_cardb0'), { shiftKey: true });
+      fireEvent.keyDown(window, { key: 'Delete' });
+      const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 hotspots?' });
+      expect(ids()).toContain('h_carda0');
+      // Escape cancels the question, and keeps the selection.
+      fireEvent.keyDown(within(dialog).getByRole('button', { name: 'Cancel' }), { key: 'Escape' });
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+      expect(selected(store)).toEqual(['h_carda0', 'h_cardb0']);
+      expect(ids()).toContain('h_carda0');
+
+      fireEvent.keyDown(window, { key: 'Backspace' });
+      fireEvent.click(screen.getByRole('button', { name: 'Delete 2 hotspots' }));
+      expect(ids()).toEqual(['h_cardc0', 'h_about0', 'h_call00']);
+      expect(selected(store)).toEqual([]);
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+    });
+  });
+  describe('copy and paste (spec ED-17)', () => {
+    type Store = Awaited<ReturnType<typeof renderCanvas>>['store'];
+    const names = (store: Store, pageId: string) =>
+      store
+        .getState()
+        .project!.pages.find((p) => p.id === pageId)!
+        .hotspots.map((h) => h.name);
+    const show = (store: Store, pageId: string) =>
+      act(() => store.getState().select({ pageId, hotspotIds: [] }));
+
+    it('copies with Cmd/Ctrl + C and pastes with Cmd/Ctrl + V on another page', async () => {
+      const { store, overlay } = await renderCanvas();
+      expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.pointerDown(overlay('h_call00'), { shiftKey: true });
+      fireEvent.keyDown(window, { key: 'c', metaKey: true });
+      // Paste is offered once something is copied.
+      expect(screen.getByRole('button', { name: 'Paste' })).toHaveAttribute(
+        'title',
+        'Paste 2 hotspots (Cmd/Ctrl + V)',
+      );
+      show(store, 'p_about0');
+      fireEvent.keyDown(window, { key: 'V', ctrlKey: true });
+      expect(names(store, 'p_about0')).toEqual([
+        'Back',
+        'Visit the showroom',
+        'Product A card',
+        'Call our team',
+      ]);
+      expect(store.getState().selection.hotspotIds).toHaveLength(2);
+    });
+
+    it('pastes with the Paste button too', async () => {
+      const { store, overlay } = await renderCanvas();
+      fireEvent.pointerDown(overlay('h_about0'));
+      fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
+      fireEvent.click(screen.getByRole('button', { name: 'Paste' }));
+      expect(names(store, 'p_home00').at(-1)).toBe('About 2');
+    });
+
+    it('leaves the shortcuts to a text field, and Cmd + C to text selected on the page', async () => {
+      const { store, overlay } = await renderCanvas();
+      const field = document.createElement('input');
+      document.body.append(field);
+      fireEvent.pointerDown(overlay('h_carda0'));
+      fireEvent.keyDown(field, { key: 'c', metaKey: true });
+      expect(store.getState().clipboard).toBeNull();
+
+      const text = document.createElement('p');
+      text.textContent = 'Some words';
+      document.body.append(text);
+      document.getSelection()!.selectAllChildren(text);
+      fireEvent.keyDown(window, { key: 'c', metaKey: true });
+      expect(store.getState().clipboard).toBeNull();
+      document.getSelection()!.removeAllRanges();
+
+      fireEvent.keyDown(window, { key: 'c', metaKey: true });
+      expect(store.getState().clipboard?.hotspots.map((h) => h.id)).toEqual(['h_carda0']);
+      fireEvent.keyDown(field, { key: 'v', metaKey: true });
+      expect(names(store, 'p_home00')).toHaveLength(5);
+      // C and V alone are just letters.
+      fireEvent.keyDown(window, { key: 'v' });
+      expect(names(store, 'p_home00')).toHaveLength(5);
+      act(() => store.getState().select({ pageId: 'p_home00', hotspotIds: ['h_cardb0'] }));
+      fireEvent.keyDown(window, { key: 'c' });
+      expect(store.getState().clipboard?.hotspots.map((h) => h.id)).toEqual(['h_carda0']);
+      field.remove();
+      text.remove();
     });
   });
 });

@@ -24,6 +24,8 @@ interface TextFieldProps {
   size?: 'm' | 's';
   maxLength?: number;
   disabled?: boolean;
+  /** Takes the focus when it appears, e.g. the first field of a dialog. */
+  autoFocus?: boolean;
 }
 
 export function TextField({
@@ -43,6 +45,7 @@ export function TextField({
   size = 'm',
   maxLength,
   disabled = false,
+  autoFocus = false,
 }: TextFieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
@@ -59,6 +62,7 @@ export function TextField({
     disabled,
     placeholder,
     maxLength,
+    autoFocus,
     'aria-label': label ? undefined : ariaLabel,
     'aria-invalid': error ? true : undefined,
     'aria-describedby': error || helper ? messageId : undefined,

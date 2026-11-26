@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Command, Project, Target } from '@tapcue/shared';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../app';
 import { DEFAULT_PROJECT_DIR } from '../config';
 import { loadProjectStore, type ProjectStore } from '../project/store';
@@ -129,7 +129,11 @@ describe('POST /api/test-send for a fader (spec FD-2, ADR 0020)', () => {
     call.pressEffect = 'none';
     call.action = {
       goTo: null,
-      command: { type: 'osc-udp', targetId: 't_resolm', address: '/layer/1/opacity', args: [] },
+      commands: [
+        {
+          command: { type: 'osc-udp', targetId: 't_resolm', address: '/layer/1/opacity', args: [] },
+        },
+      ],
     };
     await writeFile(file, JSON.stringify(project));
     faderStore = await loadProjectStore(dir);
@@ -171,5 +175,124 @@ describe('POST /api/test-send for a fader (spec FD-2, ADR 0020)', () => {
       entry: { status: 'ignored', message: `Value 2 is outside "Call our team"'s range, 0 to 1` },
     });
     expect(sent).toEqual([]);
+  });
+});
+
+describe('POST /api/test-send for a sequence (spec ACT-4, ADR 0022)', () => {
+  let dir: string;
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  /** A copy of the demo stand where Product A's card sends these steps. */
+  async function sequenceApp(steps: { delayMs?: number; command: Command }[]) {
+    dir = await mkdtemp(join(tmpdir(), 'tapcue-sequence-'));
+    await cp(DEFAULT_PROJECT_DIR, dir, { recursive: true });
+    const file = join(dir, 'project.json');
+    const project = JSON.parse(await readFile(file, 'utf8')) as Project;
+    project.pages[0]!.hotspots.find((h) => h.id === 'h_carda0')!.action.commands = steps;
+    await writeFile(file, JSON.stringify(project));
+    const fake = fakeDrivers();
+    const app = buildApp({ store: await loadProjectStore(dir), drivers: fake.drivers });
+    const send = () =>
+      app.inject({
+        method: 'POST',
+        url: '/api/test-send',
+        payload: { pageId: 'p_home00', hotspotId: 'h_carda0' },
+      });
+    return { app, send, sent: fake.sent };
+  }
+  const udp = (text: string): Command => ({ type: 'udp', targetId: 't_projec', text });
+
+  it('runs the whole sequence: answers the first step, sends the rest after their delays', async () => {
+    const { app, send, sent } = await sequenceApp([
+      { command: udp('ONE') },
+      { delayMs: 30, command: udp('TWO') },
+    ]);
+
+    const answer = await send();
+
+    expect(answer.json()).toMatchObject({
+      entry: { status: 'sent', sequence: { step: 1, of: 2 }, source: { type: 'test' } },
+    });
+    await vi.waitFor(() =>
+      expect(sent.map((s) => 'text' in s.command && s.command.text)).toEqual(['ONE', 'TWO']),
+    );
+    expect(sent[1]!.context.source).toEqual({ type: 'test' });
+    await app.close();
+  });
+
+  it('sends nothing more once the server stops', async () => {
+    const { app, send, sent } = await sequenceApp([
+      { command: udp('ONE') },
+      { delayMs: 30, command: udp('TWO') },
+    ]);
+    await send();
+
+    await app.close();
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    expect(sent).toHaveLength(1);
+  });
+
+  it('answers a null entry when the first step waits for its delay', async () => {
+    const { app, send, sent } = await sequenceApp([{ delayMs: 30, command: udp('LATE') }]);
+
+    const answer = await send();
+
+    expect(answer.statusCode).toBe(200);
+    expect(answer.json()).toEqual({ entry: null });
+    await vi.waitFor(() => expect(sent).toHaveLength(1));
+    await app.close();
+  });
+});
+
+describe('POST /api/test-send with steps that are off (spec ACT-9)', () => {
+  let dir: string;
+  let offStore: ProjectStore;
+  const udp = (text: string): Command => ({ type: 'udp', targetId: 't_projec', text });
+
+  // A copy of the demo stand: Product A's card has every step off; Product B's card has its first
+  // step, with a pause, off.
+  beforeAll(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'tapcue-off-'));
+    await cp(DEFAULT_PROJECT_DIR, dir, { recursive: true });
+    const file = join(dir, 'project.json');
+    const project = JSON.parse(await readFile(file, 'utf8')) as Project;
+    const card = (id: string) => project.pages[0]!.hotspots.find((h) => h.id === id)!;
+    card('h_carda0').action.commands = [
+      { command: udp('A'), enabled: false },
+      { delayMs: 100, command: udp('B'), enabled: false },
+    ];
+    card('h_cardb0').action.commands = [
+      { delayMs: 2000, command: udp('A'), enabled: false },
+      { command: udp('B') },
+    ];
+    await writeFile(file, JSON.stringify(project));
+    offStore = await loadProjectStore(dir);
+  });
+  afterAll(() => rm(dir, { recursive: true, force: true }));
+
+  function send(hotspotId: string) {
+    const fake = fakeDrivers();
+    const app = buildApp({ store: offStore, drivers: fake.drivers });
+    const payload = { pageId: 'p_home00', hotspotId };
+    return { response: app.inject({ method: 'POST', url: '/api/test-send', payload }), ...fake };
+  }
+
+  it('answers 409 when every command is off, and sends nothing', async () => {
+    const { response, sent } = send('h_carda0');
+    const answer = await response;
+    expect(answer.statusCode).toBe(409);
+    expect(answer.json()).toEqual({ error: 'Every command of the hotspot is switched off' });
+    expect(sent).toHaveLength(0);
+  });
+
+  it('skips a step that is off with its pause, as a tap would', async () => {
+    const { response, sent } = send('h_cardb0');
+    const answer = await response;
+    expect(answer.statusCode).toBe(200);
+    expect(sent.map((s) => s.command)).toEqual([udp('B')]);
+    expect(answer.json()).toMatchObject({ entry: { status: 'sent', command: udp('B') } });
   });
 });

@@ -277,7 +277,7 @@ function TargetForm({ project, target }: { project: Project; target: Target }) {
                       className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-hover"
                       // Opens the hotspot on the Pages tab, selected, to change its command.
                       onClick={() => {
-                        select({ pageId: page.id, hotspotId: hotspot.id });
+                        select({ pageId: page.id, hotspotIds: [hotspot.id] });
                         void navigate('/edit/pages');
                       }}
                     >

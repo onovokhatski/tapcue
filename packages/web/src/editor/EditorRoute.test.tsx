@@ -41,16 +41,18 @@ describe('editor shell', () => {
     expect(currentTab()).toHaveTextContent('Pages');
   });
 
-  it('has the four tabs of the design, as links in that order', () => {
+  it('has the tabs of the design, after Projects (ADR 0021), as links in that order', () => {
     renderAt('/edit/pages');
     const links = tabs().getAllByRole('link');
     expect(links.map((link) => link.textContent)).toEqual([
+      'Projects',
       'Pages',
       'Targets',
       'Stations',
       'Settings',
     ]);
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/edit/projects',
       '/edit/pages',
       '/edit/targets',
       '/edit/stations',
@@ -115,6 +117,16 @@ describe('editor shell', () => {
       const bar = within(screen.getByRole('banner'));
       expect(await bar.findByText('Demo stand')).toBeInTheDocument();
       expect(bar.getAllByRole('status')[1]).toHaveTextContent('Saved');
+    });
+
+    it('links the project name to the Projects tab (spec PRJ-5)', async () => {
+      const router = renderAt('/edit/pages');
+      const name = await within(screen.getByRole('banner')).findByRole('link', {
+        name: 'Demo stand',
+      });
+      expect(name).toHaveAttribute('href', '/edit/projects');
+      fireEvent.click(name);
+      expect(router.state.location.pathname).toBe('/edit/projects');
     });
 
     it('shows "Demo mode · not saved" instead of the save status in demo mode (DEMO-3)', async () => {
@@ -293,7 +305,7 @@ describe('editor shell', () => {
 
     it('keeps the full page list from 1440 px', async () => {
       renderAt('/edit/pages');
-      expect(await screen.findByRole('heading', { name: 'Pages 4' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Pages 5' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Show page list' })).toBeNull();
     });
   });

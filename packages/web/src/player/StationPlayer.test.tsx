@@ -1,9 +1,9 @@
 import type { Project, Station } from '@tapcue/shared';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { demoProject } from '../test/demoProject';
+import { demoProject, plainDemoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
-import { StationPlayer } from './StationPlayer';
+import { idleSeconds, invitingHotspots, StationPlayer } from './StationPlayer';
 import { useStationSocket } from './useStationSocket';
 
 const project = demoProject();
@@ -21,8 +21,8 @@ function Connected(props: { project: Project; station: Station }) {
   return <StationPlayer {...props} connection={connection} />;
 }
 
-function renderStation(station: Station = main) {
-  const { container, rerender } = render(<Connected project={project} station={station} />);
+function renderStation(station: Station = main, start: Project = project) {
+  const { container, rerender } = render(<Connected project={start} station={station} />);
   /** A new project from the editor, with this station as it is in that project. */
   const update = (next: Project) => {
     const nextStation = next.stations.find((s) => s.id === station.id)!;
@@ -199,7 +199,7 @@ describe('StationPlayer', () => {
         value: { at: 0, as: 'f' },
       };
       call.pressEffect = 'none';
-      call.action = { goTo: null, command: call.action.command };
+      call.action = { goTo: null, commands: call.action.commands.slice(0, 1) };
       return next;
     }
 
@@ -520,6 +520,234 @@ describe('StationPlayer', () => {
       advance(3_600_000);
       expect(layer('incoming')).toBeNull();
     });
+  });
+});
+
+describe('inviting taps while idle (spec ST-7, ADR 0025)', () => {
+  const inviting = { ...main, inviteTaps: true as const };
+  /** The demo stand with Home's "Call our team" doing nothing, so it has no tap to invite. */
+  const withIdleButton = (() => {
+    const p = demoProject();
+    p.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!.action.commands = [];
+    return p;
+  })();
+
+  /** The hotspot pulsing on the page on screen, if any. */
+  const pulsing = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>('[data-layer="shown"] [data-inviting]')?.dataset.hotspot ??
+    null;
+  /** The pulsing hotspot's pulse ends, handing the turn to the next one. */
+  const endPulse = (container: HTMLElement) =>
+    fireEvent.animationIteration(container.querySelector('[data-inviting]')!);
+
+  it('starts after exactly 15 s without a touch on the start page', () => {
+    const { container } = renderStation(inviting);
+    advance(14_999);
+    expect(pulsing(container)).toBeNull();
+    advance(1);
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+
+  it('pulses the hotspots that go to a page or send a command, one at a time, in page order, in a loop', () => {
+    const { container } = renderStation(inviting, withIdleButton);
+    advance(15_000);
+    const order = [pulsing(container)];
+    for (let i = 0; i < 4; i++) {
+      endPulse(container);
+      order.push(pulsing(container));
+    }
+    // h_call00 does nothing and is skipped; after the last, the first again.
+    expect(order).toEqual(['h_carda0', 'h_cardb0', 'h_cardc0', 'h_about0', 'h_carda0']);
+    expect(container.querySelectorAll('[data-inviting]')).toHaveLength(1);
+  });
+
+  it('moves on only when the pulse of the hotspot itself ends, not its light or an animation inside it', () => {
+    const { container } = renderStation(inviting);
+    advance(15_000);
+    fireEvent.animationIteration(container.querySelector('[data-inviting] .hotspot-style')!);
+    expect(pulsing(container)).toBe('h_carda0');
+    // Its light is a pseudo-element whose cycles are reported on the hotspot as well.
+    fireEvent.animationIteration(container.querySelector('[data-inviting]')!, {
+      pseudoElement: '::after',
+    });
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+
+  it('chooses no faders and no hotspots that do nothing', () => {
+    // Product A: Back, Play, Next and a volume fader.
+    expect(invitingHotspots(project.pages[1]!)).toEqual(['h_aback0', 'h_aplay0', 'h_anext0']);
+    expect(invitingHotspots(withIdleButton.pages[0]!)).not.toContain('h_call00');
+  });
+
+  it('stops at the first touch, at once, and starts again 15 s after it', () => {
+    const { container, layer } = renderStation(inviting);
+    advance(15_000);
+    endPulse(container);
+    expect(pulsing(container)).toBe('h_cardb0');
+
+    fireEvent.pointerDown(layer('shown')!.querySelector('img')!);
+    expect(pulsing(container)).toBeNull();
+    advance(14_999);
+    expect(pulsing(container)).toBeNull();
+    advance(1);
+    expect(pulsing(container)).toBe('h_carda0'); // from the start of the page again
+  });
+
+  it('stops when the editor switches it off, and waits a full quiet time once it is back on', () => {
+    const { container, update } = renderStation(inviting);
+    advance(15_000);
+    expect(pulsing(container)).toBe('h_carda0');
+
+    const off = plainDemoProject();
+    update(off);
+    expect(pulsing(container)).toBeNull();
+    const on = plainDemoProject();
+    on.stations.find((s) => s.id === 'main')!.inviteTaps = true;
+    update(on);
+    expect(pulsing(container)).toBeNull();
+    advance(15_000);
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+
+  it('stays still when the station does not invite', () => {
+    const plain = plainDemoProject();
+    const { container } = renderStation(plain.stations[0], plain);
+    advance(60_000);
+    expect(pulsing(container)).toBeNull();
+  });
+
+  it('stays still on other pages, and starts 15 s after the idle return brings back the start page', async () => {
+    const { container, layer, navigate, load, finishFade } = renderStation(inviting);
+    await navigate('h_carda0');
+    advance(60_000);
+    expect(pulsing(container)).toBeNull();
+
+    advance(30_000); // the idle return (90 s) starts bringing Home back
+    expect(layer('incoming')).toHaveAttribute('data-page', 'p_home00');
+    await load(layer('incoming'));
+    finishFade();
+    advance(14_999);
+    expect(pulsing(container)).toBeNull();
+    advance(1);
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+});
+
+describe('page transitions (spec PG-4, ADR 0025)', () => {
+  function withTransition(transition: Project['transition']) {
+    const p = { ...demoProject(), transition };
+    const station = p.stations.find((s) => s.id === 'main')!;
+    const { container } = render(<Connected project={p} station={station} />);
+    const layer = (role: 'shown' | 'incoming') =>
+      container.querySelector<HTMLElement>(`[data-layer="${role}"]`);
+    const tapOn = (hotspotId: string) => {
+      const el = container.querySelector(`[data-layer="shown"] [data-hotspot="${hotspotId}"]`)!;
+      fireEvent.pointerDown(el, { pointerId: 1, button: 0 });
+      fireEvent.pointerUp(el, { pointerId: 1, button: 0 });
+      advance(200);
+    };
+    const load = async () => {
+      const media = layer('incoming')!.querySelector('img, video')!;
+      await act(async () => {
+        if (media instanceof HTMLVideoElement) fireEvent.loadedData(media);
+        else fireEvent.load(media);
+        await Promise.resolve();
+      });
+    };
+    return { layer, tapOn, load };
+  }
+
+  it('marks the incoming page with how it comes in, and only that one', async () => {
+    const { layer, tapOn, load } = withTransition('slide');
+    expect(layer('shown')).not.toHaveAttribute('data-motion');
+    tapOn('h_carda0');
+    expect(layer('incoming')).toHaveAttribute('data-motion', 'slide-from-right');
+    await load();
+    expect(layer('incoming')).toHaveAttribute('data-fading');
+    // The shown page stays underneath until the transition ends.
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_home00');
+    expect(layer('shown')).not.toHaveAttribute('data-motion');
+    fireEvent.animationEnd(layer('incoming')!);
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    expect(layer('shown')).not.toHaveAttribute('data-motion');
+    tapOn('h_aback0');
+    expect(layer('incoming')).toHaveAttribute('data-motion', 'slide-from-left');
+  });
+
+  it('fades by default, and zooms when the project says so', () => {
+    const fade = withTransition(undefined);
+    fade.tapOn('h_carda0');
+    expect(fade.layer('incoming')).toHaveAttribute('data-motion', 'fade');
+    cleanup();
+    const zoom = withTransition('zoom');
+    zoom.tapOn('h_carda0');
+    expect(zoom.layer('incoming')).toHaveAttribute('data-motion', 'zoom');
+  });
+
+  it('swaps the page as soon as it is ready with None, with no animation to wait for', async () => {
+    const { layer, tapOn, load } = withTransition('none');
+    tapOn('h_carda0');
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_home00'); // not before it is ready
+    await load();
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    expect(layer('incoming')).toBeNull();
+  });
+});
+
+describe('web pages (spec PG-7, PG-10)', () => {
+  /** The demo stand with Product A showing a mini-site, and a web page time (null: not set). */
+  function webProject(seconds: number | null = 30): Project {
+    const p = demoProject();
+    p.pages[1]!.background = { type: 'web', site: 'assets/sites/catalog' };
+    if (seconds !== null) p.webPageSeconds = seconds;
+    return p;
+  }
+
+  it('uses the web page time on a page with a web background, the station timeout elsewhere', () => {
+    const p = webProject();
+    expect(idleSeconds(p, main, 'p_proda0')).toBe(30);
+    expect(idleSeconds(p, main, 'p_home00')).toBe(90);
+    expect(idleSeconds(webProject(null), main, 'p_proda0')).toBe(180);
+    expect(idleSeconds(p, { ...main, idleTimeoutSeconds: null }, 'p_proda0')).toBeNull();
+    expect(idleSeconds(p, main, 'p_zzzzzz')).toBe(90); // a page just deleted
+  });
+
+  /** Taps to Product A and lets its frame load, with a same-origin window to hear touches in. */
+  function openWebPage() {
+    const p = webProject();
+    const station = p.stations.find((s) => s.id === 'main')!;
+    const { container } = render(<Connected project={p} station={station} />);
+    const layer = (role: 'shown' | 'incoming') =>
+      container.querySelector<HTMLElement>(`[data-layer="${role}"]`);
+    const el = container.querySelector('[data-layer="shown"] [data-hotspot="h_carda0"]')!;
+    fireEvent.pointerDown(el, { pointerId: 1, button: 0 });
+    fireEvent.pointerUp(el, { pointerId: 1, button: 0 });
+    advance(200);
+    const frame = layer('incoming')!.querySelector('iframe')!;
+    const inside = new EventTarget();
+    Object.defineProperty(frame, 'contentWindow', { configurable: true, get: () => inside });
+    fireEvent.load(frame);
+    fireEvent.animationEnd(layer('incoming')!);
+    return { layer, inside };
+  }
+
+  it('returns to the start page after the web page time', () => {
+    const { layer } = openWebPage();
+    expect(layer('shown')).toHaveAttribute('data-page', 'p_proda0');
+    advance(30_000 - 100);
+    expect(layer('incoming')).toBeNull();
+    advance(200);
+    expect(layer('incoming')).toHaveAttribute('data-page', 'p_home00');
+  });
+
+  it("counts touches inside a mini-site's frame as activity", () => {
+    const { layer, inside } = openWebPage();
+    advance(20_000);
+    act(() => void inside.dispatchEvent(new Event('pointerdown')));
+    advance(20_000);
+    expect(layer('incoming')).toBeNull();
+    advance(10_100);
+    expect(layer('incoming')).toHaveAttribute('data-page', 'p_home00');
   });
 });
 

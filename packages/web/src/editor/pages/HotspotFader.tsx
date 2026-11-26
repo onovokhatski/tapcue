@@ -3,7 +3,7 @@
 // (spec FD-1).
 // Every field applies only a value that fits the others (spec ED-10): the editor never saves a
 // fader the server would refuse.
-import type { FaderSettings, Hotspot, PageId } from '@tapcue/shared';
+import { type FaderSettings, firstCommand, type Hotspot, type PageId } from '@tapcue/shared';
 import { useState, type ReactNode } from 'react';
 import { NumberField } from '../../ui/NumberField';
 import { Segmented } from '../../ui/Segmented';
@@ -50,7 +50,7 @@ function FaderFields({ pageId, hotspot, fader }: Props & { fader: FaderSettings 
   const change = useEditor((state) => state.change);
   const update = (patch: Partial<FaderSettings>) =>
     change((p) => setFader(p, pageId, hotspot.id, patch));
-  const command = hotspot.action.command;
+  const command = firstCommand(hotspot.action);
   const argCount = command?.type === 'osc-udp' ? command.args.length : 0;
   const [asError, setAsError] = useState<string | null>(null);
 

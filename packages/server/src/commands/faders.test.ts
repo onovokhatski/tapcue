@@ -29,12 +29,16 @@ const volume: Hotspot = {
   pressEffect: 'none',
   action: {
     goTo: null,
-    command: {
-      type: 'osc-udp',
-      targetId: 't_resolm',
-      address: '/composition/layers/1/video/opacity',
-      args: [{ type: 's', value: 'layer' }],
-    },
+    commands: [
+      {
+        command: {
+          type: 'osc-udp',
+          targetId: 't_resolm',
+          address: '/composition/layers/1/video/opacity',
+          args: [{ type: 's', value: 'layer' }],
+        },
+      },
+    ],
   },
 };
 
@@ -44,13 +48,13 @@ const button: Hotspot = {
   name: 'Play',
   kind: 'button',
   pressEffect: 'press',
-  action: { goTo: null, command: null },
+  action: { goTo: null, commands: [] },
 };
 delete (button as Partial<Hotspot>).fader;
 
 function projectWith(...hotspots: Hotspot[]): Project {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     name: 'Faders',
     canvas: { width: 2048, height: 1536, scaleMode: 'fit', backgroundColor: '#000000' },
     pages: [{ id: 'p_home00', name: 'Home', background: null, hotspots }],
@@ -197,7 +201,7 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     const entry = await faders.receive(at(0.333, true));
     expect(sent).toHaveLength(1);
     expect(sent[0]!.command).toEqual({
-      ...volume.action.command,
+      ...volume.action.commands[0]?.command,
       args: [
         { type: 's', value: 'layer' },
         { type: 'f', value: 0.33 },
@@ -211,7 +215,10 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     project = {
       ...projectWith({
         ...volume,
-        action: { goTo: null, command: { type: 'udp', targetId: 't_projec', text: 'VOL {value}' } },
+        action: {
+          goTo: null,
+          commands: [{ command: { type: 'udp', targetId: 't_projec', text: 'VOL {value}' } }],
+        },
       }),
     };
     project.targets.push({
@@ -249,8 +256,39 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     expect(sent.length).toBeLessThanOrEqual(26);
     expect(sent.length).toBeGreaterThan(20);
     expect(sentValues().at(-1)).toEqual({ type: 'f', value: 0.6 });
+    // One row for the whole drag: its final value, and how many values it sent (ADR 0020).
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ status: 'sent' });
+    expect(entries[0]).toMatchObject({ status: 'sent', valuesSent: sent.length });
+  });
+
+  it('counts each drag on its own, and a single touch as one value', async () => {
+    await faders.receive(at(0.1));
+    await vi.advanceTimersByTimeAsync(SEND_INTERVAL_MS);
+    await faders.receive(at(0.2, true));
+    await vi.advanceTimersByTimeAsync(SEND_INTERVAL_MS);
+    expect(await faders.receive(at(0.3, true))).toMatchObject({ valuesSent: 1 });
+    expect(entries.map((entry) => (entry.status === 'sent' ? entry.valuesSent : null))).toEqual([
+      2, 1,
+    ]);
+  });
+
+  it('tells the driver the value and the range, so a receiver can draw a level', async () => {
+    const contexts: unknown[] = [];
+    const drivers = {
+      'osc-udp': {
+        send: (_target: unknown, _command: unknown, context: unknown) => {
+          contexts.push(context);
+          return Promise.resolve();
+        },
+        close: () => Promise.resolve(),
+      },
+    } as unknown as Drivers;
+    const withContext = createFaders({ project: () => project, drivers, log: createCommandLog() });
+    await withContext.receive(at(0.456, true));
+    withContext.close();
+    expect(contexts).toEqual([
+      { source: main, hotspotName: 'Volume', fader: { value: 0.46, min: 0, max: 1 } },
+    ]);
   });
 
   it('sends a final value that came between two sends, after the interval', async () => {
@@ -281,8 +319,21 @@ describe('createFaders (spec FD-2–FD-4, ADR 0020)', () => {
     expect(faders.values()).toEqual({ h_vol000: 0.5 });
   });
 
+  it('holds the value of a fader whose command is off, and sends nothing (spec ACT-9)', async () => {
+    const [step] = volume.action.commands;
+    project = projectWith({
+      ...volume,
+      action: { goTo: null, commands: [{ ...step!, enabled: false }] },
+    });
+    expect(await faders.receive(at(0.5, true))).toBeNull();
+    expect(await faders.receive(at(0.6, false))).toBeNull();
+    await vi.advanceTimersByTimeAsync(SEND_INTERVAL_MS * 3);
+    expect(sent).toEqual([]);
+    expect(faders.values()).toEqual({ h_vol000: 0.6 });
+  });
+
   it('holds the value of a fader that sends nothing yet, and sends nothing', async () => {
-    project = projectWith({ ...volume, action: { goTo: null, command: null } });
+    project = projectWith({ ...volume, action: { goTo: null, commands: [] } });
     expect(await faders.receive(at(0.5, true))).toBeNull();
     expect(sent).toEqual([]);
     expect(faders.values()).toEqual({ h_vol000: 0.5 });
