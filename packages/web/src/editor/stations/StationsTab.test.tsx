@@ -149,11 +149,29 @@ describe('StationsTab (spec ST-1, ST-6)', () => {
 
   it('switches the idle return off and on again', async () => {
     const { station } = await renderTab();
-    fireEvent.click(screen.getByRole('radio', { name: 'Off' }));
+    const idle = within(screen.getByRole('radiogroup', { name: 'Idle return' }));
+    fireEvent.click(idle.getByRole('radio', { name: 'Off' }));
     expect(station('main')?.idleTimeoutSeconds).toBeNull();
     expect(screen.getByRole('textbox', { name: 'Idle seconds' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('radio', { name: 'On' }));
+    fireEvent.click(idle.getByRole('radio', { name: 'On' }));
     expect(station('main')?.idleTimeoutSeconds).toBe(60);
+  });
+
+  it('switches the invitation to tap while idle on and off, off for a station without it (spec ST-7)', async () => {
+    const { station } = await renderTab();
+    const invite = within(screen.getByRole('radiogroup', { name: 'Invite taps when idle' }));
+    expect(invite.getByRole('radio', { name: 'Off' })).toBeChecked();
+    expect(
+      screen.getByText(
+        'After 15 s without a touch on the start page, its buttons pulse one after another.',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(invite.getByRole('radio', { name: 'On' }));
+    expect(station('main')?.inviteTaps).toBe(true);
+    expect(invite.getByRole('radio', { name: 'On' })).toBeChecked();
+    expect(station('main')?.idleTimeoutSeconds).toBe(90); // the idle return is its own setting
+    fireEvent.click(invite.getByRole('radio', { name: 'Off' }));
+    expect(station('main')).not.toHaveProperty('inviteTaps');
   });
 
   it('changes the id with a warning about tablets on the old URL; a taken id is refused', async () => {

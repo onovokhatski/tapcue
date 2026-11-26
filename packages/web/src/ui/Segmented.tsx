@@ -1,5 +1,5 @@
 // Segmented control of the design system (components.md: Segmented control; prototype segmented()):
-// two or three fixed options, one chosen, or none when several hotspots differ (spec ED-19). A radio
+// two to four fixed options, one chosen, or none when several hotspots differ (spec ED-19). A radio
 // group: Tab enters it, the arrow keys choose.
 import { type KeyboardEvent, useRef } from 'react';
 

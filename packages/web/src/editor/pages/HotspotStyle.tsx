@@ -105,6 +105,8 @@ const EFFECTS: { value: PressEffect; label: string }[] = [
   { value: 'highlight', label: 'Highlight' },
   { value: 'press', label: 'Press-in' },
   { value: 'ripple', label: 'Ripple' },
+  { value: 'pop', label: 'Pop' },
+  { value: 'glow', label: 'Glow' },
 ];
 
 /**

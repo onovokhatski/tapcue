@@ -35,6 +35,18 @@ export function updateStation(
   return { ...project, stations: project.stations.map((s) => (s.id === stationId ? next : s)) };
 }
 
+/**
+ * Switches a station's invitation to tap while idle on or off (spec ST-7). Off is written as no
+ * field, as the format wants.
+ */
+export function setInviteTaps(project: Project, stationId: string, on: boolean): Project {
+  const station = project.stations.find((s) => s.id === stationId);
+  if (!station || (station.inviteTaps === true) === on) return project;
+  const { inviteTaps: _old, ...rest } = station;
+  const next: Station = on ? { ...rest, inviteTaps: true } : rest;
+  return { ...project, stations: project.stations.map((s) => (s.id === stationId ? next : s)) };
+}
+
 /** Why an id cannot be used for this station, or null (a slug, not "test", unique). */
 export function checkStationId(project: Project, stationId: string, id: string): string | null {
   const result = StationId.safeParse(id);

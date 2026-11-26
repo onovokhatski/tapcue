@@ -58,6 +58,23 @@ describe('SettingsTab (spec CNV-1, CNV-2, ED-10)', () => {
     expect(canvas().height).toBe(1536);
   });
 
+  it('chooses the page transition, fade for a project without one (spec PG-4)', async () => {
+    const { project } = await renderTab();
+    const group = within(screen.getByRole('radiogroup', { name: 'Page transition' }));
+    expect(group.getAllByRole('radio').map((r) => r.textContent)).toEqual([
+      'Fade',
+      'Slide',
+      'Zoom',
+      'None',
+    ]);
+    expect(group.getByRole('radio', { name: 'Fade' })).toBeChecked();
+    fireEvent.click(group.getByRole('radio', { name: 'Slide' }));
+    expect(project().transition).toBe('slide');
+    expect(group.getByRole('radio', { name: 'Slide' })).toBeChecked();
+    fireEvent.click(group.getByRole('radio', { name: 'Fade' }));
+    expect('transition' in project()).toBe(false);
+  });
+
   it('changes the scale mode, and the diagrams mark it as current', async () => {
     const { canvas } = await renderTab();
     expect(diagrams('Fit')).toHaveAttribute('aria-current', 'true');
