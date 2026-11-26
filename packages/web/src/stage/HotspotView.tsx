@@ -25,6 +25,10 @@ interface HotspotViewProps {
   faderValue?: number | undefined;
   /** A fader's new value while it is dragged, and the last one with `final` (spec FD-2). */
   onValue?: ((hotspot: Hotspot, value: number, final: boolean) => void) | undefined;
+  /** Pulses to invite a tap while the station is idle (spec ST-7). */
+  inviting?: boolean | undefined;
+  /** Called at the end of each pulse, so the invitation can move on to the next hotspot. */
+  onInvited?: (() => void) | undefined;
 }
 
 export function HotspotView({
@@ -33,6 +37,8 @@ export function HotspotView({
   onImageReady,
   faderValue,
   onValue,
+  inviting = false,
+  onInvited,
 }: HotspotViewProps) {
   const { id, x, y, width, height, shape, style, text, pressEffect } = hotspot;
   const [ripples, setRipples] = useState<Ripple[]>([]);
@@ -86,8 +92,14 @@ export function HotspotView({
         data-kind={fader ? 'fader' : undefined}
         data-pressed={pressed || undefined}
         data-popping={popping || undefined}
+        data-inviting={inviting || undefined}
         className="hotspot"
         style={box}
+        onAnimationIteration={(event) => {
+          // The light of the invitation, a pseudo-element, reports its cycles on the hotspot too;
+          // only the hotspot's own pulse counts, once per cycle.
+          if (event.target === event.currentTarget && !event.pseudoElement) onInvited?.();
+        }}
         onAnimationEnd={(event) => {
           // A ripple's end bubbles up here too; only the hotspot's own animation is the pop.
           if (event.target === event.currentTarget) setPopping(false);

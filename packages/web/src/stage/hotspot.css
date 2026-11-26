@@ -131,8 +131,45 @@
   transition-duration: var(--duration-base);
 }
 
-/* Reduced motion: nothing grows. The ripple only fades, the glow only fades in and out, and pop,
-   which is only growth, is left out. The fades of highlight and press stay. */
+/* Invite taps while idle (spec ST-7): the hotspot grows slightly and lights up, then rests for the
+   rest of the cycle. It loops while it is this hotspot's turn; each cycle's end hands the turn on. */
+.hotspot[data-inviting] {
+  animation: hotspot-invite var(--duration-invite) var(--easing-standard) infinite;
+}
+
+.hotspot[data-inviting]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--color-overlay-light) 22%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: hotspot-invite-light var(--duration-invite) var(--easing-standard) infinite;
+}
+
+@keyframes hotspot-invite {
+  35% {
+    transform: scale(1.04);
+  }
+  70%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hotspot-invite-light {
+  35% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: nothing grows. The ripple only fades, the glow and the invitation only light up
+   and fade, and pop, which is only growth, is left out. The fades of highlight and press stay. */
 @media (prefers-reduced-motion: reduce) {
   .hotspot > .ripple {
     animation-name: hotspot-ripple-fade;
@@ -146,6 +183,11 @@
   .hotspot-glow,
   .hotspot-glow[data-pressed] {
     transform: none;
+  }
+
+  /* The invitation only lights up; still an animation, so each cycle still hands the turn on. */
+  .hotspot[data-inviting] {
+    animation-name: hotspot-still;
   }
 }
 

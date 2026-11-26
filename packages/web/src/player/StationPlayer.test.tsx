@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { demoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
-import { idleSeconds, StationPlayer } from './StationPlayer';
+import { idleSeconds, invitingHotspots, StationPlayer } from './StationPlayer';
 import { useStationSocket } from './useStationSocket';
 
 const project = demoProject();
@@ -21,8 +21,8 @@ function Connected(props: { project: Project; station: Station }) {
   return <StationPlayer {...props} connection={connection} />;
 }
 
-function renderStation(station: Station = main) {
-  const { container, rerender } = render(<Connected project={project} station={station} />);
+function renderStation(station: Station = main, start: Project = project) {
+  const { container, rerender } = render(<Connected project={start} station={station} />);
   /** A new project from the editor, with this station as it is in that project. */
   const update = (next: Project) => {
     const nextStation = next.stations.find((s) => s.id === station.id)!;
@@ -520,6 +520,115 @@ describe('StationPlayer', () => {
       advance(3_600_000);
       expect(layer('incoming')).toBeNull();
     });
+  });
+});
+
+describe('inviting taps while idle (spec ST-7, ADR 0025)', () => {
+  const inviting = { ...main, inviteTaps: true as const };
+  /** The demo stand with Home's "Call our team" doing nothing, so it has no tap to invite. */
+  const withIdleButton = (() => {
+    const p = demoProject();
+    p.pages[0]!.hotspots.find((h) => h.id === 'h_call00')!.action.commands = [];
+    return p;
+  })();
+
+  /** The hotspot pulsing on the page on screen, if any. */
+  const pulsing = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>('[data-layer="shown"] [data-inviting]')?.dataset.hotspot ??
+    null;
+  /** The pulsing hotspot's pulse ends, handing the turn to the next one. */
+  const endPulse = (container: HTMLElement) =>
+    fireEvent.animationIteration(container.querySelector('[data-inviting]')!);
+
+  it('starts after exactly 15 s without a touch on the start page', () => {
+    const { container } = renderStation(inviting);
+    advance(14_999);
+    expect(pulsing(container)).toBeNull();
+    advance(1);
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+
+  it('pulses the hotspots that go to a page or send a command, one at a time, in page order, in a loop', () => {
+    const { container } = renderStation(inviting, withIdleButton);
+    advance(15_000);
+    const order = [pulsing(container)];
+    for (let i = 0; i < 4; i++) {
+      endPulse(container);
+      order.push(pulsing(container));
+    }
+    // h_call00 does nothing and is skipped; after the last, the first again.
+    expect(order).toEqual(['h_carda0', 'h_cardb0', 'h_cardc0', 'h_about0', 'h_carda0']);
+    expect(container.querySelectorAll('[data-inviting]')).toHaveLength(1);
+  });
+
+  it('moves on only when the pulse of the hotspot itself ends, not its light or an animation inside it', () => {
+    const { container } = renderStation(inviting);
+    advance(15_000);
+    fireEvent.animationIteration(container.querySelector('[data-inviting] .hotspot-style')!);
+    expect(pulsing(container)).toBe('h_carda0');
+    // Its light is a pseudo-element whose cycles are reported on the hotspot as well.
+    fireEvent.animationIteration(container.querySelector('[data-inviting]')!, {
+      pseudoElement: '::after',
+    });
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+
+  it('chooses no faders and no hotspots that do nothing', () => {
+    // Product A: Back, Play, Next and a volume fader.
+    expect(invitingHotspots(project.pages[1]!)).toEqual(['h_aback0', 'h_aplay0', 'h_anext0']);
+    expect(invitingHotspots(withIdleButton.pages[0]!)).not.toContain('h_call00');
+  });
+
+  it('stops at the first touch, at once, and starts again 15 s after it', () => {
+    const { container, layer } = renderStation(inviting);
+    advance(15_000);
+    endPulse(container);
+    expect(pulsing(container)).toBe('h_cardb0');
+
+    fireEvent.pointerDown(layer('shown')!.querySelector('img')!);
+    expect(pulsing(container)).toBeNull();
+    advance(14_999);
+    expect(pulsing(container)).toBeNull();
+    advance(1);
+    expect(pulsing(container)).toBe('h_carda0'); // from the start of the page again
+  });
+
+  it('stops when the editor switches it off, and waits a full quiet time once it is back on', () => {
+    const { container, update } = renderStation(inviting);
+    advance(15_000);
+    expect(pulsing(container)).toBe('h_carda0');
+
+    const off = demoProject();
+    update(off);
+    expect(pulsing(container)).toBeNull();
+    const on = demoProject();
+    on.stations.find((s) => s.id === 'main')!.inviteTaps = true;
+    update(on);
+    expect(pulsing(container)).toBeNull();
+    advance(15_000);
+    expect(pulsing(container)).toBe('h_carda0');
+  });
+
+  it('stays still when the station does not invite', () => {
+    const { container } = renderStation();
+    advance(60_000);
+    expect(pulsing(container)).toBeNull();
+  });
+
+  it('stays still on other pages, and starts 15 s after the idle return brings back the start page', async () => {
+    const { container, layer, navigate, load, finishFade } = renderStation(inviting);
+    await navigate('h_carda0');
+    advance(60_000);
+    expect(pulsing(container)).toBeNull();
+
+    advance(30_000); // the idle return (90 s) starts bringing Home back
+    expect(layer('incoming')).toHaveAttribute('data-page', 'p_home00');
+    await load(layer('incoming'));
+    finishFade();
+    advance(14_999);
+    expect(pulsing(container)).toBeNull();
+    advance(1);
+    expect(pulsing(container)).toBe('h_carda0');
   });
 });
 

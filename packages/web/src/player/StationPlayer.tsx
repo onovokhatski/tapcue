@@ -1,9 +1,11 @@
 // One station on a tablet: taps sent to the server, navigation, the idle return, page changes
-// that fade without a blank frame, kiosk behaviour and a screen that stays on where it can
-// (spec ACT-2, ACT-3, ST-4, PG-4, PG-5, PLY-4, PLY-5, PLY-7, ADR 0005, ADR 0014, ADR 0016).
+// that fade without a blank frame, taps invited while idle, kiosk behaviour and a screen that
+// stays on where it can (spec ACT-2, ACT-3, ST-4, ST-7, PG-4, PG-5, PLY-4, PLY-5, PLY-7,
+// ADR 0005, ADR 0014, ADR 0016, ADR 0025).
 import {
   type Canvas,
   type Hotspot,
+  type HotspotId,
   type Page,
   type PageId,
   type Project,
@@ -36,9 +38,19 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
   if (project !== state.project || station !== state.station) {
     dispatch({ type: 'project', project, station });
   }
-  const touched = useIdleTimer(idleSeconds(state.project, station, state.shown), () =>
+  const idle = useIdleTimer(idleSeconds(state.project, station, state.shown), () =>
     dispatch({ type: 'idle' }),
   );
+  const next = incoming(state);
+  const invite = useInvite(
+    station.inviteTaps === true && state.shown === station.startPageId && next === null
+      ? state.project.pages.find((page) => page.id === state.shown)
+      : undefined,
+  );
+  function touched() {
+    idle();
+    invite.touched();
+  }
   const later = useLater();
   useNoPinchZoom();
   useWakeLock();
@@ -53,7 +65,6 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
 
   // Only the page on screen and the one on its way are in the DOM: the next page's background
   // starts loading on the tap (ADR 0016).
-  const next = incoming(state);
   const motion = incomingMotion(state);
   const layerOf = (page: Page): Layer | null =>
     page.id === state.shown ? 'shown' : page.id === next ? 'incoming' : null;
@@ -93,6 +104,9 @@ export function StationPlayer({ project, station, connection }: StationPlayerPro
             onReady={() => dispatch({ type: 'ready', pageId: page.id })}
             onActivity={touched}
             onFaded={() => dispatch({ type: 'faded', pageId: page.id })}
+            // Only while no page is on its way, so only the shown page has it.
+            inviting={invite.hotspot}
+            onInvited={invite.next}
           />
         );
       })}
@@ -114,6 +128,8 @@ interface PageLayerProps {
   onReady: () => void;
   onFaded: () => void;
   onActivity: () => void;
+  inviting: HotspotId | null;
+  onInvited: () => void;
 }
 
 function PageLayer({
@@ -128,6 +144,8 @@ function PageLayer({
   onReady,
   onFaded,
   onActivity,
+  inviting,
+  onInvited,
 }: PageLayerProps) {
   const [loaded, setLoaded] = useState(false);
   const reportReady = useEffectEvent(onReady);
@@ -166,6 +184,8 @@ function PageLayer({
         onValue={onValue}
         onReady={() => setLoaded(true)}
         onActivity={onActivity}
+        inviting={inviting}
+        onInvited={onInvited}
       />
     </div>
   );
@@ -181,6 +201,46 @@ export function idleSeconds(project: Project, station: Station, shown: PageId): 
   if (station.idleTimeoutSeconds === null) return null;
   const page = project.pages.find((p) => p.id === shown);
   return page?.background?.type === 'web' ? webPageSeconds(project) : station.idleTimeoutSeconds;
+}
+
+/** Seconds without a touch on the start page before its hotspots invite taps (spec ST-7). */
+export const INVITE_AFTER_SECONDS = 15;
+
+/**
+ * The start page's hotspots that invite taps, in page order: those that go to a page or send a
+ * command. Faders are dragged, not tapped, and a hotspot that does nothing has nothing to offer.
+ */
+export function invitingHotspots(page: Page): HotspotId[] {
+  return page.hotspots
+    .filter((h) => h.kind !== 'fader' && (h.action.goTo !== null || h.action.commands.length > 0))
+    .map((h) => h.id);
+}
+
+/**
+ * Taps invited on `page` (undefined: not now) after a quiet time (spec ST-7): one hotspot pulses
+ * at a time, and the end of its pulse hands over to the next, in a loop. A touch stops it at once
+ * and starts the quiet time again.
+ */
+function useInvite(page: Page | undefined) {
+  const [inviting, setInviting] = useState(false);
+  const [turn, setTurn] = useState(0);
+  const touched = useIdleTimer(page ? INVITE_AFTER_SECONDS : null, () => {
+    setTurn(0);
+    setInviting(true);
+  });
+  // Off the start page, or mid-change, the invitation ends; it starts again after a quiet time
+  // there (React: "adjusting state when a prop changes").
+  if (!page && inviting) setInviting(false);
+
+  const hotspots = page ? invitingHotspots(page) : [];
+  return {
+    hotspot: inviting && hotspots.length > 0 ? hotspots[turn % hotspots.length]! : null,
+    next: () => setTurn((n) => n + 1),
+    touched: () => {
+      setInviting(false);
+      touched();
+    },
+  };
 }
 
 /** Runs a function after a delay (at once for 0); pending calls are dropped when the player closes. */
