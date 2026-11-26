@@ -1,6 +1,6 @@
 import { type Project, validateProject } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
-import { demoProject } from '../../test/demoProject';
+import { demoProject, plainDemoProject } from '../../test/demoProject';
 import { checkCanvasSize, setTransition, setWebPageSeconds, updateCanvas } from './canvas';
 
 const expectValid = (project: Project) =>
@@ -108,7 +108,7 @@ describe('setTransition (spec PG-4)', () => {
   });
 
   it('returns the same project when the transition is already that, written or not', () => {
-    const before = demoProject();
+    const before = plainDemoProject();
     expect(setTransition(before, 'fade')).toBe(before);
     const zoom = setTransition(before, 'zoom');
     expect(setTransition(zoom, 'zoom')).toBe(zoom);
