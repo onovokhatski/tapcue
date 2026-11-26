@@ -4,6 +4,39 @@ What changed in each release of Tapcue. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-11-25
+
+The stand moves: pages change with a transition, buttons answer with more life, and an idle
+station invites taps. Milestone v0.10 (Motion).
+
+### Added
+
+- **Page transitions** (Settings, one choice per project): Fade, Slide, Zoom or None. Slide
+  follows the page order: a page further down the list comes in from the right, one further up
+  from the left.
+- **Pop and Glow press effects:** Pop springs the button out and back after a tap; Glow lights a
+  soft halo around it while it is pressed. The page change after a tap waits for the effect to
+  finish.
+- **Invite taps when idle** (Stations, one switch per station): after 15 s without a touch on the
+  station's start page, its buttons pulse one after another until someone touches the screen.
+- **The demo stand** slides between pages, and its main station invites taps.
+
+### Changed
+
+- **Project format:** a project may have `transition`, a hotspot's `pressEffect` may be `"pop"` or
+  `"glow"`, and a station may have `inviteTaps`. The schema version stays 2; Tapcue 0.9 and older
+  refuse a project that uses them.
+- **Reduced motion:** when the tablet asks for less motion, no button grows: Pop is left out, and
+  Glow and the invite pulse only light up.
+
+### Known limitations
+
+- The Windows app still opens a console window; a fix is in review (#230).
+- Not yet checked on an iPad: motion (from 0.10.0), web backgrounds (from 0.9.0), sequences (from
+  0.5.0), faders (from 0.3.0), the stand setup (from 0.1.0) and the frosted backdrop over video
+  (from 0.2.0)
+  ([docs/ipad-check.md](https://github.com/onovokhatski/tapcue/blob/main/docs/ipad-check.md)).
+
 ## [0.9.0] - 2026-11-25
 
 A page can show a live web page, with the stand's own hotspots on top. Milestone v0.9 (Web
