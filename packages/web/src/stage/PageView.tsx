@@ -1,6 +1,13 @@
 // Draws one page — background and hotspots — at canvas size, scaled to fill its parent (ADR 0004).
 // A web background is a frame under the hotspots, in real screen pixels (ADR 0024).
-import type { Canvas, Hotspot, MediaBackground, Page, WebBackground } from '@tapcue/shared';
+import type {
+  Canvas,
+  Hotspot,
+  HotspotId,
+  MediaBackground,
+  Page,
+  WebBackground,
+} from '@tapcue/shared';
 import {
   type CSSProperties,
   useEffect,
@@ -35,6 +42,10 @@ interface PageViewProps {
    * takes a click or the focus (ADR 0024).
    */
   inertWeb?: boolean;
+  /** The hotspot pulsing to invite a tap while the station is idle (spec ST-7). */
+  inviting?: HotspotId | null;
+  /** Called at the end of each pulse of that hotspot. */
+  onInvited?: () => void;
 }
 
 /**
@@ -56,6 +67,8 @@ export function PageView({
   onValue,
   onActivity,
   inertWeb = false,
+  inviting = null,
+  onInvited,
 }: PageViewProps) {
   const [ref, viewport] = useElementSize<HTMLDivElement>();
   const { scale, offsetX, offsetY } = stageGeometry(canvas, viewport, canvas.scaleMode);
@@ -135,6 +148,8 @@ export function PageView({
             faderValue={faderValues?.[hotspot.id]}
             onValue={onValue}
             onImageReady={(image) => markLoaded(`hotspot ${hotspot.id} ${image}`)}
+            inviting={hotspot.id === inviting}
+            onInvited={onInvited}
           />
         ))}
       </div>
