@@ -576,9 +576,16 @@ describe('HotspotPanel', () => {
       'Highlight',
       'Press-in',
       'Ripple',
+      'Pop',
+      'Glow',
     ]);
     fireEvent.change(effect, { target: { value: 'ripple' } });
     expect(cardA().pressEffect).toBe('ripple');
+    fireEvent.change(effect, { target: { value: 'pop' } });
+    expect(cardA().pressEffect).toBe('pop');
+    fireEvent.change(effect, { target: { value: 'glow' } });
+    expect(cardA().pressEffect).toBe('glow');
+    expect(effect).toHaveValue('glow');
   });
 
   describe('on tap (spec ACT-1)', () => {
