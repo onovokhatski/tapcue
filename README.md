@@ -89,6 +89,10 @@ the commands.
 - **Targets:** where commands go — OSC over UDP, UDP or HTTP — with a log of every command sent.
 - **Stations:** an entry point per tablet with its own start page and idle return, opened by
   scanning its QR code.
+- **Motion:** pages change with a fade, a slide that follows the page order, a zoom or no
+  transition; buttons answer a press with a highlight, press-in, ripple, pop or glow; and a
+  station can invite taps while nobody touches it, its buttons pulsing one after another. One
+  choice per place, no timings to set.
 - **Live editing:** every open tablet follows each change within a second, without reloading.
 - **Reliable on the stand:** tablets keep working through Wi-Fi drops and reconnect on their own.
 - **Projects:** several stands on one server, created, opened on every station and deleted from

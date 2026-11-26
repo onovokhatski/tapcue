@@ -378,7 +378,14 @@
     }
   ],
   "stations": [
-    { "id": "main", "name": "Main catalog", "startPageId": "p_home00", "idleTimeoutSeconds": 90 },
+    {
+      "id": "main",
+      "name": "Main catalog",
+      "startPageId": "p_home00",
+      "idleTimeoutSeconds": 90,
+      "inviteTaps": true
+    },
     { "id": "small", "name": "Small screen", "startPageId": "p_proda0", "idleTimeoutSeconds": 60 }
-  ]
+  ],
+  "transition": "slide"
 }

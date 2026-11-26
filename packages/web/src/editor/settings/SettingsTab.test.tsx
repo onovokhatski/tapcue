@@ -1,13 +1,13 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { demoProject } from '../../test/demoProject';
+import { demoProject, plainDemoProject } from '../../test/demoProject';
 import { createEditorStore } from '../editorStore';
 import { EditorStoreContext } from '../useEditor';
 import { aspectNote, SettingsTab } from './SettingsTab';
 
-async function renderTab(demo = false) {
+async function renderTab(demo = false, project = demoProject()) {
   const store = createEditorStore({
-    load: () => Promise.resolve({ revision: 1, project: demoProject(), demo }),
+    load: () => Promise.resolve({ revision: 1, project, demo }),
     save: () => Promise.resolve({ ok: true, revision: 2 }),
     testSend: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
     importArchive: () => Promise.resolve({ ok: false, reason: 'Not used in this test' }),
@@ -59,7 +59,7 @@ describe('SettingsTab (spec CNV-1, CNV-2, ED-10)', () => {
   });
 
   it('chooses the page transition, fade for a project without one (spec PG-4)', async () => {
-    const { project } = await renderTab();
+    const { project } = await renderTab(false, plainDemoProject());
     const group = within(screen.getByRole('radiogroup', { name: 'Page transition' }));
     expect(group.getAllByRole('radio').map((r) => r.textContent)).toEqual([
       'Fade',

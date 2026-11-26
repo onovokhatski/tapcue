@@ -1,7 +1,7 @@
 import type { Project, Station } from '@tapcue/shared';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { demoProject } from '../test/demoProject';
+import { demoProject, plainDemoProject } from '../test/demoProject';
 import { FakeWebSocket } from '../test/fakeWebSocket';
 import { idleSeconds, invitingHotspots, StationPlayer } from './StationPlayer';
 import { useStationSocket } from './useStationSocket';
@@ -598,10 +598,10 @@ describe('inviting taps while idle (spec ST-7, ADR 0025)', () => {
     advance(15_000);
     expect(pulsing(container)).toBe('h_carda0');
 
-    const off = demoProject();
+    const off = plainDemoProject();
     update(off);
     expect(pulsing(container)).toBeNull();
-    const on = demoProject();
+    const on = plainDemoProject();
     on.stations.find((s) => s.id === 'main')!.inviteTaps = true;
     update(on);
     expect(pulsing(container)).toBeNull();
@@ -610,7 +610,8 @@ describe('inviting taps while idle (spec ST-7, ADR 0025)', () => {
   });
 
   it('stays still when the station does not invite', () => {
-    const { container } = renderStation();
+    const plain = plainDemoProject();
+    const { container } = renderStation(plain.stations[0], plain);
     advance(60_000);
     expect(pulsing(container)).toBeNull();
   });

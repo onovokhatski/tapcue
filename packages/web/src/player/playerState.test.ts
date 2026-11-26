@@ -1,6 +1,6 @@
 import type { Hotspot, Transition } from '@tapcue/shared';
 import { describe, expect, it } from 'vitest';
-import { demoProject } from '../test/demoProject';
+import { demoProject, plainDemoProject } from '../test/demoProject';
 import {
   currentPage,
   incoming,
@@ -195,7 +195,7 @@ describe('a new project from the editor (spec PLY-5, PLY-6)', () => {
 describe('incomingMotion (spec PG-4, ADR 0025)', () => {
   const withTransition = (transition?: Transition) =>
     startPlayer({
-      project: transition === undefined ? project : { ...project, transition },
+      project: transition === undefined ? plainDemoProject() : { ...project, transition },
       station: main,
     });
 
