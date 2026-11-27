@@ -38,3 +38,20 @@ application feature: `Tapcue.app` for macOS and `Tapcue.exe` for Windows.
   right-click → Open) and Windows SmartScreen warns too. Signing needs an Apple Developer
   account and a Windows certificate; it can be added later without changing the app.
 - Two more CI jobs build the files for every release.
+
+## Amendment (2026-11-24, issue #230): no console window
+- **`Tapcue.exe` is marked as a windowed program.** As a copy of `node.exe` it was a console
+  program, so Windows opened a command-prompt window for it, and closing that window stopped the
+  stand. After `postject`, the build changes the PE header's Subsystem field from console (3) to
+  Windows GUI (2) (`scripts/peSubsystem.ts`). The browser is started with `windowsHide`, so `cmd`
+  flashes no window either.
+- **The log goes to a file.** With no terminal on either system, the app writes the server's log
+  and everything it would print to `Documents/Tapcue/tapcue.log`, appending (a second click adds to
+  the running one's log), synchronously (the last lines survive an exit), and keeping a log grown
+  past 1 MB once as `tapcue.old.log`. When that folder cannot be written, the system's temporary
+  folder is used.
+- **A start that fails says why in the browser.** The app writes `tapcue-error.html` with the
+  reason and the log's path, and opens it. Without it a port taken by another program would make
+  the app fail silently.
+- **Stopping** is Quit Tapcue in the editor, as before; closing a console window is no longer a
+  way, nor a way to stop the stand by mistake.

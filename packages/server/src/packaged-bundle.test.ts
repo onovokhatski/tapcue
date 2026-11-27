@@ -1,7 +1,15 @@
 // The click-to-run app's bundle, run as the app runs it: one file, its web app and demo stand next
-// to it, a home folder of its own, no repository around it (ADR 0017).
+// to it, a home folder of its own, no repository around it, no terminal (ADR 0017, issue #230).
 import { execFileSync, spawn } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -55,6 +63,10 @@ function runApp() {
   return { child, done, output: () => output };
 }
 
+/** The app has no terminal: what it says is in its log in Documents/Tapcue (issue #230). */
+const tapcueDir = () => join(root, 'home', 'Documents', 'Tapcue');
+const appLog = () => readFileSync(join(tapcueDir(), 'tapcue.log'), 'utf8');
+
 async function waitForHealth() {
   for (let i = 0; i < 60; i++) {
     try {
@@ -81,11 +93,18 @@ describe('the click-to-run app’s bundle (ADR 0017)', () => {
       expect(
         existsSync(join(root, 'home', 'Documents', 'Tapcue', 'demo-stand', 'project.json')),
       ).toBe(true);
-      expect(app.output()).toContain(`Open http://localhost:${PORT}/edit`);
+      // Nothing on the console; the log has the start, the server's own lines and the editor URL.
+      expect(app.output()).toBe('');
+      expect(appLog()).toContain('--- Tapcue started ');
+      expect(appLog()).toContain('Projects library:');
+      expect(appLog()).toContain(`Open http://localhost:${PORT}/edit`);
 
       const second = await runApp().done;
       expect(second.code).toBe(0);
-      expect(second.output).toContain(`Tapcue is already running on port ${PORT}.`);
+      // The second click adds to the log of the running one, and shows its editor.
+      expect(appLog()).toContain(`Tapcue is already running on port ${PORT}.`);
+      expect(appLog().match(/--- Tapcue started /g)).toHaveLength(2);
+      expect(appLog().split(`Open http://localhost:${PORT}/edit`)).toHaveLength(3);
 
       // Quit from the editor stops the app itself.
       expect((await fetch(`http://localhost:${PORT}/api/quit`, { method: 'POST' })).status).toBe(
@@ -102,9 +121,15 @@ describe('the click-to-run app’s bundle (ADR 0017)', () => {
     const other = createServer().listen(PORT);
     await new Promise((r) => other.once('listening', r));
     try {
-      const { code, output } = await runApp().done;
+      const { code } = await runApp().done;
       expect(code).toBe(1);
-      expect(output).toContain(`Tapcue cannot start: port ${PORT} is in use by another program.`);
+      const why = `Tapcue cannot start: port ${PORT} is in use by another program.`;
+      expect(appLog()).toContain(why);
+      // With no terminal, a page in the browser says why and where the log is.
+      const page = join(tapcueDir(), 'tapcue-error.html');
+      expect(readFileSync(page, 'utf8')).toContain(why);
+      expect(readFileSync(page, 'utf8')).toContain(join(tapcueDir(), 'tapcue.log'));
+      expect(appLog()).toContain(`Open ${page}`);
     } finally {
       other.close();
     }

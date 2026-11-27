@@ -120,9 +120,11 @@ jobs:
           done
           curl -sf http://localhost:4600/edit/pages | grep -q '<div id="root">'
           test -f apphome/Documents/Tapcue/demo-stand/project.json
+          # No terminal of its own (issue #230): the app logs to a file.
+          grep -q 'Projects library:' apphome/Documents/Tapcue/tapcue.log
       - name: Show the app output
         if: always()
-        run: cat app.log || true
+        run: cat app.log apphome/Documents/Tapcue/tapcue.log || true
       - uses: actions/upload-artifact@v4
         with:
           name: Tapcue-${{ runner.os }}

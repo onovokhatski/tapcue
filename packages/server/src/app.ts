@@ -26,8 +26,11 @@ export interface AppOptions {
   store: ProjectStore;
   /** The folder of projects to list, create, open and delete (ADR 0021); left out, no such API. */
   library?: Library;
-  /** Log requests to stdout (on when running, off in tests). */
-  logger?: boolean;
+  /**
+   * Log requests to stdout (on when running, off in tests), or to this stream: the click-to-run
+   * app's log file, since it has no terminal (issue #230).
+   */
+  logger?: boolean | { stream: { write(text: string): void } };
   /** The real drivers by default; tests pass fakes so nothing leaves the computer. Ignored in demo mode. */
   drivers?: Drivers;
   /** This computer's addresses; tests pass fixed ones. */

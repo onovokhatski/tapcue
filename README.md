@@ -160,13 +160,18 @@ which starts with a copy of the demo stand. Clicking it again while it runs just
 
 The apps are not code-signed yet, so the first start needs one extra step:
 
-- **macOS:** right-click `Tapcue.app` → Open → Open. Tapcue runs in the background, without a
-  Dock icon.
+- **macOS:** right-click `Tapcue.app` → Open → Open.
 - **Windows:** unzip the folder, start `Tapcue.exe`, and on the SmartScreen notice choose More
-  info → Run anyway. A console window shows that Tapcue runs.
+  info → Run anyway.
 
-To stop the app, choose **Quit Tapcue** in the editor's Settings tab. Closing the console window
-on Windows, or quitting "Tapcue" in Activity Monitor on macOS, works too.
+Tapcue then runs in the background, with no window of its own: the editor is a browser tab.
+Closing that tab leaves Tapcue running, and the tablets keep working. To get back to the editor,
+start the app again (it opens the editor of the one already running) or open
+`http://localhost:4000/edit`. To stop it, choose **Quit Tapcue** in the editor's Settings tab;
+quitting "Tapcue" in Activity Monitor on macOS, or ending it in Task Manager on Windows, works too.
+
+The app writes what it does to `Documents/Tapcue/tapcue.log`. If it cannot start, for example
+because another program holds port 4000, it opens a page in the browser that says why.
 
 ## Security
 
